@@ -1,0 +1,39 @@
+[hidden] {
+    display: unset !important;
+}
+
+body {
+    overflow: hidden !important;
+    background-color: rgba(28,27,32,var(--tw-bg-opacity));
+}
+
+.content-block {
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+.play-area {
+   width: 900px !important;
+   height: 600px !important;
+   margin: 0 !important;
+}
+
+#calibration {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+#game-container {
+    height: fit-content;
+    width: fit-content;
+    margin: auto;
+}
+
+#iframe-game {
+    display: block;
+    height: inherit;
+}

@@ -1,0 +1,416 @@
+html {
+    height: 100vh;
+    width: 100vw;
+}
+
+html, body {
+    overflow: hidden;
+}
+
+html, body, main {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+}
+
+/* body {
+    background-color: #1c1b1b !important;
+} */
+
+webview {
+    width: 900px;
+    height: 600px;
+}
+
+[hidden] {
+    display: unset !important;
+}
+
+#ateballpanel {
+    z-index: 2;
+}
+
+#ateballpanel.portrait {
+    width: min-content;
+    margin-left: 6px;
+}
+
+#ateballpanel.landscape {
+    width: fit-content;
+    margin: 6px auto 0;
+}
+
+#ateballpanel button {
+    font-weight: 600;
+}
+
+#ateball-prompt #prompt {
+    height: 30px;
+    font-weight: 600;
+    text-align: center;
+}
+
+#controlpanel, #debugpanel {
+    width: 300px;
+    max-width: 300px;
+    height: 100%;
+}
+
+#calibration {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+}
+
+#debug_1, #debug_2 {
+    height: 100%;
+}
+
+#game-container {
+    height: fit-content;
+    width: fit-content;
+    margin: auto;
+}
+
+#logo_header {
+    width: inherit;
+    height: inherit;
+}
+
+/* Menu button colors */
+
+#ateball-start {
+    border-color: #40cb23;
+    background: -webkit-linear-gradient(top,#1a8f01,#60fd02,#1a8f01);
+}
+
+#ateball-start:not([disabled]):hover {
+    border-color: #20b500;
+    background: -webkit-linear-gradient(top,#20b500,#73ff1f,#20b500);
+}
+
+#ateball-stop {
+    border-color: #c91717;
+    background-image: -webkit-linear-gradient(top, #c91717, #ff2a2a, #c91717);
+}
+
+#ateball-stop:not([disabled]):hover {
+    border-color: #e02020;
+    background-image: -webkit-linear-gradient(top, #e02020, #ff4747, #e02020);
+}
+
+#call-pocket-all-btn {
+    border-color: #660f0f;
+    background-image: -webkit-linear-gradient(top, #660f0f, #bb2121, #660f0f);
+}
+
+#call-pocket-all-btn:not([disabled]):hover {
+    border-color: #7c1313;
+    background-image: -webkit-linear-gradient(top, #7c1313, #cf2828, #7c1313);
+}
+
+#call-pocket-eight-btn {
+    border-color: #18191a;
+    background-image: -webkit-linear-gradient(top, #18191a, #484b4c, #18191a);
+}
+
+#call-pocket-eight-btn:not([disabled]):hover {
+    border-color: #2b2c2e;
+    background-image: -webkit-linear-gradient(top, #2b2c2e, #565a5c, #2b2c2e);
+}
+
+#call-pocket-standard-btn {
+    border-color: #023665;
+    background-image: -webkit-linear-gradient(top, #023665, #1c91ce, #023665);
+}
+
+#call-pocket-standard-btn:not([disabled]):hover {
+    border-color: #03437a;
+    background-image: -webkit-linear-gradient(top, #03437a, #209ee2, #03437a);
+}
+
+#friends-btn {
+    border-color: #db8d4c;
+    background-image: -webkit-linear-gradient(top, #f46f00, #ffc100, #f46f00);
+}
+
+#friends-btn:not([disabled]):hover {
+    border-color: #ff8520;
+    background-image: -webkit-linear-gradient(top, #ff8520, #ffcc34, #ff8520);
+}
+
+#guest-btn {
+    border-color: #ed960f;
+    background-image: -webkit-linear-gradient(top, #ed960f, #f1840a, #ed5201);
+}
+
+#guest-btn:not([disabled]):hover {
+    border-color: #f7a62c;
+    background-image: -webkit-linear-gradient(top, #ffb13b, #ff9924, #ff6816);
+}
+
+#login-btn {
+    border-color: #1170d6;
+    background: -webkit-linear-gradient(top,#1170d6,#1067c2,#0f559f);
+}
+
+#login-btn:not([disabled]):hover {
+    border-color: #1778df;
+    background: -webkit-linear-gradient(top,#1780f0,#1575db,#1364bb);
+}
+
+#luckyshot-btn {
+    border-color: #e9ab4d;
+    background-image: -webkit-linear-gradient(top, #e9ab4d, #fff282, #e9ab4d);
+}
+
+#luckyshot-btn:not([disabled]):hover {
+    border-color: #fdc064;
+    background-image: -webkit-linear-gradient(top, #fdc064, #fff48f, #fdc064);
+}
+
+#minigames-btn, #spinwin-btn {
+    border-color: #30a2a7;
+    background-image: -webkit-linear-gradient(top, #178489, #12fde3, #168387);
+}
+
+#minigames-btn:not([disabled]):hover, #spinwin-btn:not([disabled]):hover {
+    border-color: #1a99a0;
+    background-image: -webkit-linear-gradient(top, #1a99a0, #29ffe6, #1a99a0);
+}
+
+#nine-ball-btn {
+    border-color: #8c51cd;
+    background-image: -webkit-linear-gradient(top, #6d25bd, #aa70e7, #6d25bd);
+}
+
+#nine-ball-btn:not([disabled]):hover {
+    border-color: #7529cc;
+    background-image: -webkit-linear-gradient(top, #7529cc, #b77ff3, #7529cc);
+}
+
+#no-guideline-btn, #quick-fire-btn {
+    border-color: #8d002a;
+    background-image: -webkit-linear-gradient(top, #8d002a, #bf2953, #8d002a);
+}
+
+#no-guideline-btn:not([disabled]):hover, #quick-fire-btn:not([disabled]):hover {
+    border-color: #9c002f;
+    background-image: -webkit-linear-gradient(top, #9c002f, #d63361, #9c002f);
+}
+
+#one-on-one-btn {
+    border-color: #40cb23;
+    background: -webkit-linear-gradient(top,#1a8f01,#60fd02,#1a8f01);
+}
+
+#one-on-one-btn:not([disabled]):hover {
+    border-color: #20b500;
+    background: -webkit-linear-gradient(top,#20b500,#73ff1f,#20b500);
+}
+
+#pass-n-play-btn, #practice-btn {
+    border-color: #8c8e91;
+    background-image: -webkit-linear-gradient(top, #3c4854, #aebcc9, #3c4854);
+}
+
+#pass-n-play-btn:not([disabled]):hover, #practice-btn:not([disabled]):hover {
+    border-color: #8c8e91;
+    background-image: -webkit-linear-gradient(top, #4c5966, #c3d0dd, #4c5966);
+}
+
+#quit-btn {
+    border-color: #7a1010;
+    background-image: -webkit-linear-gradient(top, #7a1010, #b72c2c, #7a1010);
+}
+
+#quit-btn:not([disabled]):hover {
+    border-color: #8f1212;
+    background-image: -webkit-linear-gradient(top, #8f1212, #c14949, #8f1212);
+}
+
+#special-btn {
+    border-color: #4488cd;
+    background-image: -webkit-linear-gradient(top, #004899, #088ffa, #004899);
+}
+
+#special-btn:not([disabled]):hover {
+    border-color: #0055b6;
+    background-image: -webkit-linear-gradient(top, #0055b6, #1d99ff, #0055b6);
+}
+
+#tounament-btn {
+    border-color: #0173a3;
+    background-image: -webkit-linear-gradient(top, #0173a3, #07dbff, #0173a3);
+}
+
+#tounament-btn:not([disabled]):hover {
+    border-color: #0081b8;
+    background-image: -webkit-linear-gradient(top, #0081b8, #17dcff, #0081b8);
+}
+
+/* Menu button colors */
+
+.ateball-input {
+    width: 100%;
+    border: 1px solid #858585;
+    background-color: white;
+    font-weight: 600;
+}
+
+.ateball-input:focus-visible {
+    outline: unset;
+}
+
+._btn {
+    width: 100%;
+    height: 32px;
+    padding: 0 4%;
+    color: white;
+    text-shadow: 1px 0px 4px #000000;
+    border: unset; /* perhaps not? looks better without? */
+    opacity: unset;
+    outline: none;
+}
+
+._btn[disabled] {
+    cursor: default;
+    color: #d3d3d3;
+    filter: grayscale(100%);
+    transition: filter 1s;
+}
+
+._btn.slim {
+    height: 24px;
+}
+
+.debug {
+    display: flex;
+    flex-direction: column-reverse;
+    position: absolute;
+    width: 100%;
+    height: -webkit-fill-available;
+    margin: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    white-space: -moz-pre-wrap;
+    word-wrap: break-word; 
+    font-size: 12px;
+}
+
+.dropdown::after {
+    content: "▾";
+    margin-right: auto;
+    float: right;
+}
+
+.dropdown.open::after {
+    content: "▴";
+    margin-right: auto;
+    float: right;
+}
+
+.log-object {
+    border-bottom: solid #dddddd 1px;
+    padding: 2px 4px;
+    line-height: 1em;
+}
+
+.log-object > .empty {
+    height: 1em;
+}
+
+.menu-btn.open, .sub-menu-btn.open {
+    border-width: initial;
+    border-style: initial;
+    border-image-slice: 1;
+    border-style: inset;
+}
+
+.menu-select {
+    width: 100%;
+    height: 100%;
+    color: #036;
+    font-weight: 600;
+}
+
+.menu-select:focus-visible {
+    outline: unset;
+}
+
+.menu-select[disabled] {
+    color: #a1a3a5;
+}
+
+.menu-select option {
+    color: #036;
+    font-weight: 600;
+}
+
+.nav-tabs {
+    border-bottom: unset !important;
+}
+
+.play-btn {
+    height: 100%;
+}
+
+.play-btn.green {
+    border-color: #419533;
+    background-image: -webkit-linear-gradient(top, #4fbf4c, #0a7201);
+}
+
+.play-btn.green:not([disabled]):hover {
+    border-color: #0d8f01;
+    background-image: -webkit-linear-gradient(top, #59d354, #0d8f01);
+}
+
+.prompt {
+    display: flex;
+    flex-flow: column;
+    height: 30px;
+    font-weight: 600;
+    justify-content: end;
+    align-items: center;
+    opacity: 0;
+    background-image: -webkit-linear-gradient(top,#d2fdcf,#a4cda3);
+    animation: notify 2s ease-in forwards;
+}
+
+.prompt .timerbar {
+    height: 3px;
+    width: 100%;
+    background-color: #b31414;
+}
+
+.prompt a {
+    text-decoration: none;
+}
+
+.panel-btn{
+    display: block;
+    border: 1px solid #fff;
+    color: #036;
+    text-decoration: none;
+    text-align: center;
+    height: 32px;
+    font-weight: 600;
+    background-image: -webkit-gradient(linear,left top,left bottom,from(#fcfcfc),to(#ccc));
+    border-color: #ccc;
+    white-space: nowrap;
+}
+
+.sub-menu-btn {
+    font-size: .9em;
+}
+
+@keyframes notify {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

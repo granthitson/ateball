@@ -1,0 +1,20 @@
+html, body {
+    overflow: hidden !important;
+}
+
+#container {
+    width: 900px !important;
+    height: 600px !important;
+}
+
+#canvas-container {
+    width: inherit !important;
+    height: inherit !important;
+    transform: unset !important;
+    transform-origin: unset !important;
+}
+
+#engine {
+    transform: scaleX(0.78125) scaleY(0.78125) !important;
+    transform-origin: 0px 0px 0px !important;
+}

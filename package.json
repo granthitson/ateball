@@ -1,0 +1,29 @@
+{
+  "name": "ateball",
+  "version": "1.0.0",
+  "description": "eight ball pool bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/granthitson/AteBallPool.git"
+  },
+  "author": "grant hitson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/granthitson/AteBallPool/issues"
+  },
+  "homepage": "https://github.com/granthitson/AteBallPool#readme",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "electron": "^20.3.1",
+    "ws": "^8.9.0",
+    "zeromq": "^6.0.0-beta.6"
+  },
+  "devDependencies": {
+    "electron-rebuild": "^3.2.9"
+  }
+}
