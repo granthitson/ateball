@@ -15,7 +15,6 @@ from enum import IntEnum
 
 import threading
 import queue as q
-import asyncio
 import janus
 import itertools
 import ctypes
@@ -57,27 +56,27 @@ class Formatter(logging.Formatter):
 
 class OrEvent:
     def __init__(self, event1, event2, *args):
+        self.condition = threading.Condition()
         self.events = [event1, event2, *args]
-        self.timeout = asyncio.Event()
+        self.timeout = threading.Event()
 
-    async def wait(self, timeout=None):
+    def wait(self, timeout):
         logger.debug("or event start")
-        try:
-            logger.debug(f"or event waiting")
-            done, pending = await asyncio.wait([e.wait() for e in self.events], timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
-            for task in pending:
-                task.cancel()
-        except asyncio.TimeoutError as e:
-            self.timeout.set()
-            logger.debug("or event timeout")
-        except Exception as e:
-            logger.error("error waiting for orevent")
+        with self.condition:
+            while not any([e.is_set() for e in self.events]) and not self.timeout.is_set():
+                logger.debug(f"or event waiting")
+                timed_out = not self.condition.wait(timeout)
+                if timed_out:
+                    self.timeout.set()
+                    logger.debug("or event timeout")
 
         result = " - ".join([str(e.is_set()) for e in self.events])
         logger.debug(f"or event end: {result} - {self.timeout.is_set()}")
 
     def notify(self, event):
         event.set()
+        with self.condition:
+            self.condition.notify()
 
     def clear(self):
         for e in self.events:
@@ -85,7 +84,12 @@ class OrEvent:
         self.timeout.clear()
 
     def is_set(self):
-        return any([e.is_set() for e in self.events])
+        is_set = False
+        for e in self.events:
+            if e.is_set():
+                is_set = True
+
+        return is_set
 
     def has_timed_out(self):
         return self.timeout.is_set()
@@ -162,49 +166,46 @@ class TaskScheduler:
     
 class IPC:
     def __init__(self):
-        self.loop = asyncio.get_event_loop()
-        self.reader = asyncio.StreamReader()
-        self.writer = None
-
-        self.start_event = asyncio.Event()
-        self.start_exception_event = asyncio.Event() 
-        self.start = OrEvent(self.start_event, self.start_exception_event)
-
-        self.stop_event = asyncio.Event()
+        self.incoming = q.Queue()
+        self.outgoing = q.Queue()
+        
+        self.listen_event = threading.Event()
+        self.listen_exception_event = threading.Event() 
+        self.exception_event = threading.Event() 
+        self.stop_event = threading.Event()
 
         self.exception = None
 
         self.logger = logging.getLogger("ateball.utils.ipc")
 
-    async def serve(self):
+    def listen(self):
         try:
-            self.logger.info("Starting ipc...")
-
-            protocol = asyncio.StreamReaderProtocol(self.reader)
-            self.logger.info("1")
-            await self.loop.connect_read_pipe(lambda: protocol, sys.stdin)
-            self.logger.info("2")
-            w_transport, w_protocol = await self.loop.connect_write_pipe(asyncio.streams.FlowControlMixin, sys.stdout)
-            self.logger.info("3")
-            self.writer = asyncio.StreamWriter(w_transport, w_protocol, self.reader, self.loop)
-
-            self.logger.info("IPC ready...")
-            self.start.notify(self.start_event)
-            self.writer.write("BIG ASS TEST YO")
-        except Exception as e:
-            self.start.notify(self.start_exception_event)
-            self.logger.error(f"error starting ipc: {e}")
-            self.exception = IPCSetupError("error setting up ipc")
-
-    async def listen(self):
-        try:
+            self.logger.info("ipc listening...")
+            self.listen_event.set()
             while not self.stop_event.is_set():
-                res = await self.reader.read(100)
-                if not res:
-                    break
-                self.writer.write(res)
+                data = sys.stdin.readline()
+                if data:
+                    msg = json.loads(data)
+                    self.incoming.put(msg)
         except Exception as e:
-            self.logger.exception(f"error handling messages: {e}")
+            self.listen_exception_event.set()
+            self.logger.exception(f"error handling ipc messages: {e}")
+
+    def send(self):
+        try:
+            self.logger.info("sending message: {msg}")
+            while not self.stop_event.is_set():
+                try:
+                    msg = self.outgoing.get()
+                    sys.stdout.write(msg)
+                except q.Empty:
+                    pass
+        except Exception as e:
+            self.start_exception_event.set()
+            self.logger.exception(f"error handling ipc messages: {e}")
+
+    def quit(self):
+        self.stop_event.set()
 
 # class WebSocketServer:
 #     def __init__(self, port):

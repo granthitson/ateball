@@ -4,8 +4,6 @@ import sys
 import os
 import traceback
 
-import asyncio
-
 #files
 import utils
 from ateball import AteBall
@@ -34,13 +32,13 @@ def configure_logging():
     logging.getLogger("websockets").setLevel(logging.WARNING)
     logging.getLogger("chromedriver_autoinstaller").setLevel(logging.INFO)
 
-async def main():
+def main():
     configure_logging()
 
     try:
         ateball = AteBall(8888)
-        await ateball.start()
-        await ateball.quit_event.wait()
+        ateball.start()
+        ateball.quit_event.wait()
     except KeyboardInterrupt: # causes error with webdriver - max retry error
         logger.debug("User interrupted execution.")
         webdriver.driver = None
@@ -48,7 +46,8 @@ async def main():
         logger.error(e)
         logger.error(traceback.format_exc())
     finally:  
-        await ateball.shutdown()
+        if not ateball.quit_event.is_set():
+            ateball.quit()
 
         logger.info("exited")
         logger.handlers.clear()
@@ -57,4 +56,4 @@ async def main():
         sys.exit(0)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

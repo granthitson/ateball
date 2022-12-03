@@ -4,8 +4,10 @@ from contextlib import suppress
 
 import math
 import time
-import asyncio
 import pyautogui
+
+import threading
+import queue as q
 
 from enum import Enum
 from enum import IntEnum
@@ -44,8 +46,6 @@ class AteBall():
         self.ipc = utils.IPC()
         # self.task_scheduler = utils.TaskScheduler()
 
-        self.loop = asyncio.get_event_loop()
-
         #statuses
 
         self.loginStatus = LoginStatus.LOGGED_OUT
@@ -57,40 +57,37 @@ class AteBall():
         self.game_region = [0, 0, constants.game_width, constants.game_height]
         self.click_offset = [0, 0]
 
-        self.init_event = asyncio.Event()
-        self.init_start_time = None
+        self.login_event = threading.Event()
 
-        self.login_event = asyncio.Event()
+        self.game_region_event = threading.Event()
 
-        self.game_region_event = asyncio.Event()
-
-        self.accept_prompt_event = asyncio.Event()
-        self.deny_prompt_event = asyncio.Event()
+        self.accept_prompt_event = threading.Event()
+        self.deny_prompt_event = threading.Event()
         self.prompt = utils.OrEvent(self.accept_prompt_event, self.deny_prompt_event)
 
-        self.menu_acquired_event = asyncio.Event()
-        self.menu_exception_event = asyncio.Event()
+        self.menu_acquired_event = threading.Event()
+        self.menu_exception_event = threading.Event()
         self.menu_search_event = utils.OrEvent(self.menu_acquired_event, self.menu_exception_event)
 
-        self.processing_play_request = asyncio.Event()
+        self.processing_play_request = threading.Event()
 
-        self.location_carousel_event = asyncio.Event()
-        self.bet_selection_event = asyncio.Event()
+        self.location_carousel_event = threading.Event()
+        self.bet_selection_event = threading.Event()
 
         self.current_gamemode = None
         self.current_gamemode_info = None
 
-        self.game_start_event = asyncio.Event()
-        self.game_cancelled_event = asyncio.Event()
+        self.game_start_event = threading.Event()
+        self.game_cancelled_event = threading.Event()
         self.game_event = utils.OrEvent(self.game_start_event, self.game_cancelled_event)
         self.game = None
 
         self.unique_dismiss_points = set()
-        self.dismiss_points = asyncio.PriorityQueue() 
-        self.dismiss_lock = asyncio.Lock()
-        self.dismiss_event = asyncio.Event()
+        self.dismiss_points = q.PriorityQueue() 
+        self.dismiss_lock = threading.Lock()
+        self.dismiss_event = threading.Event()
 
-        self.quit_event = asyncio.Event()
+        self.quit_event = threading.Event()
 
         self.exception = None
 
@@ -98,8 +95,8 @@ class AteBall():
 
         self.logger = logging.getLogger("ateball")
 
-    async def send_message(self, msg):
-        await self.wsserver.outgoing.put(msg)
+    def send_message(self, msg):
+        self.ipc.outgoing.put(msg)
 
     def status_msg(self, resptype=rtype.INFO):
         return {
@@ -118,7 +115,7 @@ class AteBall():
             "action" : raction.BUSY.name,
         }
 
-    async def prompt_user(self, mode, timeout):
+    def prompt_user(self, mode, timeout):
         self.logger.debug(f"prompting user to play: {mode.name}")
 
         msg = {
@@ -128,7 +125,7 @@ class AteBall():
             "timeout" : timeout
         }
 
-        await self.send_message(msg)
+        self.send_message(msg)
 
     def accept_prompt(self):
         self.logger.debug("user accepted prompt")
@@ -138,25 +135,21 @@ class AteBall():
         self.logger.debug("user denied prompt")
         self.prompt.notify(self.deny_prompt_event)
 
-    async def process_message(self):
-        self.logger.info("Waiting to process messages")
+    def process_message(self):
+        self.logger.info("waiting for command...")
         while not self.quit_event.is_set():
             try:
                 response = None # change to object/dict to send response
 
-                msg = await self.wsserver.inc_processing.get()
+                msg = self.ipc.incoming.get()
+                self.logger.debug(msg)
                 action = msg["action"]
                 if "data" in msg:
                     mdata = msg["data"]
 
                 self.logger.debug(f"incoming msg: {msg}")
                 
-                if action == "init":
-                    await self.login_event.wait()
-                    self.create_task(self.initialize)
-                    # self.task_scheduler.add_task(self.initialize, 0)
-                    response = self.status_msg(rtype.INIT)
-                elif action == "login":
+                if action == "login":
                     self.create_task(self.login)
                     # self.task_scheduler.add_task(self.login, 1)
                 elif action == "logout":
@@ -180,6 +173,8 @@ class AteBall():
                     self.quit()
                 else:
                     pass
+            except q.Empty() as e:
+                pass
             except KeyError as e:
                 response["status"] = "failed"
                 response["msg"] = str(e)
@@ -193,89 +188,59 @@ class AteBall():
                     if (isinstance(response, dict)):
                         response["id"] = msg["id"]
 
-                await self.wsserver.inc_processed.put(response)
+                self.ipc.outgoing.put(response)
 
-    def create_task(self, func, *args, **kwargs):
-        task = asyncio.create_task(func(*args, **kwargs))
-        self.tasks.add(task)
-        task.add_done_callback(self.tasks.discard)
-
-        return task
 
     ###initialization
 
-    async def start(self):
+    def start(self):
         try:
             self.logger.info("Starting Ateball...")
             self.init_start_time = time.time()
 
             #wait for websocket server to start or throw
-            self.create_task(self.ipc.serve)
+            threading.Thread(target=self.ipc.listen, daemon=True).start()
 
-            await self.ipc.start.wait(5)
-            if self.ipc.start_event.is_set():
+            if self.ipc.listen_event.wait(5):
                 #start receiving msgs and initialize
-                self.create_task(self.process_message)
-            else:
-                raise self.ipc.exception
+                threading.Thread(target=self.process_message, daemon=True).start()
+
+                self.send_message(self.status_msg(rtype.INIT))
         except Exception as e:
             self.logger.error(f"{type(e)} - {e}")
             self.quit()
-
-    async def initialize(self):
-        try:
-            self.logger.info("Initializing...")
-            self.init_event.clear()
-            self.init_start_time = time.time()
-
-            await self.send_message(self.status_msg(rtype.INIT))
-
-            # await self.verifyLoginState()
-
-            await self.findGameRegion()
-            if not self.game_region_event.is_set():
-                raise self.exception
-
-            # await self.searchForMenu()
-            # if not self.menu_acquired_event.is_set():
-            #     raise self.exception
-        except Exception as e:
-            self.logger.error(f"Initialization failed...webview {traceback.format_exc()}")
-            self.quit()
         else:
-            self.init_event.set()
-            time_to_init = time.time() - self.init_start_time
-            self.logger.info(f"Initialization complete - {time_to_init:.2f}s...webview")
+            self.send_message(self.status_msg(rtype.INIT))
 
-    async def findGameRegion(self):
-        try:
-            self.game_region_event.clear()
+    # def findGameRegion(self):
+    #     try:
+    #         self.game_region_event.clear()
 
-            self.logger.info("Getting game region...")
+    #         self.logger.info("Getting game region...")
 
-            if not await asyncio.wait_for(self.login_event.wait(), timeout=5):
-                raise Exception("login event not set")
+    #         if not self.login_event.wait(5):
+    #             raise Exception("login event not set")
 
-            # self.game_container = await self.webdriver.presenceOfElement(".play-area", 10000)
+    #         # self.game_container = await self.webdriver.presenceOfElement(".play-area", 10000)
 
-            calibration = await self.run_blocking(utils.ImageHelper.imageSearch, constants.img_calibration, point_type="corner", time_limit=20)
-            if calibration:
-                browser_pos = await self.webdriver.getPosition(".play-area")
+    #         calibration = utils.ImageHelper.imageSearch(constants.img_calibration, point_type="corner", time_limit=20)
+    #         if calibration:
+    #             browser_pos = (0, 0)
 
-                self.game_region[0], self.game_region[1] = calibration[0], calibration[1]
-                self.click_offset[0], self.click_offset[1] = browser_pos[0]-calibration[0], browser_pos[1]-calibration[1]
-                if self.game:
-                    self.game.regions.recalculate()
-            else:
-                raise Exception(f"could not find calibration img")
-        except Exception as e:
-            self.exception = Exception(f"error getting game region: {e}")
-        else:
-            self.logger.debug(f"game window acquired: {self.game_region}")
-            self.logger.debug(f"click offset: {self.click_offset} - {browser_pos} - {calibration[0], calibration[1]}")
-            self.game_region_event.set()
+    #             self.game_region[0], self.game_region[1] = calibration[0], calibration[1]
+    #             self.click_offset[0], self.click_offset[1] = browser_pos[0]-calibration[0], browser_pos[1]-calibration[1]
+    #             if self.game:
+    #                 self.game.regions.recalculate()
+    #         else:
+    #             raise Exception(f"could not find calibration img")
+    #     except Exception as e:
+    #         self.exception = Exception(f"error getting game region: {e}")
+    #     else:
+    #         self.logger.debug(f"game window acquired: {self.game_region}")
+    #         self.logger.debug(f"click offset: {self.click_offset} - {browser_pos} - {calibration[0], calibration[1]}")
+    #         self.game_region_event.set()
 
-    # async def verifyLoginState(self):
+    # def verifyLoginState(self):
     #     self.logger.info("Verifying login state...")
 
     #     await self.webdriver.presenceOfElement(".play-area", 10000)
@@ -362,7 +327,7 @@ class AteBall():
 
     ###menu
 
-    async def play(self, data):
+    def play(self, data):
         try:
             self.processing_play_request.set()
 
@@ -394,19 +359,19 @@ class AteBall():
             else:
                 self.logger.info(f"Playing {self.current_gamemode.name}...")
 
-            gamemode_pos = await self.create_task(self.searchForGamemode)
+            gamemode_pos = self.create_task(self.searchForGamemode)
             if gamemode_pos:
                 self.logger.info(f"Navigated to {self.current_gamemode.name} gamemode..")
 
-                await self.prompt_user(self.current_gamemode, 30)
+                self.prompt_user(self.current_gamemode, 30)
                 self.prompt.clear()
-                await self.prompt.wait()
+                self.prompt.wait()
                 
                 if not self.accept_prompt_event.is_set():
                     self.logger.debug("play game prompt denied/timeout")
                     self.game_event.notify(self.game_cancelled_event)
                 else:
-                    await self.click(gamemode_pos)
+                    self.click(gamemode_pos)
                 
                     self.game = game.Game(self.current_gamemode, self.game_region)
                     self.create_task(self.game.start)
@@ -427,20 +392,12 @@ class AteBall():
                 self.logger.error(f"error playing game: {e}")
         finally:
             if not self.game_start_event.is_set() or self.game_cancelled_event.is_set():
-                await self.create_task(self.searchForMenu)
+                self.create_task(self.searchForMenu)
 
             self.processing_play_request.clear()
 
     ###menu
 
-    async def run_blocking(self, func, *args, **kwargs):
-        return await self.loop.run_in_executor(None, lambda: func(*args, **kwargs))
-
-    async def shutdown(self):     
-        for task in self.tasks: # asyncio.Task.all_tasks():
-            task.cancel()
-            with suppress(asyncio.CancelledError, ConnectionResetError):
-                await task
-
     def quit(self):
+        self.ipc.quit()
         self.quit_event.set()
