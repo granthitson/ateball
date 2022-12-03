@@ -13,6 +13,8 @@ dotenv.config();
 app.allowRendererProcessReuse = true;
 app.commandLine.appendSwitch("disable-site-isolation-trials");
 
+var ateball = null;
+
 app.on('ready', async () => {
 	// Create the browser window.
 	let factor = screen.getPrimaryDisplay().scaleFactor;
@@ -21,7 +23,7 @@ app.on('ready', async () => {
 		width: 1200, // / factor,
 		height: 600, // / factor,
 		autoHideMenuBar: !app.isPackaged,
-		alwaysOnTop: true,
+		// alwaysOnTop: true,
 		minimizable: false,
 		resizable: false,
 		useContentSize: true,
@@ -41,6 +43,8 @@ app.on('ready', async () => {
 
 	// clear persistent data
 	session.defaultSession.clearStorageData();
+
+	ateball = new Ateball(window);
 	
 	window.loadFile(path.join(__dirname, "/ateball-js/html/index.html"));
 	window.webContents.on('did-finish-load', () => {
@@ -76,25 +80,21 @@ app.on('ready', async () => {
 		})
 	});
 
+	window.webContents.once('dom-ready', () => {
+		ateball.start();
+	});
+
 	ipcMain.on('ateball-start', async (e) => {
-		console.log("starting ateball");
-		if (!ateball == null) {
-			(new Promise((resolve, reject) => {
-				spawn_ateball(window);
-				resolve();
-			})).catch((e) => {
-				console.log("could not start ateball", e);
-			});
-		}
+		ateball.start();
 	});
 
 	ipcMain.on('ateball-status', async (e) => {
 		return (new Promise((resolve, reject) => {
-			if (ateball != null) {
+			if (ateball.process != null) {
 				console.log("getting ateball status");
-				ateball.send({ action : "status", callback : (data) => {
+				ateball.get_status().then((data) => {
 					resolve(data); // figure out way to return from ateball
-				}});
+				});
 			} else {
 				resolve(null);
 			}
@@ -104,76 +104,18 @@ app.on('ready', async () => {
 	});
 
 	ipcMain.on('ateball-stop', async (e) => {
-		console.log("stopping ateball");
-		(new Promise((resolve, reject) => {
-			try {
-				ateball.send({ action : "quit", callback : (data) => {
-					ateball.kill();
-					resolve();
-				}});
-			} catch (e) {
-				reject();
-			}
-		})).catch((e) => {
-			console.log("could not stop ateball");
-		});
-	});
-
-	var ateball = null;
-	window.webContents.once('dom-ready', () => {
-		spawn_ateball(window);
-	});
-
-	ipcMain.handle("test", (e) => {
-		console.log("test");
+		if (ateball.process != null) {
+			console.log("stopping ateball");
+			ateball.quit().then(() => {
+				if (!window.isDestroyed()) {
+					window.webContents.send("ateball-stopped");
+				}
+			}).catch((e) => {
+				console.log("could not stop ateball", e);
+			});
+		}
 	});
 });
-
-var ateball = undefined;
-const spawn_ateball = (window) => {
-	ateball = subpy.spawn( "python", [ "./ateball-py/main.py", process.env.PORT], { windowsHide: false});
-
-	ateball.on('spawn', function () {
-		console.log("ateball process spawned");
-		window.webContents.send("ateball-started");
-	});
-
-	ateball.stdout.on('data', function (data) {
-		var data = data.toString().trim().split(/\r?\n|\r/g);
-		data.forEach((msg) => {
-			window.webContents.send("ateball-log", msg);
-		})
-	});
-
-	// ateball.stdout.on('end', function (data) {
-	// 	console.log("ateball python done yo");
-	// });
-
-	// ------------------
-
-	ipcMain.once('send-message', async (e, msg) => {
-		console.log("sending msg: ", msg);
-		return new Promise((resolve, reject) => {
-			// send message
-			resolve();
-		})
-	});
-
-	// ===================
-
-	ateball.on('exit', function() {
-		console.log("ateball process exited");
-		window.webContents.send("ateball-stopped");
-	});
-
-	process.on('SIGTERM', () => {
-		if (ateball.pid) ateball.kill();
-	});
-	
-	process.on('SIGINT', () => {
-		if (ateball.pid) ateball.kill();
-	});
-}
 
 app.on('web-contents-created', (e, contents) => {
 	contents.on('will-navigate', (e, url) => {
@@ -215,4 +157,135 @@ app.on('browser-window-blur', function () {
 
 app.on('window-all-closed', () => {
   	app.quit()
+});
+
+class Ateball {
+	constructor(window) {
+		this.window = window;
+		
+		this.process = null;
+		this.state = {};
+
+		this.started = null;
+		this.stopped = null;
+
+		this.pending = {};
+	}
+
+	start() {
+		if (this.process == null) {
+			console.log("starting ateball");
+			this.spawn().then(() => {
+				this.window.webContents.send("ateball-started");
+			}).catch((e) => {
+				console.log("could not start ateball", e);
+			});
+		}
+	}
+
+	spawn() {
+		var self = this;
+
+		var start_resolve, start_reject;
+		this.started = new Promise((resolve, reject) => {
+			start_resolve = resolve;
+			start_reject = reject;
+		}); 
+
+		var stop_resolve, stop_reject;
+		this.stopped = new Promise((resolve, reject) => {
+			stop_resolve = resolve;
+			stop_reject = reject;
+		});
+
+		this.process = subpy.spawn("python", ["./ateball-py/main.py"], { stdio: 'pipe', windowsHide: false });
+
+		this.process.once('spawn', function () {
+			console.log("ateball process spawned");
+			start_resolve();
+
+			self.process.stdout.removeAllListeners('data');
+			self.process.stdout.on('data', function (data) {
+				var data = data.toString().trim().split(/\r?\n|\r/g);
+				data.forEach((msg) => {
+					try {
+						var p_msg = JSON.parse(msg);
+						console.log(msg);
+					} catch (e) {
+						self.window.webContents.send("ateball-log", msg);
+					}
+				});
+			});
+	
+			self.process.once('exit', function () {
+				console.log("ateball process exited");
+				stop_resolve();
+				if (!self.window.isDestroyed()) {
+					self.window.webContents.send("ateball-stopped");
+				}
+			});
+		});
+
+		this.process.once('error', (err) => {
+			console.error('ateball process failed to start');
+			start_reject();
+		});
+
+		return this.started;
+	};
+
+	send_message(msg, callback = null) {
+		var id = (new Date()).getTime().toString(36);
+		if (callback) {
+			this.pending[id] = callback;
+		}
+
+		msg = { 
+			id : id,
+			...msg
+		}
+
+		console.log("sending msg : ", msg);
+		
+		this.process.stdin.write(JSON.stringify(msg));
+		this.process.stdin.end();
+	}
+
+	get_status() {
+		var status = new Promise((resolve, reject) => {
+			this.send_message({ action : "status" });
+		});
+		this.pending[id] = status;
+
+		return status;
+	}
+
+	log_message(msg) {
+		this.window.webContents.send("ateball-log", msg);
+	}
+
+	kill() {
+		if (this.process != null) {
+			this.process.stdout.removeAllListeners('data');
+			this.process.kill();
+		}
+	}
+
+	quit() {
+		return (new Promise((resolve, reject) => {
+			this.send_message({ action : "quit" });
+			this.stopped.then(() => {
+				this.process = null;
+				resolve();
+			});
+		}));
+	}
+}
+
+process.on('SIGTERM', () => {
+	ateball.kill();
+});
+
+process.on('SIGINT', () => {
+	ateball.kill();
 });

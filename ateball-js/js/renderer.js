@@ -35,12 +35,6 @@ window.api.ateball.started(() => {
     console.log("Ateball started");
     // allowGUIInteraction(true);
     toggleAteballControls(true);
-});
-
-window.api.ateball.connected(() => {
-    console.log("Ateball connected");
-    // allowGUIInteraction(true);
-    toggleAteballControls(true);
     toggleGUIElements(window.api.ateball.state);
 });
 

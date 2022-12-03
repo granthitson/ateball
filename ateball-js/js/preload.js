@@ -13,7 +13,6 @@ contextBridge.exposeInMainWorld('api', {
         },
         start: () => ipcRenderer.send('ateball-start'),
         started: (callback) => ipcRenderer.on('ateball-started', callback),
-        connected: (callback) => ipcRenderer.on('ateball-connected', callback),
         stop: () => ipcRenderer.send('ateball-stop'),
         stopped: (callback) => ipcRenderer.on('ateball-stopped', callback),
         log_message: (callback) => ipcRenderer.on('ateball-log', callback)
