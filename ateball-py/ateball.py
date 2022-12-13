@@ -142,7 +142,7 @@ class AteBall():
                 response = None # change to object/dict to send response
 
                 msg = self.ipc.incoming.get()
-                self.logger.debug(msg)
+
                 action = msg["action"]
                 if "data" in msg:
                     mdata = msg["data"]
@@ -188,7 +188,8 @@ class AteBall():
                     if (isinstance(response, dict)):
                         response["id"] = msg["id"]
 
-                self.ipc.outgoing.put(response)
+                if response:
+                    self.ipc.outgoing.put(response)
 
 
     ###initialization
@@ -200,12 +201,11 @@ class AteBall():
 
             #wait for websocket server to start or throw
             threading.Thread(target=self.ipc.listen, daemon=True).start()
+            threading.Thread(target=self.ipc.send, daemon=True).start()
 
             if self.ipc.listen_event.wait(5):
                 #start receiving msgs and initialize
                 threading.Thread(target=self.process_message, daemon=True).start()
-
-                self.send_message(self.status_msg(rtype.INIT))
         except Exception as e:
             self.logger.error(f"{type(e)} - {e}")
             self.quit()

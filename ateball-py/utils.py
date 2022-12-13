@@ -193,11 +193,11 @@ class IPC:
 
     def send(self):
         try:
-            self.logger.info("sending message: {msg}")
             while not self.stop_event.is_set():
                 try:
                     msg = self.outgoing.get()
-                    sys.stdout.write(msg)
+                    sys.stdout.write(f"{json.dumps(msg)}\n")
+                    sys.stdout.flush()
                 except q.Empty:
                     pass
         except Exception as e:
