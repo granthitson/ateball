@@ -1,23 +1,7 @@
 const { ipcRenderer } = require('electron');
-  
-ipcRenderer.on('format', () => {
-    format();
-});
 
-window.addEventListener("DOMContentLoaded", async (e) => {
-    format();
-});
-
-window.addEventListener("message", function (e) {
+window.addEventListener("DOMContentLoaded", () => {
     try {
-        var data = JSON.parse(e.data);
-        console.log(data);
-    } catch (e) {}
-});
-
-function format() {
-    try {
-        console.log(location.pathname);
         if (location.host == "me.miniclip.com") {
             if (location.pathname == "/login/pool") {
                 document.querySelectorAll("header, footer, .page-header, #form-fb-login").forEach((elem) => {
@@ -51,7 +35,6 @@ function format() {
                 
                 var iframe = play_area.querySelector("#iframe-game");
                 iframe.onload = async () => {
-                    console.log(iframe);
                     var iframe_doc = iframe.contentDocument || iframe.contentWindow.document;
                     var style = document.createElement('style');
     
@@ -72,9 +55,9 @@ function format() {
         //     document.querySelector(".sidebar").remove();
         // });
     }
-}
+});
 
-function waitForElement(selector) {
+const waitForElement = (selector) => {
     return new Promise(resolve => {
         if (document.querySelector(selector)) {
             return resolve(document.querySelector(selector));
