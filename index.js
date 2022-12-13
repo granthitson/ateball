@@ -70,7 +70,7 @@ app.on('ready', async () => {
 		}
 	});
 
-	ipcMain.handle('get-css', async (e, type) => {
+	ipcMain.handle('get-css', (e, type) => {
 		console.log("injecting css: ", type);
 		return new Promise((resolve, reject) => {
 			fs.readFile(path.join(__dirname, 'ateball-js/css/' + type + '.css'), 'utf8', (err, data) => {
@@ -84,11 +84,17 @@ app.on('ready', async () => {
 		ateball.start();
 	});
 
-	ipcMain.on('ateball-start', async (e) => {
+	ipcMain.on('ateball-start', () => {
 		ateball.start();
 	});
 
-	ipcMain.on('ateball-status', async (e) => {
+	ipcMain.handle('ateball-state', (e) => {
+		return (new Promise((resolve, reject) => {
+			resolve(ateball.get_state());
+		}));
+	});
+
+	ipcMain.on('ateball-status', (e) => {
 		return (new Promise((resolve, reject) => {
 			if (ateball.process != null) {
 				console.log("getting ateball status");
@@ -103,17 +109,8 @@ app.on('ready', async () => {
 		});
 	});
 
-	ipcMain.on('ateball-stop', async (e) => {
-		if (ateball.process != null) {
-			console.log("stopping ateball");
-			ateball.quit().then(() => {
-				if (!window.isDestroyed()) {
-					window.webContents.send("ateball-stopped");
-				}
-			}).catch((e) => {
-				console.log("could not stop ateball", e);
-			});
-		}
+	ipcMain.on('ateball-stop', (e) => {
+		ateball.stop();
 	});
 });
 
@@ -164,7 +161,11 @@ class Ateball {
 		this.window = window;
 		
 		this.process = null;
-		this.state = {};
+
+		this.state = {
+			started: false,
+			connected: false,
+		};
 
 		this.started = null;
 		this.stopped = null;
@@ -176,9 +177,21 @@ class Ateball {
 		if (this.process == null) {
 			console.log("starting ateball");
 			this.spawn().then(() => {
+				this.state.started = true;
 				this.window.webContents.send("ateball-started");
 			}).catch((e) => {
+				this.state.started = false;
 				console.log("could not start ateball", e);
+			});
+		}
+	}
+
+	stop() {
+		if (this.process != null) {
+			console.log("stopping ateball");
+			this.send_message({ action : "quit" });
+			this.stopped.catch((e) => {
+				console.log("could not stop ateball", e);
 			});
 		}
 	}
@@ -210,7 +223,7 @@ class Ateball {
 				data.forEach((msg) => {
 					try {
 						var p_msg = JSON.parse(msg);
-						console.log(msg);
+						self.process_message(p_msg);
 					} catch (e) {
 						self.window.webContents.send("ateball-log", msg);
 					}
@@ -221,6 +234,9 @@ class Ateball {
 				console.log("ateball process exited");
 				stop_resolve();
 				if (!self.window.isDestroyed()) {
+					self.state.started = false;
+					self.state.connected = false;
+					self.process = null;
 					self.window.webContents.send("ateball-stopped");
 				}
 			});
@@ -233,6 +249,18 @@ class Ateball {
 
 		return this.started;
 	};
+	
+	process_message(msg) {
+		console.log("processing message: ", msg);
+		switch (msg.action) {
+			case "STATUS":
+				if (msg.type == "INIT") {
+					this.state.connected = true;
+					this.window.webContents.send("ateball-connected");
+				}
+				break;
+		}
+	}
 
 	send_message(msg, callback = null) {
 		var id = (new Date()).getTime().toString(36);
@@ -251,6 +279,10 @@ class Ateball {
 		this.process.stdin.end();
 	}
 
+	get_state() {
+		return this.state;
+	}
+
 	get_status() {
 		var status = new Promise((resolve, reject) => {
 			this.send_message({ action : "status" });
@@ -260,25 +292,11 @@ class Ateball {
 		return status;
 	}
 
-	log_message(msg) {
-		this.window.webContents.send("ateball-log", msg);
-	}
-
 	kill() {
 		if (this.process != null) {
 			this.process.stdout.removeAllListeners('data');
 			this.process.kill();
 		}
-	}
-
-	quit() {
-		return (new Promise((resolve, reject) => {
-			this.send_message({ action : "quit" });
-			this.stopped.then(() => {
-				this.process = null;
-				resolve();
-			});
-		}));
 	}
 }
 

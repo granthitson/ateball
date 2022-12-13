@@ -5,11 +5,14 @@ webview.addEventListener('dom-ready', () => {
 });
 
 webview.addEventListener("did-navigate", () => {
-    console.log("navigate", webview.getURL());
     window.api.inject_css("webview").then((css) => {
         webview.insertCSS(css);
+    }).then(() => {
+        // don't really like this but works fairly reliably
+        setTimeout(() => {
+            toggleGUIElements(get_state());
+        }, 1000);
     });
-    webview.send("format");
 });
 
 var log = document.querySelector('#debug_console_2');
@@ -31,16 +34,29 @@ webview.addEventListener('console-message', (e) => {
 
 // ----------------------
 
-window.api.ateball.started(() => {
-    console.log("Ateball started");
-    // allowGUIInteraction(true);
-    toggleAteballControls(true);
-    toggleGUIElements(window.api.ateball.state);
+var start = document.querySelector("#ateball-start");
+start.addEventListener("click", (e) => {
+    window.api.ateball.start();
 });
 
-window.api.ateball.stopped(() => {
+window.api.ateball.on_start( (e) => {
+    console.log("Ateball started");
+    toggleAteballControls(true);
+});
+
+window.api.ateball.on_connected( (e) => {
+    console.log("Ateball connected");
+    toggleGUIElements(get_state());
+});
+
+var stop = document.querySelector("#ateball-stop");
+stop.addEventListener("click", (e) => {
+    window.api.ateball.stop();
+});
+
+window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
-    allowGUIInteraction(false);
+    toggleGUIElements(Promise.resolve({}));
     toggleAteballControls(false);
     log_message("<div class='empty'></div>");
 });
@@ -49,10 +65,20 @@ window.api.ateball.log_message((e, msg) => {
     log_message(msg);
 });
 
+const debug = document.querySelector("#debug_console_1");
 const log_message = (msg) => {
-    var debug = document.querySelector("#debug_console_1");
     var log = document.createElement('span');
     log.classList.add("log-object");
     log.innerHTML += msg;
     debug.prepend(log);
+}
+
+const get_state = async () => {
+    var state = {};
+    
+    await window.api.ateball.state().then((a_state) => { state.ateball = a_state; });
+    await webview.executeJavaScript('location.pathname || null').then((m_state) => { state.menu = m_state; });
+    await webview.executeJavaScript('(localStorage.getItem("accessToken") !== null) ? true : false').then((l_state) => { state.logged_in = l_state; });
+
+    return state;
 }

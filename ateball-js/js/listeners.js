@@ -1,15 +1,5 @@
 var dropdown_btns = document.querySelectorAll("._btn.dropdown[data-target]");
 
-var start = document.querySelector("#ateball-start");
-start.addEventListener("click", (e) => {
-    window.api.ateball.start();
-});
-
-var stop = document.querySelector("#ateball-stop");
-stop.addEventListener("click", (e) => {
-    window.api.ateball.stop();
-});
-
 var menu_btns = document.querySelectorAll(".menu-btn[data-target]");
 menu_btns.forEach(btn => {
     btn.addEventListener("click", function(e) {
@@ -139,27 +129,12 @@ Array.from(inputs).forEach(input => {
 
 var play_btns = document.getElementsByClassName("play-btn");
 Array.from(play_btns).forEach(btn => {
-    console.log(btn.dataset);
     btn.addEventListener("click", function(e) {
         // sendSocketMessage("play", btn.dataset);
         window.api.send_message(btn.dataset);
-        allowGUIInteraction(false);
+        toggleGUIElements(null);
     });
 });
-
-const toggleGUIElements = async (status) => {
-	if (status.menu != "PENDING") {
-		if (status.login != "PENDING" && status.login != "UNAUTHORIZED") {
-			if (status.login == "LOGGED_IN") {
-				allowGUIInteraction((status.menu == "MAIN"))
-			} else {
-				allowGUIInteraction((status.menu == "GUEST"))
-			}
-		}
-	} else {
-		allowGUIInteraction(false, menu.id);
-	}
-}
 
 const toggleAteballControls = (state) => {
     var start = document.querySelector("#ateball-start");
@@ -174,8 +149,8 @@ const toggleAteballControls = (state) => {
     }
 }
 
-const allowGUIInteraction = (interact, parent_id=undefined) => {
-	var elemList = ["#button:not(.static)", "input.ateball-input", "select.menu-select"];
+const toggleGUIElements = (state, parent_id=undefined) => {
+	var elemList = ["button:not(.static)", "input.ateball-input", "select.menu-select"];
 
 	var parent = document.getElementById("controlpanel");
 	if (parent_id !== undefined) {
@@ -183,13 +158,22 @@ const allowGUIInteraction = (interact, parent_id=undefined) => {
 	}
 	
 	if (parent) {
-		elemList.forEach(function(elemName) {
-			parent.querySelectorAll(elemName).forEach(function(elem) {
-				if (elem.dataset.username === undefined || elem.dataset.username === "") {
-					elem.disabled = true;
-				}
-				elem.disabled = !interact;
-			});
+        state.then((s) => {
+            elemList.forEach(function(elemName) {
+                parent.querySelectorAll(elemName).forEach(function(elem) {
+                    if (s !== null && (s.menu && s.menu == "/en/game")) {
+                        if (s.logged_in) {
+                            let interact = (elem.id == "guest-btn") ? false : true;
+                            elem.disabled = !interact;
+                        } else {
+                            let interact = (elem.id == "guest-btn") ? true : false;
+                            elem.disabled = !interact;
+                        }
+                    } else {
+                        elem.disabled = true;
+                    }
+                });
+            });
 		});
 	}
 }
