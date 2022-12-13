@@ -334,6 +334,7 @@ webview {
     height: 100%;
     color: #036;
     font-weight: 600;
+    border-radius: 0;
 }
 
 .menu-select:focus-visible {
