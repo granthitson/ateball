@@ -275,8 +275,7 @@ class Ateball {
 
 		console.log("sending msg : ", msg);
 		
-		this.process.stdin.write(JSON.stringify(msg));
-		this.process.stdin.end();
+		this.process.stdin.write(JSON.stringify(msg) + "\n");
 	}
 
 	get_state() {
