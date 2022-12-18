@@ -59,15 +59,18 @@ app.on('ready', async () => {
 		}
 	});
 
-	// need to change filter list to inverse of what it is
-	session.defaultSession.webRequest.onBeforeRequest({ urls: [process.env.ACCEPTED_FULL_FILTER_LIST] }, (details, callback) => {
+	session.defaultSession.webRequest.onBeforeRequest({ urls: process.env.ACCEPTED_FULL_FILTER_LIST.split(" ") }, (details, callback) => {
 		var parsed_url = new URL(details.url);
-		console.log(parsed_url);
-		if (!process.env.ACCEPTED_ORIGINS_FULL.split(" ").includes(parsed_url)) {
-			callback({ cancel: true });
+		if (parsed_url.protocol != "file:") {
+			if (!process.env.ACCEPTED_HOST_FULL.split(" ").includes(parsed_url.host)) {
+				callback({ cancel: true });
+			} else {
+				callback({});
+			}
 		} else {
 			callback({});
 		}
+		
 	});
 
 	ipcMain.handle('get-css', (e, type) => {
@@ -116,11 +119,11 @@ app.on('ready', async () => {
 
 app.on('web-contents-created', (e, contents) => {
 	contents.on('will-navigate', (e, url) => {
-		var accepted_origins = (app.isPackaged) ? process.env.ACCEPTED_ORIGINS_GUEST.split(" ") : process.env.ACCEPTED_ORIGINS_FULL.split(" ");
+		var accepted_hosts = (app.isPackaged) ? process.env.ACCEPTED_HOST_GUEST.split(" ") : process.env.ACCEPTED_HOST_FULL.split(" ");
 		const parsed_url = new URL(url)
 
-		// console.log("parsed url: ", parsed_url.href);
-		if (!(accepted_origins.includes(parsed_url.origin))) {
+		if (!(accepted_hosts.includes(parsed_url.host))) {
+			console.log("blocked url: ", parsed_url.href);
 			e.preventDefault();
 		}
 	});
