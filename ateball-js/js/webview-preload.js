@@ -63,7 +63,9 @@ window.addEventListener("DOMContentLoaded", () => {
         }
 	} catch (error) {
 		console.log(error);
-	}
+	} finally {
+        ipcRenderer.sendToHost("formatting-complete");
+    }
 });
 
 const waitForElement = (selector, _document=document, to_be_visible=true) => {

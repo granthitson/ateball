@@ -159,10 +159,16 @@ const toggleGUIElements = (state, parent_id=undefined) => {
 	
 	if (parent) {
         state.then((s) => {
+            if (s !== null && s.loaded) {
+                if (s.menu && s.menu == "/en/game") {
+                    document.querySelector("#loading-overlay").style.display = (s.loaded) ? "none" : "block";
+                }
+            }
+
             elemList.forEach(function(elemName) {
                 parent.querySelectorAll(elemName).forEach(function(elem) {
-                    if (s.loaded) {
-                        if (s !== null && (s.menu && s.menu == "/en/game")) {
+                    if (s !== null && s.loaded) {
+                        if (s.menu && s.menu == "/en/game") {
                             if (s.logged_in) {
                                 let interact = (elem.id == "guest-btn") ? false : true;
                                 elem.disabled = !interact;

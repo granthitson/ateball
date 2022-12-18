@@ -18,12 +18,17 @@ html, body, main {
 } */
 
 webview {
-    width: 900px;
-    height: 600px;
+    width: inherit;
+    height: inherit;
 }
 
 [hidden] {
     display: unset !important;
+}
+
+#ateball-webview {
+    width: 900px;
+    height: 600px;
 }
 
 #ateballpanel {
@@ -76,6 +81,43 @@ webview {
 #logo_header {
     width: inherit;
     height: inherit;
+}
+
+#loading-background {
+    width: inherit;
+    height: inherit;
+}
+
+#loading-header {
+    z-index: 1;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+}
+
+#loading-overlay {
+    width: inherit;
+    height: inherit;
+    position: absolute;
+    display: block;
+}
+
+#loading-overlay img {
+    position: absolute;
+    pointer-events: none;
+}
+
+#loading-spinner {
+    z-index: 1;
+    left: 0;
+    right: 0;
+    top: 300px;
+    bottom: 0;
+    margin: auto;
+    transform: scale(.5);
+    
 }
 
 /* Menu button colors */
@@ -352,6 +394,13 @@ webview {
 
 .nav-tabs {
     border-bottom: unset !important;
+}
+
+.overlay {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    background-color: rgba(0,0,0,.5);
 }
 
 .play-btn {

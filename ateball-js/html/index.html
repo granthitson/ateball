@@ -16,8 +16,12 @@
 		<main>
 			<div class="container-fluid">
 				<div class="row justify-content-center">
-					<div class="col-sm-auto p-0">
-						<!-- <img id="calibration" src="./images/calibration.svg"> -->
+					<div id="ateball-webview" class="col-sm-auto p-0">
+						<div id="loading-overlay">
+							<img id="loading-header" src="https://static-web-pool-production.pool.miniclippt.com/game/wasm_guest_1.0.0_73372/images/Generic_Logo-hd.png">
+							<img id="loading-spinner" src="https://static-web-pool-production.pool.miniclippt.com/site/master_173/img/spinner.svg">
+							<img id="loading-background" src="https://static-web-pool-production.pool.miniclippt.com/site/master_173/img/bg.jpg">
+						</div>
 						<webview src="https://8ballpool.com/en/game" sandbox="" disablewebsecurity=""preload="../js/webview-preload.js"></webview>
 					</div>
 
