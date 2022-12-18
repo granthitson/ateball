@@ -161,13 +161,17 @@ const toggleGUIElements = (state, parent_id=undefined) => {
         state.then((s) => {
             elemList.forEach(function(elemName) {
                 parent.querySelectorAll(elemName).forEach(function(elem) {
-                    if (s !== null && (s.menu && s.menu == "/en/game")) {
-                        if (s.logged_in) {
-                            let interact = (elem.id == "guest-btn") ? false : true;
-                            elem.disabled = !interact;
+                    if (s.loaded) {
+                        if (s !== null && (s.menu && s.menu == "/en/game")) {
+                            if (s.logged_in) {
+                                let interact = (elem.id == "guest-btn") ? false : true;
+                                elem.disabled = !interact;
+                            } else {
+                                let interact = (elem.id == "guest-btn") ? true : false;
+                                elem.disabled = !interact;
+                            }
                         } else {
-                            let interact = (elem.id == "guest-btn") ? true : false;
-                            elem.disabled = !interact;
+                            elem.disabled = true;
                         }
                     } else {
                         elem.disabled = true;

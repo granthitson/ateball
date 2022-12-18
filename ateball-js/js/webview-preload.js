@@ -21,13 +21,14 @@ window.addEventListener("DOMContentLoaded", () => {
             });
     
             waitForElement(".play-area").then(() => {
-                var play_area_p1 = document.querySelector(".play-area").parentElement;
+                var play_area = document.querySelector(".play-area");
+
+                var play_area_p1 = play_area.parentElement;
                 play_area_p1.style.display = "flex";
                 play_area_p1.style.width = "fit-content";
                 play_area_p1.style.position = "relative";
                 play_area_p1.style.margin = "0";
-        
-                var play_area = document.querySelector(".play-area");
+
                 Array.from(play_area_p1.children).forEach((elem) => {
                     if (elem === play_area) { return; }
                     elem.remove();
@@ -41,36 +42,52 @@ window.addEventListener("DOMContentLoaded", () => {
                     ipcRenderer.invoke('get-css', "iframe").then((data) => {
                         iframe_doc.head.appendChild(style);
                         style.appendChild(document.createTextNode(data));
+                    }).then(() => {
+                        if (location.pathname == "/en/game") {
+                            waitForElement("#loadingBox", iframe_doc, false).then(() => {
+                                ipcRenderer.sendToHost("loaded");
+                            });
+
+                            // iframe_doc.addEventListener("click", () => {
+                            //     ipcRenderer.sendToHost("capture-image");
+                            // });
+                        }
                     });
                 }
+
+                document.querySelector("header").remove();
+                document.querySelector("footer").remove();
+                document.querySelector(".sidebar-overlay").remove();
+                document.querySelector(".sidebar").remove();
             });
         }
 	} catch (error) {
 		console.log(error);
-	} finally {
-        // waitForElement(".play-area").then(() => {
-        //     document.querySelector("header").remove();
-        //     document.querySelector("footer").remove();
-        //     document.querySelector(".sidebar-overlay").remove();
-        //     document.querySelector(".sidebar").remove();
-        // });
-    }
+	}
 });
 
-const waitForElement = (selector) => {
+const waitForElement = (selector, _document=document, to_be_visible=true) => {
     return new Promise(resolve => {
-        if (document.querySelector(selector)) {
-            return resolve(document.querySelector(selector));
+        if (_document.querySelector(selector)) {
+            if (to_be_visible && _document.querySelector(selector).offsetParent != null) {
+                return resolve(_document.querySelector(selector));
+            }
         }
 
         const observer = new MutationObserver(mutations => {
-            if (document.querySelector(selector)) {
-                resolve(document.querySelector(selector));
-                observer.disconnect();
+            var elem = _document.querySelector(selector);
+            if (elem) {
+                if (to_be_visible && elem.offsetParent != null) {
+                    resolve(elem);
+                    observer.disconnect();
+                } else if (!to_be_visible && elem.offsetParent == null) {
+                    resolve(elem);
+                    observer.disconnect();
+                }
             }
         });
 
-        observer.observe(document.body, {
+        observer.observe(_document.body, {
             childList: true,
             subtree: true
         });

@@ -1,19 +1,25 @@
 var webview = document.querySelector("webview");
 
 webview.addEventListener('dom-ready', () => {
-    // webview.openDevTools();
+    webview.openDevTools();
 });
 
 webview.addEventListener("did-navigate", () => {
     window.api.inject_css("webview").then((css) => {
         webview.insertCSS(css);
-    }).then(() => {
-        // don't really like this but works fairly reliably
-        setTimeout(() => {
-            toggleGUIElements(get_state());
-        }, 1000);
     });
 });
+
+webview.addEventListener('ipc-message', (e) => {
+    console.log(e)
+    switch (e.channel) {
+        case "loaded":
+            console.log("loaded");
+            state.loaded = true;
+            toggleGUIElements(get_state());
+            break;
+    }
+  })
 
 var log = document.querySelector('#debug_console_2');
 ['log','debug','info','warn','error'].forEach(function (verb) {
@@ -56,6 +62,7 @@ stop.addEventListener("click", (e) => {
 
 window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
+    state.loaded = true;
     toggleGUIElements(Promise.resolve({}));
     toggleAteballControls(false);
     log_message("<div class='empty'></div>");
@@ -73,9 +80,8 @@ const log_message = (msg) => {
     debug.prepend(log);
 }
 
+const state = { loaded: false };
 const get_state = async () => {
-    var state = {};
-    
     await window.api.ateball.state().then((a_state) => { state.ateball = a_state; });
     await webview.executeJavaScript('location.pathname || null').then((m_state) => { state.menu = m_state; });
     await webview.executeJavaScript('(localStorage.getItem("accessToken") !== null) ? true : false').then((l_state) => { state.logged_in = l_state; });
