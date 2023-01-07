@@ -32,7 +32,7 @@ var log = document.querySelector('#debug_console_2');
             method.apply(console, arguments);
             var msg = document.createElement('span');
             msg.classList.add("log-object");
-            msg.innerHTML += Array.prototype.slice.call(arguments).join(' ');
+            msg.innerHTML += Array.prototype.slice.call(arguments).map(x => { return (typeof(x) === 'object') ? JSON.stringify(x) : x } ).join(' ');
             log.prepend(msg);
         };
     })(console[verb], verb, log);
@@ -68,7 +68,10 @@ window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
     toggleGUIElements(Promise.resolve({}));
     toggleAteballControls(false);
-    log_message("<div class='empty'></div>");
+    
+    var empty = document.createElement('div')
+    empty.classList.add('empty')
+    log_message(empty);
 });
 
 window.api.ateball.log_message((e, msg) => {
@@ -79,7 +82,13 @@ const debug = document.querySelector("#debug_console_1");
 const log_message = (msg) => {
     var log = document.createElement('span');
     log.classList.add("log-object");
-    log.innerHTML += msg;
+
+    if (typeof(msg) === "object") {
+        log.appendChild(msg);
+    } else if (typeof(msg) === "string") {
+        log.innerText += msg;
+    }
+
     debug.prepend(log);
 }
 
