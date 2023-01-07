@@ -72,8 +72,6 @@ type_btns.forEach(btn => {
         var menu = (!sub_menu) ? parent_menu : sub_menu;
 
         var location = menu.querySelector("select[name='location']");
-        var bet = menu.querySelector("select[name='bet']");
-        var username = menu.querySelector("input[name='username']")
 
         var play_btn = parent_menu.querySelector("button.play-btn");
         if (play_btn.dataset.gamemode !== undefined) {
@@ -81,16 +79,6 @@ type_btns.forEach(btn => {
         }
         if (play_btn.dataset.location !== undefined) {
             play_btn.dataset.location = location.value;
-        }
-        play_btn.dataset.bet = (bet != null) ? bet.value : '';
-        if (bet == null) {
-            delete play_btn.dataset.bet;
-        }
-        if (play_btn.dataset.username !== undefined) {
-            play_btn.dataset.username = (username != null) ? username.value : '';
-            if (username == null) {
-                delete play_btn.dataset.bet;
-            }
         }
     });
 });
@@ -108,21 +96,6 @@ selects.forEach(select => {
             case 'location':
                 play_btn.dataset.location = select.value;
                 break;
-        }
-    });
-});
-
-var inputs = document.getElementsByClassName("ateball-input");
-Array.from(inputs).forEach(input => {
-    input.addEventListener("keyup", function(e) {
-        var parent_menu = input.closest("div.menu");
-        var play_btn = parent_menu.querySelector("button.play-btn");
-        
-        play_btn.dataset.username = input.value;
-        if (input.value === undefined || input.value === "") {
-            play_btn.disabled = true;
-        } else {
-            play_btn.disabled = false;
         }
     });
 });
