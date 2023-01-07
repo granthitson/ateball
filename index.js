@@ -13,12 +13,26 @@ dotenv.config();
 app.allowRendererProcessReuse = true;
 app.commandLine.appendSwitch("disable-site-isolation-trials");
 
+var window = null;
 var ateball = null;
+
+const instance_lock = app.requestSingleInstanceLock();
+if (instance_lock) {
+	app.on('second-instance', (event, argv, cwd) => {
+		if (window) {
+			if (window.isMinimized()) window.restore();
+			window.focus();
+		}
+	});
+} else {
+	app.quit();
+}
+
 
 app.on('ready', async () => {
 	// Create the browser window.
 	let factor = screen.getPrimaryDisplay().scaleFactor;
-	const window = new BrowserWindow({
+	window = new BrowserWindow({
 		icon: "",
 		width: 1200, // / factor,
 		height: 600, // / factor,
