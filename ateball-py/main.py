@@ -4,6 +4,8 @@ import sys
 import os
 import traceback
 
+import datetime
+
 #files
 import utils
 from ateball import AteBall
@@ -11,9 +13,11 @@ from ateball import AteBall
 logger = logging.getLogger("ateball")
 
 def configure_logging():
+    time = datetime.datetime.now().strftime("%m-%d-%H-%M-%S")
+
     formatter = utils.Formatter()
 
-    fHandler = logging.FileHandler("debug.log", mode="w")
+    fHandler = logging.FileHandler(f"logs/{time}.log", mode="w")
     fHandler.setFormatter(formatter)
     fHandler.setLevel(logging.DEBUG)
 
