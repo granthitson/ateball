@@ -43,7 +43,7 @@
 								</div>
 
 								<div class="tab-content">
-									<div class="row tab-pane fade show active" id="menu-controls" role="tabpanel">
+									<div class="row tab-pane root-menu fade show active" id="menu-controls" role="tabpanel">
 										<div class="col">
 											<div id="guest_dropdown" class="row">
 												<button id="guest-btn" class="_btn play-btn" data-gamemode="guest" disabled="">Guest</button>
@@ -206,8 +206,102 @@
 										</div>
 									</div>
 
-									<div class="row tab-pane fade" id="game-controls" role="tabpanel">
-										<h1> TRST</h1>
+									<div class="row tab-pane root-menu fade" id="game-controls" role="tabpanel">
+										<div class="col">
+											<div id="rules_dropdown" class="row">
+												<div class="col p-0">
+													<select class="menu-select" name="game-rule-type">
+														<option value="standard">Standard</option>
+														<option value="nine-ball">Nine Ball</option>
+														<option value="lucky-shot">Lucky Shot</option>
+													</select>
+												</div>
+
+												<div class="col-sm-auto p-0">
+													<select class="menu-select" name="game-pocket-type">
+														<option value="pocket-on-eight">Call Pocket on Eight Ball</option>
+														<option value="pocket-on-all">Call Pocket on All Shots</option>
+														<option value="no-guidelines">No Guidelines</option>
+													</select>
+												</div>
+											</div>
+											<div id="pool_balls" class="row">
+												<div class="col">
+													<div class="row">
+														<div class="col p-0">
+															<div class="d-flex flex-wrap">
+																<a id="cueball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/1ball.png"/>
+																	<!-- <img src="../images/balls/cue.png"/> -->
+																</a>
+
+																<a id="1ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/1ball.png"/>
+																</a>
+																<a id="2ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/2ball.png"/>
+																</a>
+																<a id="3ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/3ball.png"/>
+																</a>
+																<a id="4ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/4ball.png"/>
+																</a>
+																<a id="5ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/5ball.png"/>
+																</a>
+																<a id="6ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/6ball.png"/>
+																</a>
+																<a id="7ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/7ball.png"/>
+																</a>
+
+																<a id="8ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/8ball.png"/>
+																</a>
+
+																<a id="9ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/9ball.png"/>
+																</a>
+																<a id="10ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/10ball.png"/>
+																</a>
+																<a id="11ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/11ball.png"/>
+																</a>
+																<a id="12ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/12ball.png"/>
+																</a>
+																<a id="13ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/13ball.png"/>
+																</a>
+																<a id="14ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/14ball.png"/>
+																</a>
+																<a id="15ball" class="_btn pool-ball" disabled="">
+																	<img src="../images/balls/15ball.png"/>
+																</a>
+															</div>
+														</div>
+
+														<div class="col p-0">
+															<button id="" class="_btn slim" disabled="">Button</button>
+															<button id="" class="_btn slim" disabled="">Button</button>
+															<button id="" class="_btn slim" disabled="">Button</button>
+															<button id="" class="_btn slim" disabled="">Button</button>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+
+										<div id="pending-overlay">
+											<div id="pending-container">
+												<span class="loader"></span>
+												<a id="pending-cancel">✕</a>
+											</div>
+										</div>
 									</div>
 								</div>
 
