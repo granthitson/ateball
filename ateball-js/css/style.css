@@ -212,16 +212,6 @@ webview {
     background-image: -webkit-linear-gradient(top, #fdc064, #fff48f, #fdc064);
 }
 
-#minigames-btn, #spinwin-btn {
-    border-color: #30a2a7;
-    background-image: -webkit-linear-gradient(top, #178489, #12fde3, #168387);
-}
-
-#minigames-btn:not([disabled]):hover, #spinwin-btn:not([disabled]):hover {
-    border-color: #1a99a0;
-    background-image: -webkit-linear-gradient(top, #1a99a0, #29ffe6, #1a99a0);
-}
-
 #nine-ball-btn {
     border-color: #8c51cd;
     background-image: -webkit-linear-gradient(top, #6d25bd, #aa70e7, #6d25bd);
@@ -293,17 +283,6 @@ webview {
 }
 
 /* Menu button colors */
-
-.ateball-input {
-    width: 100%;
-    border: 1px solid #858585;
-    background-color: white;
-    font-weight: 600;
-}
-
-.ateball-input:focus-visible {
-    outline: unset;
-}
 
 ._btn {
     width: 100%;
