@@ -398,7 +398,7 @@ webview {
 /* pending spinner */
 
 .log-object {
-    border-bottom: solid #dddddd 1px;
+    border-top: solid #dddddd 1px;
     padding: 2px 4px;
     line-height: 1em;
 }
