@@ -26,12 +26,6 @@ def configure_logging():
     logger.setLevel(logging.DEBUG)
     logger.propagate = False
 
-    logging.getLogger("asyncio").setLevel(logging.WARNING)
-    logging.getLogger("requests").setLevel(logging.WARNING)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("websockets").setLevel(logging.WARNING)
-    logging.getLogger("chromedriver_autoinstaller").setLevel(logging.INFO)
-
 def main():
     configure_logging()
 

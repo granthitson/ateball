@@ -1,12 +1,6 @@
 import logging
 
-import pyautogui
-import time
-
 import utils
-import constants
-
-logger = logging.getLogger("ateball.hole")
 
 class Hole:
     def __init__(self, name, image, center, offset):

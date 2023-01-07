@@ -3,32 +3,18 @@ import logging
 import os
 import sys
 import time
-import psutil
-import subprocess
-
-import glob
-import shutil
-import psutil
 
 from enum import Enum
 from enum import IntEnum
 
 import threading
 import queue as q
-import janus
-import itertools
-import ctypes
 
 import json
-import websockets
-from contextlib import suppress
 
 import math
 import pyautogui
 import cv2
-
-import pyppeteer
-from fake_useragent import UserAgent
 
 import constants
 
@@ -94,76 +80,6 @@ class OrEvent:
     def has_timed_out(self):
         return self.timeout.is_set()
 
-class TaskScheduler:
-    def __init__(self):
-        self.task_heap = [] #heap
-        self.task_map = {}
-
-        self.counter = itertools.count()
-        self.REMOVED = "<removed-task>"
-        
-        self.active_task = None
-
-        self.stop_event = threading.Event()
-
-        self.exception = None
-
-        self.logger = logging.getLogger("ateball.utils.taskscheduler")
-
-    def add_task(self, task, priority):
-        'Add a new task or update the priority of an existing task'
-        if task in self.task_map:
-            self.remove_task(task)
-        count = next(self.counter)
-        entry = [priority, count, task]
-        self.task_map[task] = entry
-
-        q.heappush(self.task_heap, entry)
-
-    def remove_task(self, task):
-        'Mark an existing task as REMOVED.  Raise KeyError if not found.'
-        entry = self.task_map.pop(task)
-        entry[-1] = self.REMOVED
-
-    def pop_task(self):
-        'Remove and return the lowest priority task. Raise KeyError if empty.'
-        while self.task_heap:
-            priority, count, task = q.heappop(self.task_heap)
-            if task is not self.REMOVED:
-                del self.task_map[task]
-                return task
-        raise KeyError('pop from an empty priority queue')
-
-    # def cancel_task(self):
-    #     self.logger.debug("cancelling task")
-    #     thread_id = self.active_task.ident
-    #     res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit))
-    #     if res > 1:
-    #         ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
-    #         self.active_task = None
-    #         self.logger.debug("task cancelled")
-
-    def start(self):
-        self.logger.info("Waiting to process task")
-
-        while not self.stop_event.is_set():
-            try:
-                task = self.pop_task()
-
-                self.logger.debug(f"task starting")
-                self.active_task = threading.Thread(target=task, daemon=True)
-                self.active_task.start()
-                self.active_task.join()
-                    
-                self.logger.debug("task complete")
-            except KeyError as e:
-                pass
-            except Exception as e:
-                self.logger.error(f"Error processing task - {type(e).__name__} - {e}")
-
-    def shutdown(self):
-        self.stop_event.set()
-    
 class IPC:
     def __init__(self):
         self.incoming = q.Queue()
@@ -207,208 +123,7 @@ class IPC:
     def quit(self):
         self.stop_event.set()
 
-# class WebSocketServer:
-#     def __init__(self, port):
-#         self.server = None
-#         self.port = port
-
-#         self.instance_id = None
-
-#         self.outgoing = asyncio.Queue() # outgoing msg from ateball
-#         self.inc_processing = asyncio.Queue() # incoming msg
-#         self.inc_processed = asyncio.Queue() # incoming response msg
-        
-#         self.connection = None # connected client
-#         self.message_handler = None
-
-#         self.start_event = asyncio.Event()
-#         self.start_exception_event = asyncio.Event() 
-#         self.start = OrEvent(self.start_event, self.start_exception_event)
-
-#         self.connected_event = asyncio.Event()
-
-#         self.stop_event = asyncio.Event()
-#         self.disconnect_event = asyncio.Event()
-
-#         self.quit_event = asyncio.Event()
-
-#         self.exception = None
-
-#         self.logger = logging.getLogger("ateball.utils.wsserver")
-
-#     async def serve(self):
-#         try:
-#             self.logger.info("Starting websocket server...")
-            
-#             self.server = await websockets.serve(self.handler, "localhost", self.port, reuse_address=True)
-#             self.logger.info("Websocket server listening...")
-#             self.start.notify(self.start_event)
-#         except Exception as e:
-#             # if type(e) != asyncio.CancelledError:
-#             self.start.notify(self.start_exception_event)
-#             self.logger.error(f"error starting websocket server: {e}")
-#             self.exception = WSServerSetupError("error setting up ws server")
-
-#     async def handler(self, websocket):  
-#         try:
-#             if self.connection and not self.connection.closed:
-#                 self.logger.warning("attempted connection - still communicating with existing connection")
-#                 await self.connection.close(code=1011, reason="connection denied") 
-
-#             self.logger.debug("CLIENT CONNECTED")
-            
-#             self.connection = websocket
-#             self.connected_event.set()
-#             self.disconnect_event.clear()
-
-#             self.message_handler = MessageHandler(self.connection, self.outgoing, self.inc_processing, self.inc_processed, self.disconnect_event)
-
-#             while self.connection.open and (not self.stop_event.is_set() and not self.disconnect_event.is_set()):
-#                 # process whichever comes first, incoming msg or outgoing msg
-#                 incoming = asyncio.create_task(self.message_handler.receiveIncomingMsg())
-#                 outgoing = asyncio.create_task(self.message_handler.receiveOutgoingMsg())
-#                 send = asyncio.create_task(self.message_handler.sendOutgoingMsg())
-#                 done, pending = await asyncio.wait(
-#                     [incoming, outgoing, send],
-#                     return_when=asyncio.FIRST_COMPLETED,
-#                 )
-
-#                 if incoming in done:
-#                     msg = incoming.result()
-#                     if msg:
-#                         await self.message_handler.processIncoming(msg)
-#                 else:
-#                     incoming.cancel()
-                
-#                 if outgoing in done:
-#                     msg = outgoing.result()
-#                     await self.message_handler.processOutgoing(msg)
-#                 else:
-#                     outgoing.cancel()
-
-#                 if send in done:
-#                     msg = send.result()
-#                     await self.message_handler.processOutgoing(msg)
-#                 else:
-#                     send.cancel()
-#         except Exception as e:
-#             self.logger.exception(f"error handling messages: {e}")
-#         finally:
-#             if self.connection and self.connection.closed:
-#                 self.connection = None
-#             # await self.inc_processing.put({"action" : "cancel"})
-
-#     async def shutdown(self):
-#         self.stop_event.set()
-
-#         if self.server is not None:
-#             self.server.close()
-#             await self.server.wait_closed()
-
-#         self.quit_event.set()
-#         self.logger.debug("Websocket server shutdown")
-
-class ResponseType(int, Enum):
-    INIT: int = 0
-    INFO: int = 1
-    PROMPT: int = 2
-class ResponseAction(int, Enum):
-    STATUS: int = 0
-    PLAY: int = 1
-    BUSY: int = 2
-class ResponseStatus(int, Enum):
-    SUCCESS: int = 1
-    FAILED: int = 2
-
-# class MessageHandler:
-#     def __init__(self, websocket, outgoing, processing_queue, processed_queue, disconnect_event):
-#         self.websocket = websocket
-
-#         #outgoing
-#         self.send = outgoing
-
-#         #incoming
-#         self.incoming = asyncio.Queue() #incoming msgs from browser
-#         self.processing = processing_queue #pending
-#         self.processed = processed_queue #processed
-#         self.outgoing = asyncio.Queue() #outgoing msgs to browser
-
-#         self.disconnect_event = disconnect_event
-
-#         self.logger = logging.getLogger("ateball.utils.wsserver.handler")
-
-#     async def receiveIncomingMsg(self):
-#         try:
-#             msg = json.loads(await self.websocket.recv())
-#         except websockets.exceptions.ConnectionClosedOK as e:
-#             self.logger.debug("closing connection - ok")
-#             self.disconnect_event.set()
-#             self.connected_event.clear()
-#         except (websockets.exceptions.ConnectionClosedError, ConnectionResetError) as e:
-#             self.logger.debug("closing connection - error")
-#             self.disconnect_event.set()
-#             self.connected_event.clear()
-#         else:
-#             return msg
-
-#     async def processIncoming(self, msg):
-#         try:
-#             await self.processing.put(msg)
-
-#             response = await self.processed.get()
-#             if (response):
-#                 await self.outgoing.put(response)
-#         except websockets.exceptions.ConnectionClosedOK as e:
-#             self.logger.debug("closing connection - ok")
-#             self.disconnect_event.set()
-#             self.connected_event.clear()
-#         except (websockets.exceptions.ConnectionClosedError, ConnectionResetError) as e:
-#             self.logger.debug("closing connection - error")
-#             self.disconnect_event.set()
-#             self.connected_event.clear()
-
-#     async def receiveOutgoingMsg(self):
-#         try:
-#             msg = await self.outgoing.get()
-#         except websockets.exceptions.ConnectionClosedOK as e:
-#             self.logger.debug("closing connection - ok")
-#             self.disconnect_event.set()
-#             self.connected_event.clear()
-#         except (websockets.exceptions.ConnectionClosedError, ConnectionResetError) as e:
-#             self.logger.debug("closing connection - error")
-#             self.disconnect_event.set()
-#             self.connected_event.clear()
-#         else:
-#             return msg
-
-#     async def processOutgoing(self, msg):
-#         try:
-#             await self.websocket.send(json.dumps(msg))
-#             self.logger.debug(f"outgoing msg sent - {msg}")
-#         except websockets.exceptions.ConnectionClosedOK as e:
-#             self.logger.debug("closing connection - ok")
-#             self.disconnect_event.set()
-#             self.connected_event.clear()
-#         except (websockets.exceptions.ConnectionClosedError, ConnectionResetError) as e:
-#             self.logger.debug("closing connection - error")
-#             self.disconnect_event.set()
-#             self.connected_event.clear()
-
-#     async def sendOutgoingMsg(self):
-#         try:
-#             msg = await self.send.get()
-#         except websockets.exceptions.ConnectionClosedOK as e:
-#             self.logger.debug("closing connection - ok")
-#             self.disconnect_event.set()
-#             self.connected_event.clear()
-#         except (websockets.exceptions.ConnectionClosedError, ConnectionResetError) as e:
-#             self.logger.debug("closing connection - error")
-#             self.disconnect_event.set()
-#             self.connected_event.clear()
-#         else:
-#             return msg
-    
-class Wall():
+class Wall:
     def __init__(self, startingPoint, endingPoint):
         self.startingPoint = startingPoint
         self.endingPoint = endingPoint
@@ -678,8 +393,3 @@ class PointHelper:
                 return None
 
         return x, y
-
-class Misc:
-    @staticmethod
-    def hasMetEndCondition(end_conditions):
-        return any([ec() for ec in end_conditions])

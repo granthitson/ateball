@@ -5,116 +5,14 @@ img_back_arrow = "navigation/back_arrow.png"
 
 img_calibration = "misc/calibration.png"
 
-img_close_arrow = "navigation/close_arrow.png"
-img_close_red = "navigation/close_red.png"
-img_clubs = "misc/clubs.png"
-
-img_confirm = "navigation/confirm.png"
-# img_collectCoins = "collectcoins.png"
-# img_collectCoins1 = "collectcoins_1.png"
-
-img_friend_challenge = "gamemodes/friends/friend_challenge.png"
-img_friend_menu_arrow_left = "navigation/friend_menu_arrow_left.png"
-img_friend_menu_arrow_right = "navigation/friend_menu_arrow_right.png"
-img_friend_search_icon = "gamemodes/friends/friend_search_icon.png"
-
-img_location_menu_arrow_left = "navigation/location_menu_arrow_left.png"
-img_location_menu_arrow_right = "navigation/location_menu_arrow_right.png"
-
 img_lucky_shot = "gamemodes/lucky_shot/lucky_shot.png"
 img_lucky_shot_cue_ball = "gamemodes/lucky_shot/lucky_shot_cue_ball.png"
 img_lucky_shot_gold_ball = "gamemodes/lucky_shot/lucky_shot_gold_ball.png"
 img_lucky_shot_red_ball = "gamemodes/lucky_shot/lucky_shot_red_ball.png"
 img_lucky_shot_target = "gamemodes/lucky_shot/lucky_shot_target.png"
 
-img_menu_arrow_left = "navigation/menu_arrow_left.png"
-img_menu_arrow_right = "navigation/menu_arrow_right.png"
-
-img_play_guest_btn = "gamemodes/play-guest-btn.png"
-img_play_free_lucky_shot_btn = "gamemodes/lucky_shot/play-free_lucky_shot-btn.png"
-
-img_play_special = "gamemodes/play-special-btn.png"
-
-img_settings_btn = "misc/settings-btn.png"
-img_gamemenu = "misc/game_menu.png"
-
-img_spin_win = "gamemodes/spin_and_win/spin_win.png"
-# img_spinWinSpin = "spinwin_spin.png"
-# img_spinWinSpin1 = "spinwin_spin1.png"
-# img_spinWinCollect = "spinwin_collect.png"
-# img_spinWinIcon = "spinwinicon.png"
-
 img_turn_mask = "game/turn_mask.png"
 # UI NAVIGATION #
-
-gamemodes = {
-    "CHALLENGE" : {
-        "img" : "gamemodes/play-friends-btn.png",
-        "index" : 4
-    },
-    "GUEST" : {
-        "img" : "gamemodes/play-guest-btn.png",
-        "index" : 1
-    },
-    "LUCKY_SHOT" : {
-        "img" : "gamemodes/play-lucky_shot-btn.png",
-        "index" : 3,
-        "parent" : "MINIGAMES"
-    },
-    "MINIGAMES" : {
-        "img" : "gamemodes/play-minigames-btn.png",
-        "index" : 3
-    },
-    "NINE_BALL" : {
-        "img" : "gamemodes/play-nine_ball-btn.png",
-        "index" : 2,
-        "start" : "miami",
-        "start_index" : 0
-    },
-    "NO_GUIDELINE" : {
-        "img" : "gamemodes/play-no_guideline-btn.png",
-        "index" : 1,
-        "parent" : "SPECIAL",
-        "start" : "beijing",
-        "start_index" : 0
-    },
-    "ONE_ON_ONE" : {
-        "img" : "gamemodes/play-1_on_1-btn.png",
-        "index" : 0,
-        "start" : "las_vegas",
-        "start_index" : 5
-    },
-    "PASS_N_PLAY" : {
-        "img" : "gamemodes/play-pass_n_play-btn.png",
-        "index" : 5,
-        "parent" : "PRACTICE"
-    },
-    "PRACTICE" : {
-        "img" : "gamemodes/play-practice-btn.png",
-        "index" : 5
-    },
-    "QUICK_FIRE" : {
-        "img" : "gamemodes/play-quick_fire-btn.png",
-        "index" : 5,
-        "parent" : "PRACTICE"
-    },
-    "SPECIAL" : {
-        "img" : "gamemodes/play-special-btn.png",
-        "index" : 1
-    },
-    "SPIN_AND_WIN" : {
-        "img" : "gamemodes/play-spin_win-btn.png",
-        "index" : 3,
-        "parent" : "MINIGAMES"
-    },
-    "TOURNAMENT" : {
-        "img" : "gamemodes/play-tournament-btn.png",
-        "index" : 1,
-        "parent" : "SPECIAL",
-        "start" : "buenos_aires",
-        "start_index" : 1
-    }
-}
 
 locations = {
     "amsterdam" : {
@@ -224,36 +122,6 @@ locations = {
     }
 }
 
-bets = {
-    100 : {
-        "img" : "bets/100.png"
-    },
-    500 : {
-        "img" : "bets/500.png"
-    },
-    2500 : {
-        "img" : "bets/2500.png"
-    },
-    10000 : {
-        "img" : "bets/10000.png"
-    },
-    50000 : {
-        "img" : "bets/50000.png"
-    },
-    100000 : {
-        "img" : "bets/100000.png"
-    },
-    500000 : {
-        "img" : "bets/500000.png"
-    },
-    2500000 : {
-        "img" : "bets/2500000.png"
-    },
-    10000000 : {
-        "img" : "bets/10000000.png"
-    }
-}
-
 # GAME NAVIGATION #
 img_1ball = "1ball.png"
 img_2ball = "2ball.png"
@@ -313,20 +181,8 @@ img_rightRail = "rightrail.png"
 # IMAGES #
 
 # GAME #
-game_width = 900
-game_height = 600
-
-# offsetx, offsety, width, height
-table_dims = (106, 176, 690, 360)
 
 round_time = 30
-
-# offsetx, offsety, width, height
-pocketed_dims = (725, 0, 50, table_dims[3])
-
-# offsetx, offsety, width, height
-bot_targets_dims = (7, 119, 210, 30)
-opponent_targets_offset = (465, 0)
 
 hole_locations = [ 
     ["trh", img_trh, [666, 24]],
