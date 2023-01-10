@@ -103,27 +103,52 @@ selects.forEach(select => {
 var play_btns = document.getElementsByClassName("play-btn");
 Array.from(play_btns).forEach(btn => {
     btn.addEventListener("click", function(e) {
-        // sendSocketMessage("play", btn.dataset);
-        window.api.send_message(btn.dataset);
-        toggleGUIElements(null);
+        window.api.ateball.play(btn.dataset).then(() => {
+            toggleGUIElements(get_state());
+            document.querySelector("a[data-bs-target='#game-controls']").click()
+        });
     });
 });
 
-const toggleAteballControls = (state) => {
-    var start = document.querySelector("#ateball-start");
-    var stop = document.querySelector("#ateball-stop");
+var start = document.querySelector("#ateball-start");
+start.addEventListener("click", (e) => {
+    toggleAteballStart(true);
+    window.api.ateball.start();
+});
 
+var cancel = document.querySelector("#pending-cancel");
+cancel.addEventListener("click", (e) => {
+    window.api.ateball.cancel();
+});
+
+var stop = document.querySelector("#ateball-stop");
+stop.addEventListener("click", (e) => {
+    toggleAteballStop(true);
+    window.api.ateball.stop();
+});
+
+const toggleAteballStart = (state) => {
+    var start = document.querySelector("#ateball-start");
+    start.disabled = !state;
+}
+
+const toggleAteballStop = (state) => {
+    var start = document.querySelector("#ateball-stop");
+    start.disabled = !state;
+}
+
+const toggleAteballControls = (state) => {
     if (state) {
-        start.disabled = true;
-        stop.disabled = false;
+        toggleAteballStart(false);
+        toggleAteballStop(true);
     } else {
-        start.disabled = false;
-        stop.disabled = true;
+        toggleAteballStart(true);
+        toggleAteballStop(false);
     }
 }
 
 const toggleGUIElements = (state, parent_id=undefined) => {
-	var elemList = ["button:not(.static)", "input.ateball-input", "select.menu-select"];
+	var elem_list = ["button:not(.static)", "input.ateball-input", "select.menu-select"];
 
 	var parent = document.getElementById("controlpanel");
 	if (parent_id !== undefined) {
@@ -132,22 +157,42 @@ const toggleGUIElements = (state, parent_id=undefined) => {
 	
 	if (parent) {
         state.then((s) => {
-            if (s !== null && s.loaded) {
+            console.log(s);
+            if (s !== null /*&& s.loaded*/) {
                 if (s.menu && s.menu == "/en/game") {
                     document.querySelector("#loading-overlay").style.display = (s.loaded) ? "none" : "block";
                 }
+
+                if (s.ateball.pending) {
+                    document.querySelector("#pending-overlay").style.display = (s.ateball.game.pending) ? "none" : "block"; 
+                }
             }
 
-            elemList.forEach(function(elemName) {
+            elem_list.forEach(function(elemName) {
                 parent.querySelectorAll(elemName).forEach(function(elem) {
                     if (s !== null && s.loaded) {
-                        if (s.menu && s.menu == "/en/game") {
-                            if (s.logged_in) {
-                                let interact = (elem.id == "guest-btn") ? false : true;
+                        if (s.process.started && s.process.connected) {
+                            if (s.menu && s.menu == "/en/game") {
+                                let interact = false;
+
+                                if (s.ateball.pending) {
+                                    // disable gamemode selection buttons / enable game controls if started
+                                    interact = (elem.closest(".root-menu").id == "game-controls") ? s.ateball.game.started : false;
+                                } else {
+                                    if (elem.closest(".root-menu").id == "game-controls") {
+                                        interact = false;
+                                    } else {
+                                        if (s.logged_in) {
+                                            interact = (elem.id == "guest-btn") ? false : true;
+                                        } else {
+                                            interact = (elem.id == "guest-btn") ? true : false;
+                                        }
+                                    }
+                                }
+
                                 elem.disabled = !interact;
                             } else {
-                                let interact = (elem.id == "guest-btn") ? true : false;
-                                elem.disabled = !interact;
+                                elem.disabled = true;
                             }
                         } else {
                             elem.disabled = true;

@@ -12,14 +12,12 @@ webview.addEventListener("did-navigate", () => {
 });
 
 webview.addEventListener('ipc-message', (e) => {
-    console.log(e.channel)
     switch (e.channel) {
         case "formatting-complete":
             webview.style.display = "flex";
             toggleGUIElements(get_state(false));
             break;
         case "loaded":
-            console.log("loaded");
             toggleGUIElements(get_state(true));
             break;
     }
@@ -44,11 +42,6 @@ webview.addEventListener('console-message', (e) => {
 
 // ----------------------
 
-var start = document.querySelector("#ateball-start");
-start.addEventListener("click", (e) => {
-    window.api.ateball.start();
-});
-
 window.api.ateball.on_start( (e) => {
     console.log("Ateball started");
     toggleAteballControls(true);
@@ -59,16 +52,21 @@ window.api.ateball.on_connected( (e) => {
     toggleGUIElements(get_state());
 });
 
-var stop = document.querySelector("#ateball-stop");
-stop.addEventListener("click", (e) => {
-    window.api.ateball.stop();
+window.api.ateball.on_play( (e) => {
+    console.log("Ateball playing");
+    toggleGUIElements(get_state());
+});
+
+window.api.ateball.on_cancel( (e) => {
+    console.log("Ateball cancelled");
+    toggleGUIElements(get_state());
 });
 
 window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
-    toggleGUIElements(Promise.resolve({}));
+    toggleGUIElements(get_state());
     toggleAteballControls(false);
-    
+
     var empty = document.createElement('div')
     empty.classList.add('empty')
     log_message(empty);
@@ -98,7 +96,7 @@ const get_state = async (loaded=null) => {
         state.loaded = loaded;
     }
 
-    await window.api.ateball.state().then((a_state) => { state.ateball = a_state; });
+    await window.api.ateball.state().then((a_state) => { Object.assign(state, a_state); });
     await webview.executeJavaScript('location.pathname || null').then((m_state) => { state.menu = m_state; });
     await webview.executeJavaScript('(localStorage.getItem("accessToken") !== null) ? true : false').then((l_state) => { state.logged_in = l_state; });
 

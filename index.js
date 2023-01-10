@@ -84,7 +84,6 @@ app.on('ready', async () => {
 		} else {
 			callback({});
 		}
-		
 	});
 
 	ipcMain.handle('get-css', (e, type) => {
@@ -106,24 +105,25 @@ app.on('ready', async () => {
 	});
 
 	ipcMain.handle('ateball-state', (e) => {
-		return (new Promise((resolve, reject) => {
-			resolve(ateball.get_state());
-		}));
+		return ateball.get_state();
 	});
 
-	ipcMain.on('ateball-status', (e) => {
+	ipcMain.handle('ateball-play', (e, data) => {
 		return (new Promise((resolve, reject) => {
 			if (ateball.process != null) {
-				console.log("getting ateball status");
-				ateball.get_status().then((data) => {
-					resolve(data); // figure out way to return from ateball
-				});
+				ateball.play_game({ type: "play", ...data});
+				resolve(true);
 			} else {
 				resolve(null);
 			}
 		})).catch((e) => {
-			console.log("could not get ateball status", e);
+			console.log("could not get play game", e);
 		});
+		
+	});
+
+	ipcMain.on('ateball-cancel', (e) => {
+		ateball.cancel()
 	});
 
 	ipcMain.on('ateball-stop', (e) => {
@@ -180,8 +180,19 @@ class Ateball {
 		this.process = null;
 
 		this.state = {
-			started: false,
-			connected: false,
+			process : {
+				started: false,
+				connected: false,
+			},
+			ateball : {
+				pending: false,
+				game: {
+					started: false,
+					round: {
+						started: false
+					}
+				}
+			}
 		};
 
 		this.started = null;
@@ -194,22 +205,31 @@ class Ateball {
 		if (this.process == null) {
 			console.log("starting ateball");
 			this.spawn().then(() => {
-				this.state.started = true;
+				this.state.process.started = true;
 				this.window.webContents.send("ateball-started");
 			}).catch((e) => {
-				this.state.started = false;
+				this.state.process.started = false;
 				console.log("could not start ateball", e);
 			});
 		}
 	}
 
+	play_game(msg) {
+		this.state.ateball.pending = true;
+		this.send_message(msg, (resp) => {
+			console.log(resp);
+			return resp;
+		});
+	}
+
+	cancel() {
+		this.send_message({ "type" : "cancel" });
+	}
+
 	stop() {
 		if (this.process != null) {
 			console.log("stopping ateball");
-			this.send_message({ action : "quit" });
-			this.stopped.catch((e) => {
-				console.log("could not stop ateball", e);
-			});
+			this.kill();
 		}
 	}
 
@@ -251,8 +271,7 @@ class Ateball {
 				console.log("ateball process exited");
 				stop_resolve();
 				if (!self.window.isDestroyed()) {
-					self.state.started = false;
-					self.state.connected = false;
+					self.reset_state();
 					self.process = null;
 					self.window.webContents.send("ateball-stopped");
 				}
@@ -269,13 +288,36 @@ class Ateball {
 	
 	process_message(msg) {
 		console.log("processing message: ", msg);
-		switch (msg.action) {
-			case "STATUS":
-				if (msg.type == "INIT") {
-					this.state.connected = true;
+		if (msg.id) {
+			this.pending[id]()
+		} else {
+			switch (msg.type) {
+				case "INIT":
+					this.state.process.connected = true;
 					this.window.webContents.send("ateball-connected");
-				}
-				break;
+					break;
+				case "GAME-WAITING":
+					this.window.webContents.send("ateball-WAITING");
+					break;
+				case "GAME-START":
+					this.state.ateball.pending = false;
+					this.state.ateball.game.started = true;
+					this.window.webContents.send("ateball-playing");
+					break;
+				case "GAME-CANCELLED":
+					console.log("cancelled");
+					this.state.ateball.pending = false;
+					this.state.ateball.game.started = false;
+					this.state.ateball.game.round.started = false;
+					this.window.webContents.send("ateball-cancelled");
+					break;
+				case "GAME-END":
+					console.log("game ended");
+					this.state.ateball.game.started = false;
+					this.state.ateball.game.round.started = false;
+					this.window.webContents.send("ateball-end");
+					break;
+			}
 		}
 	}
 
@@ -299,13 +341,22 @@ class Ateball {
 		return this.state;
 	}
 
-	get_status() {
-		var status = new Promise((resolve, reject) => {
-			this.send_message({ action : "status" });
-		});
-		this.pending[id] = status;
-
-		return status;
+	reset_state() {
+		this.state = {
+			process : {
+				started: false,
+				connected: false,
+			},
+			ateball : {
+				pending: false,
+				game: {
+					started: false,
+					round: {
+						started: false
+					}
+				}
+			}
+		};
 	}
 
 	kill() {
