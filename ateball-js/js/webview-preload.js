@@ -47,10 +47,6 @@ window.addEventListener("DOMContentLoaded", () => {
                             waitForElement("#loadingBox", iframe_doc, false).then(() => {
                                 ipcRenderer.sendToHost("loaded");
                             });
-
-                            // iframe_doc.addEventListener("click", () => {
-                            //     ipcRenderer.sendToHost("capture-image");
-                            // });
                         }
                     });
                 }
@@ -62,7 +58,7 @@ window.addEventListener("DOMContentLoaded", () => {
             });
         }
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	} finally {
         ipcRenderer.sendToHost("formatting-complete");
     }
