@@ -2,6 +2,7 @@ var webview = document.querySelector("webview");
 
 webview.addEventListener('dom-ready', () => {
     webview.openDevTools();
+    window.api.ateball.init(webview.getWebContentsId());
 });
 
 webview.addEventListener("did-navigate", () => {

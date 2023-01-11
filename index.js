@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 const subpy = require( "child_process" );
 const fs = require('fs');
 
-const { app, BrowserWindow, session, screen, globalShortcut, ipcMain } = electron;
+const { app, BrowserWindow, session, screen, globalShortcut, ipcMain, webContents } = electron;
 const path = require('path');
 
 dotenv.config();
@@ -98,6 +98,10 @@ app.on('ready', async () => {
 
 	window.webContents.once('dom-ready', () => {
 		ateball.start();
+	});
+
+	ipcMain.on('ateball-init', (e, webview_id) => {
+		ateball.webview_id = webview_id;
 	});
 
 	ipcMain.on('ateball-start', () => {
@@ -195,6 +199,12 @@ class Ateball {
 			}
 		};
 
+		this.webview_id = null;
+		this.image_capture = {
+			interval: null,
+			buffer: null
+		};
+
 		this.started = null;
 		this.stopped = null;
 
@@ -215,15 +225,21 @@ class Ateball {
 	}
 
 	play_game(msg) {
+		var self = this;
 		this.state.ateball.pending = true;
-		this.send_message(msg, (resp) => {
-			console.log(resp);
-			return resp;
+
+		this.start_image_capture().then(() => {
+			self.send_message(msg, (resp) => {
+				console.log(resp);
+				return resp;
+			});
 		});
 	}
 
 	cancel() {
-		this.send_message({ "type" : "cancel" });
+		this.stop_image_capture().then(() => {
+			this.send_message({ "type" : "cancel" });
+		});
 	}
 
 	stop() {
@@ -271,9 +287,11 @@ class Ateball {
 				console.log("ateball process exited");
 				stop_resolve();
 				if (!self.window.isDestroyed()) {
-					self.reset_state();
-					self.process = null;
-					self.window.webContents.send("ateball-stopped");
+					self.stop_image_capture().then(() => {
+						self.reset_state();
+						self.process = null;
+						self.window.webContents.send("ateball-stopped");
+					});
 				}
 			});
 		});
@@ -292,33 +310,77 @@ class Ateball {
 			this.pending[id]()
 		} else {
 			switch (msg.type) {
+				case "BUSY":
+					this.window.webContents.send("ateball-busy");
+					break;
 				case "INIT":
 					this.state.process.connected = true;
 					this.window.webContents.send("ateball-connected");
-					break;
-				case "GAME-WAITING":
-					this.window.webContents.send("ateball-WAITING");
 					break;
 				case "GAME-START":
 					this.state.ateball.pending = false;
 					this.state.ateball.game.started = true;
 					this.window.webContents.send("ateball-playing");
 					break;
+				case "IMAGE-REQUEST":
+					if (this.image_capture.buffer) {
+						this.send_message({ "type" : "image-response", "data" : this.image_capture.buffer.toPNG()});
+					}
+					break;
 				case "GAME-CANCELLED":
-					console.log("cancelled");
-					this.state.ateball.pending = false;
-					this.state.ateball.game.started = false;
-					this.state.ateball.game.round.started = false;
-					this.window.webContents.send("ateball-cancelled");
+					console.log("cancelling");
+					this.stop_image_capture().then(() => {
+						this.state.ateball.pending = false;
+						this.state.ateball.game.started = false;
+						this.state.ateball.game.round.started = false;
+						this.window.webContents.send("ateball-cancelled");
+					});
 					break;
 				case "GAME-END":
-					console.log("game ended");
-					this.state.ateball.game.started = false;
-					this.state.ateball.game.round.started = false;
-					this.window.webContents.send("ateball-end");
+					console.log("ending game");
+					this.stop_image_capture().then(() => {
+						this.state.ateball.game.started = false;
+						this.state.ateball.game.round.started = false;
+						this.window.webContents.send("ateball-end");
+					});
 					break;
 			}
 		}
+	}
+
+	start_image_capture() {
+		var self = this;
+
+		return new Promise((resolve, reject) => {
+			if (!this.image_capture.interval) {
+				console.log("starting image capture");
+				this.buffer = null;
+
+				this.image_capture.interval = setInterval(() => {
+					var webview = webContents.fromId(self.webview_id);
+					if (webview) {
+						webview.capturePage().then((image) => {
+							self.image_capture.buffer = image;
+							resolve();
+						});
+					}
+				}, 250);
+			} else {
+				resolve();
+			}
+		});
+	}
+
+	stop_image_capture() {
+		return new Promise((resolve, reject) => {
+			if (this.image_capture.interval) {
+				console.log("stopping image capture");
+				clearInterval(this.image_capture.interval);
+				resolve();
+			} else {
+				resolve();
+			}
+		});
 	}
 
 	send_message(msg, callback = null) {
