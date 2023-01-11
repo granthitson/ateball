@@ -118,6 +118,7 @@ start.addEventListener("click", (e) => {
 
 var cancel = document.querySelector("#pending-cancel");
 cancel.addEventListener("click", (e) => {
+    document.querySelector("a[data-bs-target='#menu-controls']").click()
     window.api.ateball.cancel();
 });
 
