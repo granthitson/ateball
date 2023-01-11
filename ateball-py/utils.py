@@ -120,8 +120,40 @@ class IPC:
             self.start_exception_event.set()
             self.logger.exception(f"error handling ipc messages: {e}")
 
+    def send_message(self, msg):
+        self.outgoing.put(msg)
+
     def quit(self):
         self.stop_event.set()
+
+class RegionData:
+    '''
+    `game_region` is a list to maintain mutability and changes if the window is moved.
+    Changes to game_region  will not propagate to other regions regardless structure (list/tuple),
+    so performance is gained by using tuples which are immutable.
+    '''
+    def __init__(self):
+        self.table = (106, 176, 690, 360)
+        #offset from top-left-corner of screen to table corner
+        # offsetx, offsety, width, height
+        self.table_offset = (106, 176)
+        
+        # offsetx, offsety, width, height
+        self.pocketed = (self.table[2] + 725, self.table[1] + 0, 50, self.table[3])
+
+        self.targets_bot = (self.table[0] + 7, self.table[1] - 119, 210, 30)
+        self.targets_opponent = (self.targets_bot[0] + 465, self.targets_bot[1], self.targets_bot[2], self.targets_bot[3])
+        
+        # defined as within half ball_diameter distance to wall/edge of table
+        self.hittable = (
+            self.table[0]+constants.ball_diameter*2, self.table[1]+constants.ball_diameter*2, 
+            self.table[2]-constants.ball_diameter*4, self.table[3]-constants.ball_diameter*4
+        )
+        # defined as within fourth ball_diameter distance to wall/edge of table - if ball is near hole
+        self.back_up = (
+            self.table[0]+constants.ball_diameter/2, self.table[1]+constants.ball_diameter/2, 
+            self.table[2]-constants.ball_diameter, self.table[3]-constants.ball_diameter
+        )  
 
 class Wall:
     def __init__(self, startingPoint, endingPoint):
@@ -139,7 +171,7 @@ class ImageHelper:
 
     @staticmethod
     def imagePath(filename):
-        return os.path.join("images", filename)
+        return os.path.join(os.getcwd(), "ateball-py", "images", filename)
 
     @staticmethod
     def locateImage(image, region=None, confidence=.99):
