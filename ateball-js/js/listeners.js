@@ -160,13 +160,8 @@ const toggleGUIElements = (state, parent_id=undefined) => {
         state.then((s) => {
             console.log(s);
             if (s !== null /*&& s.loaded*/) {
-                if (s.menu && s.menu == "/en/game") {
-                    document.querySelector("#loading-overlay").style.display = (s.loaded) ? "none" : "block";
-                }
-
-                if (s.ateball.pending) {
-                    document.querySelector("#pending-overlay").style.display = (s.ateball.game.pending) ? "none" : "block"; 
-                }
+                document.querySelector("#loading-overlay").style.display = (s.menu && s.menu == "/en/game" && s.loaded) ? "none" : "block";
+                document.querySelector("#pending-overlay").style.display = (s.ateball.pending) ? "block" : "none"; 
             }
 
             elem_list.forEach(function(elemName) {
