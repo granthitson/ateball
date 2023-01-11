@@ -30,15 +30,16 @@ var log = document.querySelector('#debug_console_2');
         return function () {
             method.apply(console, arguments);
             var msg = document.createElement('span');
-            msg.classList.add("log-object");
+            msg.classList.add("log-object", verb);
             msg.innerHTML += Array.prototype.slice.call(arguments).map(x => { return (typeof(x) === 'object') ? JSON.stringify(x) : x } ).join(' ');
             log.prepend(msg);
         };
     })(console[verb], verb, log);
 });
 
+const log_level = {0 : "info", 1 : "log", 2 : "warn", 3 : "error"};
 webview.addEventListener('console-message', (e) => {
-    console.log(e.message);
+    console[log_level[e.level]](e.message);
 });
 
 // ----------------------
@@ -85,10 +86,14 @@ const log_message = (msg) => {
     if (typeof(msg) === "object") {
         log.appendChild(msg);
     } else if (typeof(msg) === "string") {
-        log.innerText += msg;
+        log.innerText += truncate(msg);
     }
 
     debug.prepend(log);
+}
+
+const truncate = (msg) => {
+    return (msg.length > 255) ? msg.substring(0, 255) + "..." : msg;
 }
 
 const state = { loaded: false };

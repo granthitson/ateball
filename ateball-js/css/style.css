@@ -346,7 +346,7 @@ webview {
     height: 24px;
 }
 
-.debug {
+.console {
     display: flex;
     flex-direction: column-reverse;
     position: absolute;
@@ -405,6 +405,11 @@ webview {
 
 .log-object > .empty {
     height: 1em;
+}
+
+.log-object.error {
+    color: #ff0000;
+    background-color: #fff0f0;
 }
 
 .menu-btn.open, .sub-menu-btn.open {
