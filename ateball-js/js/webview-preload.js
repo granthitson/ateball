@@ -13,6 +13,8 @@ window.addEventListener("DOMContentLoaded", () => {
             
                     document.querySelector("#login-btn").parentElement.style.width = "100%";
                     document.querySelector("#login-btn").style.width = "100%";
+
+                    ipcRenderer.sendToHost("loaded");
                 });
             }
         } else if (location.pathname == "/en/game" || (location.pathname == "/login" && location.search)) {
