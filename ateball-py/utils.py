@@ -15,6 +15,7 @@ import json
 import math
 import pyautogui
 import cv2
+import numpy as np
 
 import constants
 
@@ -174,75 +175,58 @@ class ImageHelper:
         return os.path.join(os.getcwd(), "ateball-py", "images", filename)
 
     @staticmethod
-    def locateImage(image, region=None, confidence=.99):
-        if region is None:
-            pos = pyautogui.locateOnScreen(ImageHelper.imagePath(image), confidence=confidence)
+    def get(pos, point_type="center", ):
+        if point_type == "corner":
+            return (pos[0], pos[1])
         else:
-            pos = pyautogui.locateOnScreen(ImageHelper.imagePath(image), region=region, confidence=confidence)
-        
-        return pos
+            return (pos[0] + (pos[2]/2), pos[1] + (pos[3]/2))
 
     @staticmethod
-    def locateAllImages(image, region=None, confidence=.99):
-        if region is None:
-            pos = pyautogui.locateAllOnScreen(ImageHelper.imagePath(image), confidence=confidence)
-        else:
-            pos = pyautogui.locateAllOnScreen(ImageHelper.imagePath(image), region=region, confidence=confidence)
-        
-        return pos
+    def locateImage(needle, haystack, region=None, threshold=.90):
+        try:
+            if region is not None:
+                haystack = haystack[region[1]:region[1]+region[3], region[0]:region[0]+region[2]]
 
-    @staticmethod
-    def imageSearch(image, region=None, point_type="center", confidence=.95, time_limit=0):
-        time_taken = 0 
-        startTime = time.time()
+            needle = cv2.imread(ImageHelper.imagePath(needle))
+            w, h = needle.shape[:-1]
 
-        pos = ImageHelper.locateImage(image, region, confidence)
-        while (pos is None and time_taken < time_limit):
-            pos = ImageHelper.locateImage(image, region, confidence)      
-            time_taken = (time.time() - startTime)
+            w1, h1 = haystack.shape[:-1]
 
-        if pos is not None:
-            if point_type == "corner":
-                pos = (int(pos.left), int(pos.top))
+            res = cv2.matchTemplate(haystack, needle, cv2.TM_CCOEFF_NORMED)
+
+            loc = np.where( res >= threshold)
+            results = list(map(lambda p: (p[0], p[1], w, h), zip(*loc[::-1])))
+
+            if len(results) > 0:
+                result = results[0]
             else:
-                pos = (int(pos.left + (pos.width/2)), int(pos.top + (pos.height/2)))
+                result = None
+        except Exception as e:
+            logger.error(f"error locating image - {needle} in {haystack}")
+            result = None
+
+        return result
+
+    @staticmethod
+    def imageSearch(needle, haystack, region=None, point_type="center", threshold=.95):
+        pos = ImageHelper.locateImage(needle, haystack, region, threshold)
+        if pos is not None:
+            pos = ImageHelper.get(pos, "center")
             
-        ImageHelper.logger.debug(f"image search complete: {image} - {pos} - {time_taken:.2f}s")
+        ImageHelper.logger.debug(f"image search complete: {needle} - {pos}")
 
         return pos
 
     @staticmethod
-    def imageSearchAll(image, region=None, point_type="center", confidence=.95, time_limit=0):
-        time_taken = 0 
-        startTime = time.time()
-
-        points = ImageHelper.locateAllImages(image, region, confidence)
-        while (points is None and time_taken < time_limit):
-            points = ImageHelper.locateAllImages(image, region, confidence)
-
-        if point_type == "center":
-            points = [(int(p.left + (p.width/2)), int(p.top + (p.height/2))) for p in points]
-        elif point_type == "corner":
-            points = [(int(p.left), int(p.top)) for p in points]
-        else:
-            points = [p for p in points]
-
-        time_taken += (time.time() - startTime)
-
-        ImageHelper.logger.debug(f"image search complete: {image} - {points} - {time_taken:.2f}s")
-
-        return points
-
-    @staticmethod
-    def imageSearchLock(image, region=None, confidence=.95, lock_time=1):
+    def imageSearchLock(needle, haystack, region=None, threshold=.95, lock_time=1):
         # image is present if it exists before and after x seconds
-        pos = ImageHelper.locateImage(image, region, confidence)
+        pos = ImageHelper.locateImage(needle, haystack, region, threshold)
         if pos is not None:
             threading.Event().wait(lock_time)
-            pos = ImageHelper.locateImage(image, region, confidence)
+            pos = ImageHelper.locateImage(needle, haystack, region, threshold)
             if pos is not None:
-                ImageHelper.logger.debug(f"image lock acquired: {image}")
-                return (int(pos.left + (pos.width/2)), int(pos.top + (pos.height/2))) #return center
+                ImageHelper.logger.debug(f"image lock acquired: {needle}")
+                return ImageHelper.get(pos, "center")
 
         return None
 
