@@ -47,11 +47,12 @@ class Game(threading.Thread, ABC):
         self.suit = None
 
         self.turn_num = 0
-        self.current_turn = False
+        self.round_start_image = None
 
-        self.turn_start_event = threading.Event()
-        self.turn_exception_event = threading.Event()
-        self.turn_start = utils.OrEvent(self.turn_start_event, self.turn_exception_event, self.game_over_event)
+        self.current_turn = threading.Event()
+        self.turn_start = threading.Event()
+        self.turn_exception = threading.Event()
+        self.turn_start_event = utils.OrEvent(self.turn_start, self.turn_exception, self.game_over_event)
 
         self.current_round = None
 
@@ -138,12 +139,19 @@ class Game(threading.Thread, ABC):
 
     def wait_for_game_start(self):
         self.logger.info("Waiting for game to start...")
-        while not self.game_cancelled.is_set() and not self.game_over_event.is_set():
-            pos = utils.ImageHelper.imageSearchLock(self.img_game_start)
-            if pos:
-                self.game_start.set()
-                self.set_game_num()
-            time.sleep(.2)
+        while not self.game_start.is_set() and not self.game_cancelled.is_set() and not self.game_over_event.is_set():
+            try:
+                image = self.window_capture()
+                if image.any():
+                    pos = utils.ImageHelper.imageSearchLock(self.img_game_start, image, region=self.regions.turn_start)
+                    if pos:
+                        self.get_game_num()
+                        self.game_start.set()
+                time.sleep(.25)
+            except q.Empty:
+                time.sleep(.25)
+            except Exception as e:
+                self.logger.error(f"error monitoring game start: {e}")
 
     def set_game_num(self):
         with open("gamecounter.txt", "r") as g:
@@ -155,44 +163,54 @@ class Game(threading.Thread, ABC):
                 with open("gamecounter.txt", "w") as g2:
                     g2.write(self.game_num)
 
-    def get_turn_mask(self):
-        turn_region = (332, 10, 570, 82)
+    def wait_for_turn_start(self):
+        self.logger.info("Waiting for turn to start...")
+        turn_mask = cv2.imread(utils.ImageHelper.imagePath(constants.img_turn_mask), 0)
+
+        while not self.game_over_event.is_set():
+            try:
+                image = self.window_capture()
+                if image.any():
+                    #mask turn cycle timer
+                    turn_status = self.get_turn_mask(image, turn_mask)
+                    height, width = turn_status.shape
+
+                    #sort left to right based on x coord
+                    contours = utils.CV2Helper.getContours(turn_status, lambda c: utils.CV2Helper.contourCenter(c)[0])
+
+                    # check who has turn, based on location of contour
+                    center = utils.CV2Helper.contourCenter(contours[0])
+                    if center[0] < width/2 and (not self.current_turn.is_set() or (self.current_round and self.current_round.round_over_event.is_set())):
+                        self.turn_num += 1
+                        self.round_start_image = image
+                        self.current_turn.set()
+                        self.turn_start_event.notify(self.turn_start)
+                    elif center[0] > width/2 and self.current_turn.is_set():
+                        self.current_turn.clear()
+                time.sleep(.25)
+            except q.Empty:
+                time.sleep(.25)
+            except ZeroDivisionError as e:
+                time.sleep(.25)
+            except Exception as e:
+                self.logger.debug(f"error monitoring turn start: {e}")
+
+        self.logger.debug("done wiating")
+
+    def get_turn_mask(self, image, turn_mask):
+        image = image[self.regions.turn_mask[1]:self.regions.turn_mask[1] + self.regions.turn_mask[3], self.regions.turn_mask[0]:self.regions.turn_mask[0] + self.regions.turn_mask[2]]
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         upper_gray = np.array([255, 255, 255])
         lower_gray = np.array([0, 0, 141])
 
-        screen = np.array(ImageGrab.grab(bbox=turn_region))
-        screen = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
-
-        turn_mask = cv2.imread(utils.ImageHelper.imagePath(constants.img_turn_mask), 0)
-
-        masked = cv2.bitwise_and(screen, screen , mask=turn_mask)
+        masked = cv2.bitwise_and(image_rgb, image_rgb, mask=turn_mask)
         hsv = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
-        return cv2.inRange(hsv, lower_gray, upper_gray)
 
-    def wait_for_turn_start(self):
-        try:
-            while not self.game_over_event.is_set():
-                #mask turn cycle timer
-                turn_status = self.get_turn_mask()
-                height, width = turn_status.shape
+        img = cv2.inRange(hsv, lower_gray, upper_gray)
 
-                #sort left to right based on x coord
-                contours = utils.CV2Helper.getContours(turn_status, lambda c: utils.CV2Helper.contourCenter(c)[0])
+        return img
 
-                # check who has turn, based on location of contour
-                center = utils.CV2Helper.contourCenter(contours[0])
-                if center[0] < width/2 and (not self.current_turn or self.current_round.complete_event.is_set()):
-                    self.turn_num += 1
-                    self.current_turn = True
-                    self.turn_start.notify(self.turn_start_event)
-                elif center[0] > width/2 and self.current_turn:
-                    self.current_turn = False
-        except Exception as e:
-            self.logger.error(f"something went wrong monitoring turns: {e}")
-            if type(e) is ZeroDivisionError:
-                self.logger.error("are you ingame? is the turn timer visible?")
-            self.turn_start.notify(self.turn_exception_event)
 
 class ONE_ON_ONE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
