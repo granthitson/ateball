@@ -158,15 +158,14 @@ class Game(threading.Thread, ABC):
             try:
                 image = self.window_capture()
                 if image.any():
-                    pos = utils.ImageHelper.imageSearchLock(self.img_game_start, image, region=self.regions.turn_start)
+                    pos = utils.ImageHelper.imageSearch(self.img_game_start, image, region=self.regions.turn_start)
                     if pos:
                         self.get_game_num()
                         self.game_start.set()
                 time.sleep(.25)
-            except q.Empty:
-                time.sleep(.25)
             except Exception as e:
                 self.logger.error(f"error monitoring game start: {e}")
+                time.sleep(.25)
 
     def get_game_num(self):
         json_path = Path("ateball-py", "game.json")
