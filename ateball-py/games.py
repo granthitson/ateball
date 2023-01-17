@@ -53,7 +53,7 @@ class Game(threading.Thread, ABC):
         
         self.suit = None
         self.turn_num = 0
-        self.current_image = None
+        self.prev_image = None
         self.round_start_image = None
 
         self.current_turn = threading.Event()
@@ -197,8 +197,8 @@ class Game(threading.Thread, ABC):
                     turn_status = self.get_turn_mask(image, turn_mask)
                     height, width = turn_status.shape
 
-                    #sort left to right based on x coord
-                    contours = utils.CV2Helper.getContours(turn_status, lambda c: utils.CV2Helper.contourCenter(c)[0])
+                    # sort by x coord left to right/right to left based user turn
+                    contours = utils.CV2Helper.getContours(turn_status, lambda c: utils.CV2Helper.contourCenter(c)[0], reverse=self.current_turn.is_set())
 
                     # check who has turn, based on location of contour
                     center = utils.CV2Helper.contourCenter(contours[0])
@@ -206,23 +206,25 @@ class Game(threading.Thread, ABC):
                         self.turn_num += 1
 
                         # use image from frame before to just capture pool balls
-                        self.round_start_image = self.current_image
+                        self.round_start_image = self.prev_image
+                        self.prev_image = image
+
                         self.current_turn.set()
                         self.turn_start_event.notify(self.turn_start)
                     else:
                         if center[0] > width/2 and self.current_turn.is_set():
+                            self.round_start_image = self.prev_image
                             self.current_turn.clear()
 
-                        self.current_image = image
-                time.sleep(.25)
-            except q.Empty:
+                        # table should be unchanged, use last round start image
+                        turn_area = cv2.contourArea(contours[0])
+                        self.prev_image = self.round_start_image if turn_area < 20 else image
                 time.sleep(.25)
             except ZeroDivisionError as e:
                 time.sleep(.25)
             except Exception as e:
                 self.logger.debug(f"error monitoring turn start: {e}")
-
-        self.logger.debug("done wiating")
+                time.sleep(.25)
 
     def get_turn_mask(self, image, turn_mask):
         image = image[self.regions.turn_mask[1]:self.regions.turn_mask[1] + self.regions.turn_mask[3], self.regions.turn_mask[0]:self.regions.turn_mask[0] + self.regions.turn_mask[2]]
