@@ -9,6 +9,8 @@ import os
 import cv2
 import numpy as np
 
+import win32gui, win32ui, win32con
+
 from abc import ABC
 
 #files
@@ -24,6 +26,8 @@ class Game(threading.Thread, ABC):
         super().__init__(*args, **kwargs)
 
         self.ipc = ipc
+
+        self.hwnd = win32gui.FindWindow(None, os.getenv("APP_NAME"))
 
         self.name = self.__class__.__name__
         self.location = constants.locations[location] if location != "" else location
@@ -94,6 +98,43 @@ class Game(threading.Thread, ABC):
         self.logger.debug("cancelling game")
         self.game_cancelled.set()
         self.game_end.wait()
+
+    def window_capture(self):
+        w, h = (self.regions.game[2], self.regions.game[3])
+
+        if not self.hwnd:
+            raise Exception("window not found")
+
+        left, top, right, bot = win32gui.GetWindowRect(self.hwnd)
+        offset = (self.regions.window_offset[0] + left, self.regions.window_offset[1] + top)
+
+        # can't capture hardware accelerated window
+        desktop = win32gui.GetDesktopWindow()
+        wDC = win32gui.GetWindowDC(desktop)
+
+        # wDC = win32gui.GetWindowDC(self.hwnd)
+        dcObj=win32ui.CreateDCFromHandle(wDC)
+        cDC=dcObj.CreateCompatibleDC()
+        dataBitMap = win32ui.CreateBitmap()
+        dataBitMap.CreateCompatibleBitmap(dcObj, w, h)
+        cDC.SelectObject(dataBitMap)
+        cDC.BitBlt((0,0), (w, h), dcObj, offset, win32con.SRCCOPY)
+
+        signedIntsArray = dataBitMap.GetBitmapBits(True)
+        # img = np.fromstring(signedIntsArray, dtype='uint8')
+        img = np.frombuffer(signedIntsArray, dtype='uint8')
+        img.shape = (h, w, 4)
+
+        img = img[...,:3]
+        img = np.ascontiguousarray(img)
+
+        # Free Resources
+        dcObj.DeleteDC()
+        cDC.DeleteDC()
+        win32gui.ReleaseDC(self.hwnd, wDC)
+        win32gui.DeleteObject(dataBitMap.GetHandle())
+
+        return img
 
     def wait_for_game_start(self):
         self.logger.info("Waiting for game to start...")
