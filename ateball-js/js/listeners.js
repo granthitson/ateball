@@ -171,7 +171,7 @@ const toggleGUIElements = (state, parent_id=undefined) => {
                             if (s.menu && s.menu == "/en/game") {
                                 let interact = false;
 
-                                if (s.ateball.pending) {
+                                if (s.ateball.pending || s.ateball.game.started) {
                                     // disable gamemode selection buttons / enable game controls if started
                                     interact = (elem.closest(".root-menu").id == "game-controls") ? s.ateball.game.started : false;
                                 } else {
