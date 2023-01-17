@@ -4,6 +4,16 @@ webview.addEventListener('dom-ready', () => {
     webview.openDevTools();
 });
 
+webview.addEventListener('crashed', (e, args) => {
+    console.log("crashed", e, args);
+    webview.reload();
+});
+
+webview.addEventListener('destroyed', (e, args) => {
+    console.log("destroyed", e, args);
+    webview.reload();
+});
+
 webview.addEventListener("did-navigate", () => {
     webview.style.display = "none";
     window.api.inject_css("webview").then((css) => {
