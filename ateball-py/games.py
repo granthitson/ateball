@@ -53,6 +53,7 @@ class Game(threading.Thread, ABC):
         
         self.suit = None
         self.turn_num = 0
+        self.current_image = None
         self.round_start_image = None
 
         self.current_turn = threading.Event()
@@ -203,11 +204,16 @@ class Game(threading.Thread, ABC):
                     center = utils.CV2Helper.contourCenter(contours[0])
                     if center[0] < width/2 and (not self.current_turn.is_set() or (self.current_round and self.current_round.round_over_event.is_set())):
                         self.turn_num += 1
-                        self.round_start_image = image
+
+                        # use image from frame before to just capture pool balls
+                        self.round_start_image = self.current_image
                         self.current_turn.set()
                         self.turn_start_event.notify(self.turn_start)
-                    elif center[0] > width/2 and self.current_turn.is_set():
-                        self.current_turn.clear()
+                    else:
+                        if center[0] > width/2 and self.current_turn.is_set():
+                            self.current_turn.clear()
+
+                        self.current_image = image
                 time.sleep(.25)
             except q.Empty:
                 time.sleep(.25)
