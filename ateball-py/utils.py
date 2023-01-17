@@ -128,33 +128,29 @@ class IPC:
         self.stop_event.set()
 
 class RegionData:
-    '''
-    `game_region` is a list to maintain mutability and changes if the window is moved.
-    Changes to game_region  will not propagate to other regions regardless structure (list/tuple),
-    so performance is gained by using tuples which are immutable.
-    '''
-    def __init__(self):
-        self.table = (106, 176, 690, 360)
+    def __init__(self, data):
+        self.window_offset = (data["window_offset"]["x"], data["window_offset"]["y"])
+
+        self.game = (data["game"]["x"], data["game"]["y"], data["game"]["width"], data["game"]["height"])
+
+        self.turn_start = (data["turn_start"]["x"], data["turn_start"]["y"], data["turn_start"]["width"], data["turn_start"]["height"])
+        self.turn_mask = (data["turn_mask"]["x"], data["turn_mask"]["y"], data["turn_mask"]["width"], data["turn_mask"]["height"])
+
+        self.table = (data["table"]["x"], data["table"]["y"], data["table"]["width"], data["table"]["height"])
         #offset from top-left-corner of screen to table corner
         # offsetx, offsety, width, height
-        self.table_offset = (106, 176)
+        self.table_offset = (data["table"]["x"], data["table"]["y"])
         
         # offsetx, offsety, width, height
-        self.pocketed = (self.table[2] + 725, self.table[1] + 0, 50, self.table[3])
+        self.pocketed = (data["pocketed"]["x"], data["pocketed"]["y"], data["pocketed"]["width"], data["pocketed"]["height"])
 
-        self.targets_bot = (self.table[0] + 7, self.table[1] - 119, 210, 30)
-        self.targets_opponent = (self.targets_bot[0] + 465, self.targets_bot[1], self.targets_bot[2], self.targets_bot[3])
+        self.targets_bot = (data["targets_bot"]["x"], data["targets_bot"]["y"], data["targets_bot"]["width"], data["targets_bot"]["height"])
+        self.targets_opponent = (data["targets_opponent"]["x"], data["targets_opponent"]["y"], data["targets_opponent"]["width"], data["targets_opponent"]["height"])
         
         # defined as within half ball_diameter distance to wall/edge of table
-        self.hittable = (
-            self.table[0]+constants.ball_diameter*2, self.table[1]+constants.ball_diameter*2, 
-            self.table[2]-constants.ball_diameter*4, self.table[3]-constants.ball_diameter*4
-        )
+        self.hittable = (data["hittable"]["x"], data["hittable"]["y"], data["hittable"]["width"], data["hittable"]["height"])
         # defined as within fourth ball_diameter distance to wall/edge of table - if ball is near hole
-        self.back_up = (
-            self.table[0]+constants.ball_diameter/2, self.table[1]+constants.ball_diameter/2, 
-            self.table[2]-constants.ball_diameter, self.table[3]-constants.ball_diameter
-        )  
+        self.back_up = (data["back_up"]["x"], data["back_up"]["y"], data["back_up"]["width"], data["back_up"]["height"])
 
 class Wall:
     def __init__(self, startingPoint, endingPoint):
@@ -166,6 +162,15 @@ class Wall:
 
     def __repr__(self):
         return str(self)
+
+class JSONHelper:
+    logger = logging.getLogger("ateball.utils.JSONHelper")
+
+    @staticmethod
+    def loadJSON(path):
+        with open(path, "r") as f:
+            data = json.load(f)
+            return data
 
 class ImageHelper:
     logger = logging.getLogger("ateball.utils.ImageHelper")

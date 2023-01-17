@@ -11,6 +11,9 @@ import numpy as np
 
 import win32gui, win32ui, win32con
 
+import json
+from pathlib import Path
+
 from abc import ABC
 
 #files
@@ -39,13 +42,16 @@ class Game(threading.Thread, ABC):
         self.game_exception = threading.Event()
         self.game_over_event = utils.OrEvent(self.game_end, self.game_exception)
 
+        self.game_path = None
         self.game_num = 0
 
-        self.regions = utils.RegionData()
+        self.game_constants = utils.JSONHelper.loadJSON(Path("ateball-py", "game_constants.json"))
 
-        self.hole_locations = [ Hole(hole[0], hole[1], hole[2], self.regions.table_offset) for hole in constants.hole_locations ]
+        self.regions = utils.RegionData(self.game_constants["regions"])
+        self.hole_locations = [ Hole(hole["name"], hole["image"], (hole["x"], hole["y"]), self.regions.table_offset) for hole in self.game_constants["hole_locations"] ]
+        self.walls = []
+        
         self.suit = None
-
         self.turn_num = 0
         self.round_start_image = None
 
@@ -58,36 +64,44 @@ class Game(threading.Thread, ABC):
 
         self.logger = logging.getLogger("ateball.games")
 
-    def run(self): #user waits for turn
+    def run(self):
         try:
             self.logger.info(f"Playing {self.name}...")
 
             self.wait_for_game_start()
             if self.game_start.is_set():
+                self.game_path = str(Path("ateball-py", "games", f"{self.game_num}-{self.name}-{self.location}"))
+                os.makedirs(self.game_path, exist_ok=True)
+
                 self.ipc.send_message({"type" : "GAME-START"})
 
-                self.logger.info(f"Game #{self.game_num}\n")
+                self.logger.info(f"\nGame #{self.game_num}\n")
                 
                 threading.Thread(target=self.wait_for_turn_start, daemon=True).start()
 
                 while not self.game_over_event.is_set():
-                    self.turn_start.wait(constants.round_time * 2)
-                    if self.turn_start_event.is_set():
+                    self.turn_start_event.wait(self.game_constants["round_time"] * 2)
+                    if self.turn_start.is_set():
                         self.turn_start.clear()
 
                         self.ipc.send_message({"type" : "ROUND-START"})
 
-                        save_img_path = f"games\\game{self.game_num}-{self.name}-{self.location}\\round{self.turn_num}\\"
-                        os.makedirs(save_img_path, exist_ok=True)
+                        round_path = Path(self.game_path, f"round-{self.turn_num}")
+                        os.makedirs(round_path, exist_ok=True)
 
-                        self.logger.info(f"-- Turn #{self.turn_num} --")
+                        cv2.imwrite(str(Path(round_path, "round_start.png")), self.round_start_image)
+
+                        self.logger.info(f"\nTurn #{self.turn_num}\n")
                         
-                        self.current_round = round.Round(self.suit, self.regions, self.hole_locations, save_img_path)
-                        self.current_round.start()
+                        round_data = self.get_round_data(round_path)
+                        self.current_round = Round(round_data, self.game_constants)
+                        result = self.current_round.start()
                     else:
-                        if not self.turn_exception_event.is_set():
+                        if not self.turn_exception.is_set():
                             self.logger.debug("timed out waiting for turn")
                             break
+        except Exception as e:
+            self.logger.debug(e)
         finally:
             self.game_over_event.notify(self.game_end)
             if self.game_cancelled.is_set():
@@ -153,15 +167,22 @@ class Game(threading.Thread, ABC):
             except Exception as e:
                 self.logger.error(f"error monitoring game start: {e}")
 
-    def set_game_num(self):
-        with open("gamecounter.txt", "r") as g:
-            data = g.readlines()
-            for line in data:
-                if line is None:
-                    g.write("0")
-                self.game_num = str(int(line) + 1)
-                with open("gamecounter.txt", "w") as g2:
-                    g2.write(self.game_num)
+    def get_game_num(self):
+        json_path = Path("ateball-py", "game.json")
+        json_path.touch(exist_ok=True)
+
+        with open(json_path, "r") as f:
+            try:
+                data = json.load(f)
+                data["num"] += 1 
+                self.game_num = data["num"]
+                with open(json_path, "w") as f:
+                    f.write(json.dumps(data))
+            except json.decoder.JSONDecodeError as e:
+                data = {"num" : 1}
+                self.game_num = data["num"]
+                with open(json_path, "w") as f:
+                    f.write(json.dumps(data))
 
     def wait_for_turn_start(self):
         self.logger.info("Waiting for turn to start...")
@@ -211,6 +232,17 @@ class Game(threading.Thread, ABC):
 
         return img
 
+    def get_round_data(self, image_path):
+        return {
+            "save_image_path" : image_path,
+            "round_image" : self.round_start_image,
+            "suit" : self.suit,
+            "all_balls" : {},
+            "unpocketed_balls" : [],
+            "pocketed_balls" : {},
+            "targets" : {},
+            "nontargets" : {},
+        }
 
 class ONE_ON_ONE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
