@@ -1,6 +1,8 @@
 .env
+*.json
 logs/
 node_modules/
 ateball-py/__pycache__
 ateball-py/poolpassword.txt
+ateball-py/games/
 ateball-py/images/
