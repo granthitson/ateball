@@ -115,7 +115,6 @@ class AteBall():
                 self.logger.error(f"error playing game: {traceback.format_exc()}")
         finally:
             self.processing_play_request.clear()
-            self.logger.debug(self.processing_play_request.is_set())
 
     def cancel(self):
         try:
