@@ -4,7 +4,6 @@ contextBridge.exposeInMainWorld('api', {
     test : () => ipcRenderer.invoke('test'),
     inject_css: (type) => ipcRenderer.invoke('get-css', type),
     ateball : {
-        init: (webview_id) => ipcRenderer.send('ateball-init', webview_id),
         state: () => ipcRenderer.invoke('ateball-state'),
         start: () => ipcRenderer.send('ateball-start'),
         on_start: (callback) => ipcRenderer.on('ateball-started', callback),
