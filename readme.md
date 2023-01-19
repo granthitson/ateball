@@ -7,6 +7,12 @@ This project started years ago with this [previous iteration](https://github.com
 
 The goal of this project has always been purely educational; to improve my programming and to learn more about computer vision/image processing/etc. 
 
+![UI](demo/ui.png)
+![Table](demo/table.png)
+![Table Masked](demo/table_masked.png)
+![Table Hough ](demo/table_hough.png)
+![Table Calculated](demo/table_calculated.png)
+
 ## Do I have permission to use this?
 
 No, I have not added a license for a reason. Read more about what that means [here](https://choosealicense.com/no-permission/).
