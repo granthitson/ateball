@@ -28,8 +28,6 @@ class AteBall():
 
         self.quit_event = threading.Event()
 
-        self.exception = None
-
         self.logger = logging.getLogger("ateball")
 
     def process_message(self):
@@ -59,17 +57,15 @@ class AteBall():
             except KeyError as e:
                 response["status"] = "failed"
                 response["msg"] = str(e)
+            except Exception as e:
+                self.logger.error(f"error processing message : {traceback.format_exc()}")
             else: 
-                if self.exception is not None:
-                    self.logger.error(f"error processing message : {self.exception}")
-                    if response is not None:
-                        response["status"] = "failed"
-                        response["msg"] = str(self.exception)
-                else:
+                if response is not None:
                     if (isinstance(response, dict)):
                         response["id"] = msg["id"]
+                    response["status"] = "failed"
+                    response["msg"] = str(self.exception)
 
-                if response:
                     self.ipc.outgoing.put(response)
 
 
