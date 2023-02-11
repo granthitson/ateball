@@ -217,7 +217,7 @@ class Ateball {
 		var self = this;
 		this.state.ateball.pending = true;
 
-		window.setAlwaysOnTop(true);
+		window.setAlwaysOnTop(true, 'pop-up-menu');
 		self.send_message(msg, (resp) => {
 			console.log(resp);
 			return resp;
