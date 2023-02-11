@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 import time
 
@@ -17,6 +18,7 @@ from pathlib import Path
 from abc import ABC
 
 #files
+from round import Round
 from hole import Hole
 import utils
 import constants
@@ -34,6 +36,8 @@ class Game(threading.Thread, ABC):
 
         self.name = self.__class__.__name__
         self.location = constants.locations[location] if location != "" else location
+
+        self.image_stack = []
 
         self.game_start = threading.Event()
         self.game_cancelled = threading.Event()
@@ -53,13 +57,12 @@ class Game(threading.Thread, ABC):
         
         self.suit = None
         self.turn_num = 0
-        self.prev_image = None
         self.round_start_image = None
 
-        self.current_turn = threading.Event()
+        self.player_turn = threading.Event()
+        self.opponent_turn = threading.Event()
         self.turn_start = threading.Event()
-        self.turn_exception = threading.Event()
-        self.turn_start_event = utils.OrEvent(self.turn_start, self.turn_exception, self.game_over_event)
+        self.turn_start_event = utils.OrEvent(self.turn_start, self.game_over_event)
 
         self.current_round = None
 
@@ -75,14 +78,13 @@ class Game(threading.Thread, ABC):
                 os.makedirs(self.game_path, exist_ok=True)
 
                 self.ipc.send_message({"type" : "GAME-START"})
-
                 self.logger.info(f"\nGame #{self.game_num}\n")
                 
                 threading.Thread(target=self.wait_for_turn_start, daemon=True).start()
 
                 while not self.game_over_event.is_set():
-                    self.turn_start_event.wait(self.game_constants["round_time"] * 2)
-                    if self.turn_start.is_set():
+                    self.turn_start_event.wait()
+                    if self.player_turn.is_set() and self.turn_start.is_set():
                         self.turn_start.clear()
 
                         self.ipc.send_message({"type" : "ROUND-START"})
@@ -92,15 +94,13 @@ class Game(threading.Thread, ABC):
 
                         cv2.imwrite(str(Path(round_path, "round_start.png")), self.round_start_image)
 
-                        self.logger.info(f"\nTurn #{self.turn_num}\n")
+                        self.logger.info(f"Turn #{self.turn_num}")
                         
                         round_data = self.get_round_data(round_path)
-                        self.current_round = Round(round_data, self.game_constants)
+                        game_const = { "regions" : self.regions, "hole_locations" : self.hole_locations, "balls" : self.balls}
+
+                        self.current_round = Round(round_data, game_const)
                         result = self.current_round.start()
-                    else:
-                        if not self.turn_exception.is_set():
-                            self.logger.debug("timed out waiting for turn")
-                            break
         except Exception as e:
             self.logger.debug(e)
         finally:
@@ -186,58 +186,136 @@ class Game(threading.Thread, ABC):
 
     def wait_for_turn_start(self):
         self.logger.info("Waiting for turn to start...")
-        turn_mask = cv2.imread(utils.ImageHelper.imagePath(constants.img_turn_mask), 0)
 
+        # load turn timer masks
+        turn_timer_mask = cv2.imread(utils.ImageHelper.imagePath(constants.img_turn_timers_mask), 0)
+        turn_timer_mask_single =cv2.imread(utils.ImageHelper.imagePath(constants.img_turn_timers_mask_single), 0)
+
+        old_player_status = None
         while not self.game_over_event.is_set():
             try:
                 image = self.window_capture()
                 if image.any():
-                    #mask turn cycle timer
-                    turn_status = self.get_turn_mask(image, turn_mask)
-                    height, width = turn_status.shape
+                    # keep track of last 20 image frames
+                    if len(self.image_stack) >= 20:
+                        self.image_stack.pop(0)
+                    self.image_stack.append(image)
 
-                    # sort by x coord left to right/right to left based user turn
-                    contours = utils.CV2Helper.getContours(turn_status, lambda c: utils.CV2Helper.contourCenter(c)[0], reverse=self.current_turn.is_set())
+                    # get mean color of each turn timer - colors represent different state at beginning of round
+                    turn_status = self.get_turn_status(turn_timer_mask, turn_timer_mask_single)
 
-                    # check who has turn, based on location of contour
-                    center = utils.CV2Helper.contourCenter(contours[0])
-                    if center[0] < width/2 and (not self.current_turn.is_set() or (self.current_round and self.current_round.round_over_event.is_set())):
-                        self.turn_num += 1
+                    # get status of player/opponent turn timer - color, open/closed, timeout
+                    player_status, opponent_status = turn_status["player"]["status"], turn_status["opponent"]["status"]
+                    player_timer_start, opponent_timer_start = turn_status["player"]["hierarchy"], turn_status["opponent"]["hierarchy"]
+                    timed_out = ((player_status == "timeout" and player_timer_start) or (opponent_status == "timeout" and opponent_timer_start))
 
-                        # use image from frame before to just capture pool balls
-                        self.round_start_image = self.prev_image
-                        self.prev_image = image
+                    if self.player_turn.is_set():
+                        if opponent_status != "pending":
+                            if opponent_status == "successive":
+                                # on successive pockets, player turn starts when player timer flashes white and contour is 'closed'
+                                # *as long as player status in the previous frame is not 'started'
+                                if (player_status == "started" and player_timer_start) and old_player_status != "started":
+                                    self.end_existing_round()
 
-                        self.current_turn.set()
-                        self.turn_start_event.notify(self.turn_start)
+                                    self.turn_num += 1
+                                    self.set_round_image(timed_out)
+                                    self.player_turn.set()
+                                    self.turn_start_event.notify(self.turn_start)
+                            else:
+                                # player turn ends when opponent timer flashes white and contour is 'closed'
+                                if opponent_status == "started" and opponent_timer_start:
+                                    self.end_existing_round()
+
+                                    self.set_round_image(timed_out)
+                                    self.opponent_turn.set()
+                    elif self.opponent_turn.is_set():
+                        # player turn starts when player timer flashes white and contour is 'closed'
+                        if player_status == "started" and player_timer_start:
+                            self.end_existing_round()
+
+                            self.turn_num += 1
+                            self.set_round_image(timed_out)
+                            self.player_turn.set()
+                            self.turn_start_event.notify(self.turn_start)
                     else:
-                        if center[0] > width/2 and self.current_turn.is_set():
-                            self.round_start_image = self.prev_image
-                            self.current_turn.clear()
+                        # player and opponent turn will both not be set at start of game
 
-                        # table should be unchanged, use last round start image
-                        turn_area = cv2.contourArea(contours[0])
-                        self.prev_image = self.round_start_image if turn_area < 20 else image
-                time.sleep(.25)
-            except ZeroDivisionError as e:
-                time.sleep(.25)
+                        if player_status != "pending":
+                            self.end_existing_round()
+
+                            self.turn_num += 1
+                            self.set_round_image(timed_out)
+                            self.player_turn.set()
+                            self.turn_start_event.notify(self.turn_start)
+                        else:
+                            self.player_turn.clear()
+                            self.opponent_turn.set()
             except Exception as e:
-                self.logger.debug(f"error monitoring turn start: {e}")
-                time.sleep(.25)
+                self.logger.error(traceback.format_exc())
+            finally:
+                # keep track of last frame's player status
+                old_player_status = player_status
 
-    def get_turn_mask(self, image, turn_mask):
-        image = image[self.regions.turn_mask[1]:self.regions.turn_mask[1] + self.regions.turn_mask[3], self.regions.turn_mask[0]:self.regions.turn_mask[0] + self.regions.turn_mask[2]]
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    def get_turn_status(self, mask, mask_single):
+        # status indicated by the color of turn timer and whether timer is 'open' or 'closed' (at the start of a turn)
 
-        upper_gray = np.array([255, 255, 255])
-        lower_gray = np.array([0, 0, 141])
+        # slice specified image to size - match size of mask
+        turn_timer = utils.CV2Helper.slice_image(self.image_stack[-1], self.regions.turn_timer)
 
-        masked = cv2.bitwise_and(image_rgb, image_rgb, mask=turn_mask)
-        hsv = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
+        # mask out background - show only turn timers
+        turn_timers_masked = cv2.bitwise_and(turn_timer, turn_timer, mask=mask)
 
-        img = cv2.inRange(hsv, lower_gray, upper_gray)
+        # slice image to seperate timers
+        p_timer = utils.CV2Helper.slice_image(turn_timers_masked, self.regions.player_turn_timer)
+        o_timer = utils.CV2Helper.slice_image(turn_timers_masked, self.regions.opponent_turn_timer)
 
-        return img
+        # match mean color to closest color
+        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, self.game_constants["turn_status"])
+        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, self.game_constants["turn_status"])
+
+        # get hierarchy of turn timer contours (closed vs open)
+        p_timer_hsv = cv2.cvtColor(p_timer.copy(), cv2.COLOR_BGR2HSV)
+        o_timer_hsv = cv2.cvtColor(o_timer.copy(), cv2.COLOR_BGR2HSV)
+
+        p_hierarchy_mask = utils.CV2Helper.create_mask(p_timer_hsv, np.array([0, 0, 100]), np.array([180, 255, 255]), cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
+        o_hierarchy_mask = utils.CV2Helper.create_mask(o_timer_hsv, np.array([0, 0, 100]), np.array([180, 255, 255]), cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
+
+        p_contours, p_hierarchy = cv2.findContours(p_hierarchy_mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+        o_contours, o_hierarchy = cv2.findContours(o_hierarchy_mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+
+        return {
+            "player" : {
+                "status" : closest_color_player,
+                "hierarchy" : len(p_hierarchy[0]) > 1 if p_hierarchy is not None else False
+            },
+            "opponent" : {
+                "status" : closest_color_opponent,
+                "hierarchy" : len(o_hierarchy[0]) > 1 if o_hierarchy is not None else False
+            },
+        }
+
+    def end_existing_round(self):
+        self.opponent_turn.clear()
+        self.player_turn.clear()
+
+        self.ipc.send_message({"type" : "ROUND-END"})
+
+        if self.current_round is not None and not self.current_round.round_over_event.is_set():
+            self.current_round.round_over_event.notify(self.current_round.round_cancel)
+            self.current_round = None
+            self.logger.info(f"Turn #{self.turn_num} Complete")
+
+        self.export_round_data()
+
+    def set_round_image(self, turn_timed_out):
+        if self.round_start_image is not None:
+            # in case of timeout, use last recorded round_start_image
+            self.round_start_image = self.round_start_image if turn_timed_out else self.image_stack[0]
+        else:
+            self.round_start_image = self.image_stack[0]
+
+    def export_round_data(self):
+        pass
 
     def get_round_data(self, image_path):
         return {

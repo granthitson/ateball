@@ -134,7 +134,9 @@ class RegionData:
         self.game = (data["game"]["x"], data["game"]["y"], data["game"]["width"], data["game"]["height"])
 
         self.turn_start = (data["turn_start"]["x"], data["turn_start"]["y"], data["turn_start"]["width"], data["turn_start"]["height"])
-        self.turn_mask = (data["turn_mask"]["x"], data["turn_mask"]["y"], data["turn_mask"]["width"], data["turn_mask"]["height"])
+        self.turn_timer = (data["turn_timer"]["x"], data["turn_timer"]["y"], data["turn_timer"]["width"], data["turn_timer"]["height"])
+        self.player_turn_timer = (data["player_turn_timer"]["x"], data["player_turn_timer"]["y"], data["player_turn_timer"]["width"], data["player_turn_timer"]["height"])
+        self.opponent_turn_timer = (data["opponent_turn_timer"]["x"], data["opponent_turn_timer"]["y"], data["opponent_turn_timer"]["width"], data["opponent_turn_timer"]["height"])
 
         self.table = (data["table"]["x"], data["table"]["y"], data["table"]["width"], data["table"]["height"])
         #offset from top-left-corner of screen to table corner
@@ -238,6 +240,48 @@ class ImageHelper:
 class CV2Helper:
     logger = logging.getLogger("ateball.utils.CV2Helper")
 
+    def get_closest_color(img, mask, lookup):
+        # get mean bgr color value for both timers
+        mean = cv2.mean(img, mask=mask)[:3]
+
+        # convert mean color to hsv
+        mean_hsv = cv2.cvtColor(np.uint8([[mean]]), cv2.COLOR_BGR2HSV)[0][0]
+        
+        # match mean color to nearest color match
+        closest_color = CV2Helper.get_color_name(mean_hsv, lookup)
+
+        return closest_color
+
+    def get_color_name(color, color_lookup):
+        # match color to closest color listed in lookup
+
+        # create list of differences for each lookup value
+        differences = [
+            [CV2Helper.color_difference(color, bgr), name]
+            for name, bgr in color_lookup.items()
+        ]
+
+        # sort differences (ascending) - and return color with least difference
+        differences.sort()
+        return differences[0][1]
+    
+    @staticmethod
+    def color_difference(color1, color2):
+        # return sum total of differences between two colors
+        return sum([abs(value1-value2) for value1, value2 in zip(color1, color2)])
+
+    @staticmethod
+    def slice_image(image, region):
+        # cut image to size
+        return image[region[1]:region[1] + region[3], region[0]:region[0] + region[2]]
+
+    @staticmethod
+    def create_mask(hsv, lower, upper, op=None, kernal=None):
+        mask = cv2.inRange(hsv, np.array(lower), np.array(upper))
+        if op is not None:
+            mask = cv2.morphologyEx(mask, op, kernal)
+
+        return mask
     @staticmethod
     def getContours(mask, key=None):
         contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)

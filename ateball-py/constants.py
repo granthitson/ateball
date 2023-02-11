@@ -1,17 +1,11 @@
 # IMAGES #
 
-# UI NAVIGATION #
-img_back_arrow = "navigation/back_arrow.png"
+# MASKS #
+img_turn_timers_mask = "turn_mask.png"
+img_turn_timers_mask_single = "turn_mask_single.png"
+img_target_mask = "targets_mask.png"
+# MASKS #
 
-img_calibration = "misc/calibration.png"
-
-img_lucky_shot = "gamemodes/lucky_shot/lucky_shot.png"
-img_lucky_shot_cue_ball = "gamemodes/lucky_shot/lucky_shot_cue_ball.png"
-img_lucky_shot_gold_ball = "gamemodes/lucky_shot/lucky_shot_gold_ball.png"
-img_lucky_shot_red_ball = "gamemodes/lucky_shot/lucky_shot_red_ball.png"
-img_lucky_shot_target = "gamemodes/lucky_shot/lucky_shot_target.png"
-
-img_turn_mask = "game/turn_mask.png"
 # UI NAVIGATION #
 
 locations = {
