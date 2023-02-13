@@ -44,7 +44,7 @@ class Game(threading.Thread, ABC):
 
         self.game_end = threading.Event()
         self.game_exception = threading.Event()
-        self.game_over_event = utils.OrEvent(self.game_end, self.game_exception)
+        self.game_over_event = utils.OrEvent(self.game_end, self.game_cancelled, self.game_exception)
 
         self.game_path = None
         self.game_num = 0
@@ -111,9 +111,9 @@ class Game(threading.Thread, ABC):
                 self.ipc.send_message({"type" : "GAME-END"})
 
     def cancel(self):
-        self.logger.debug("cancelling game")
-        self.game_cancelled.set()
-        self.game_end.wait()
+        self.logger.debug("cancelling current game")
+        self.game_over_event.notify(self.game_cancelled)
+        self.game_over_event.wait()
 
     def window_capture(self):
         w, h = (self.regions.game[2], self.regions.game[3])
