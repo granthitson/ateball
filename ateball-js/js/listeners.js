@@ -116,10 +116,12 @@ start.addEventListener("click", (e) => {
     window.api.ateball.start();
 });
 
-var cancel = document.querySelector("#pending-cancel");
-cancel.addEventListener("click", (e) => {
-    document.querySelector("a[data-bs-target='#menu-controls']").click()
-    window.api.ateball.cancel();
+var cancel_btns = document.querySelectorAll(".cancel");
+Array.from(cancel_btns).forEach(btn => {
+    btn.addEventListener("click", (e) => {
+        document.querySelector("a[data-bs-target='#menu-controls']").click()
+        window.api.ateball.cancel();
+    });
 });
 
 var stop = document.querySelector("#ateball-stop");
