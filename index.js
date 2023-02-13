@@ -232,7 +232,16 @@ class Ateball {
 	stop() {
 		if (this.process != null) {
 			console.log("stopping ateball");
-			this.kill();
+			this.send_message({ "type" : "quit" });
+			var timeout = setTimeout(() => {
+				if (this.process) {
+					this.kill();
+				}
+			}, 10000);
+
+			this.stopped.then(() => {
+				clearTimeout(timeout);
+			});
 		}
 	}
 
