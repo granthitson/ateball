@@ -107,7 +107,7 @@ app.on('ready', async () => {
 		return ateball.get_state();
 	});
 
-	ipcMain.handle('ateball-play', (e, data) => {
+	ipcMain.handle('game-play', (e, data) => {
 		return (new Promise((resolve, reject) => {
 			if (ateball.process != null) {
 				ateball.play_game({ type: "play", ...data});
@@ -121,8 +121,8 @@ app.on('ready', async () => {
 		
 	});
 
-	ipcMain.on('ateball-cancel', (e) => {
-		ateball.cancel()
+	ipcMain.on('game-cancel', (e) => {
+		ateball.cancel_game();
 	});
 
 	ipcMain.on('ateball-stop', (e) => {
@@ -224,7 +224,7 @@ class Ateball {
 		});
 	}
 
-	cancel() {
+	cancel_game() {
 		window.setAlwaysOnTop(false);
 		this.send_message({ "type" : "cancel" });
 	}
@@ -316,29 +316,29 @@ class Ateball {
 				case "GAME-START":
 					this.state.ateball.pending = false;
 					this.state.ateball.game.started = true;
-					this.window.webContents.send("ateball-playing");
+					this.window.webContents.send("game-playing");
 					break;
 				case "ROUND-START":
 					this.state.ateball.game.round.started = true;
-					this.window.webContents.send("ateball-round-start");
+					this.window.webContents.send("game-round-start");
 					break;
 				case "ROUND-END":
 					this.state.ateball.game.round.started = false;
-					this.window.webContents.send("ateball-round-end");
+					this.window.webContents.send("game-round-end");
 					break;
 				case "GAME-CANCELLED":
 					console.log("cancelling");
 					this.state.ateball.pending = false;
 					this.state.ateball.game.started = false;
 					this.state.ateball.game.round.started = false;
-					this.window.webContents.send("ateball-cancelled");
+					this.window.webContents.send("game-cancelled");
 					break;
 				case "GAME-END":
 					console.log("ending game");
 					this.state.ateball.pending = false;
 					this.state.ateball.game.started = false;
 					this.state.ateball.game.round.started = false;
-					this.window.webContents.send("ateball-end");
+					this.window.webContents.send("game-stopped");
 					break;
 			}
 		}

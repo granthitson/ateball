@@ -64,12 +64,17 @@ window.api.ateball.on_connected( (e) => {
 });
 
 window.api.ateball.on_play( (e) => {
-    console.log("Ateball playing");
+    console.log("Game playing");
     toggleGUIElements(get_state());
 });
 
-window.api.ateball.on_cancel( (e) => {
-    console.log("Ateball cancelled");
+window.api.ateball.game.on_cancel( (e) => {
+    console.log("Game cancelled");
+    toggleGUIElements(get_state());
+});
+
+window.api.ateball.game.on_stop( (e) => {
+    console.log("Game ended");
     toggleGUIElements(get_state());
 });
 
