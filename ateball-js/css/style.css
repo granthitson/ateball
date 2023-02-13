@@ -514,6 +514,12 @@ webview {
     white-space: nowrap;
 }
 
+.panel-btn.active {
+    color: #ffffff;
+    background-image: -webkit-gradient(linear,left top,left bottom,from(#0066cd),to(#036));
+    border-color: #036;
+}
+
 .sub-menu-btn {
     font-size: .9em;
 }
