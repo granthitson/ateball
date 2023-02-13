@@ -113,15 +113,10 @@ class AteBall():
             self.processing_play_request.clear()
 
     def cancel(self):
-        try:
-            if self.active_game:
-                self.active_game.cancel()
-            else:
-                raise Exception("no game to cancel")
-        except Exception as e:
-            self.logger.error(f"ran into error cancelling game: {e}")
-        else:
+        if self.active_game:
+            self.active_game.cancel()
             self.active_game = None
+            self.ipc.send_message({"type" : "GAME-CANCELLED"})
 
     ###menu
 
