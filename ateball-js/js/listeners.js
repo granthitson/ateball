@@ -112,7 +112,7 @@ Array.from(play_btns).forEach(btn => {
 
 var start = document.querySelector("#ateball-start");
 start.addEventListener("click", (e) => {
-    toggleAteballStart(true);
+    toggleButtonSpinner(start, true);
     window.api.ateball.start();
 });
 
@@ -124,18 +124,24 @@ cancel.addEventListener("click", (e) => {
 
 var stop = document.querySelector("#ateball-stop");
 stop.addEventListener("click", (e) => {
-    toggleAteballStop(true);
+    toggleButtonSpinner(stop, true);
     window.api.ateball.stop();
 });
+
+const toggleButtonSpinner = (elem, state) => {
+    state ? elem.classList.add("running") : elem.classList.remove("running");
+}
 
 const toggleAteballStart = (state) => {
     var start = document.querySelector("#ateball-start");
     start.disabled = !state;
+    toggleButtonSpinner(start, false);
 }
 
 const toggleAteballStop = (state) => {
-    var start = document.querySelector("#ateball-stop");
-    start.disabled = !state;
+    var stop = document.querySelector("#ateball-stop");
+    stop.disabled = !state;
+    toggleButtonSpinner(stop, false);
 }
 
 const toggleAteballControls = (state) => {

@@ -6,6 +6,7 @@
 		<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
 		<link rel="stylesheet" type="text/css" href="../css/style.css">
 		<link href="../vendor/bootstrap.min.css" rel="stylesheet">
+		<link href="../vendor/ldbutton.min.css" rel="stylesheet">
 		<script src="../vendor/jquery-3.6.0.min.js" rel="stylesheet"></script>
 		<script src="../vendor/bootstrap.bundle.min.js" rel="stylesheet"></script>
 	</head>
@@ -325,10 +326,18 @@
 										<div id="debug_1" class="tab-pane fade show active">
 											<div id="ateball-btns" class="nav nav-tabs">
 												<div class="col">
-													<button id="ateball-start" class="_btn slim" disabled="">Start</button>
+													<button id="ateball-start" class="_btn slim ld-over-inverse" disabled="">
+														<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
+														<div class="ld ld-ring ld-spin"></div>
+														Start
+													</button>
 												</div>
 												<div class="col">
-													<button id="ateball-stop" class="_btn slim" disabled="">Stop</button>
+													<button id="ateball-stop" class="_btn slim ld-over-inverse" disabled="">
+														<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
+														<div class="ld ld-ring ld-spin"></div>
+														Stop
+													</button>
 												</div>
 											</div>
 											<pre id="debug_console_1" class="console"></pre>
