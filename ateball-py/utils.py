@@ -354,6 +354,13 @@ class CV2Helper:
         # return sum total of differences between two colors
         return sum([abs(value1-value2) for value1, value2 in zip(color1, color2)])
 
+    def resize(image, factor):
+        width = int(image.shape[1] * factor)
+        height = int(image.shape[0] * factor)
+        dim = (width, height)
+
+        return cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
+
     @staticmethod
     def slice_image(image, region):
         # cut image to size

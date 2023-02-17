@@ -10,9 +10,8 @@ import os
 import cv2
 import numpy as np
 
-import win32gui, win32ui, win32con
-
 import json
+from types import SimpleNamespace
 from pathlib import Path
 
 from abc import ABC
@@ -121,18 +120,41 @@ class Game(threading.Thread, ABC):
 
     def wait_for_game_start(self):
         self.logger.info("Waiting for game to start...")
+
+        # get contour of marker
+        needle = cv2.imread(utils.ImageHelper.imagePath(self.img_game_start))
+        needle_contours = self.get_game_marker_contours(needle)
+
         while not self.game_start.is_set() and not self.game_cancelled.is_set() and not self.game_over_event.is_set():
             try:
                 image = self.window_capturer.get_first()
                 if image.any():
-                    pos = utils.ImageHelper.imageSearch(self.img_game_start, image, region=self.regions.turn_start)
-                    if pos:
+                    # get contour of (potential) marker of current game
+                    haystack = utils.CV2Helper.slice_image(image, self.game_constants.regions.turn_start)
+                    haystack_contours = self.get_game_marker_contours(haystack)
+                    
+                    # match shape of contours - contours similar closer to 0
+                    match = cv2.matchShapes(haystack_contours, needle_contours, cv2.CONTOURS_MATCH_I1 , 0.0)
+                    if match <= .05:
                         self.get_game_num()
                         self.game_start.set()
-                time.sleep(.25)
             except Exception as e:
                 self.logger.error(f"error monitoring game start: {e}")
-                time.sleep(.25)
+
+    def get_game_marker_contours(self, image):
+        # resize & blur to get clearer contours
+        image = utils.CV2Helper.resize(image, 4)
+        image_blur = cv2.GaussianBlur(image, (9,9), 0)
+
+        image_hsv = cv2.cvtColor(image_blur, cv2.COLOR_BGR2HSV)
+
+        # filter out gray background to get shape of marker
+        image_mask = cv2.inRange(image_hsv, np.array([0, 0, 40]), np.array([180, 255, 255]))
+        image_mask = cv2.morphologyEx(image_mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8), iterations=3)
+
+        # return largest contour
+        contours, hierarchy = cv2.findContours(image_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        return sorted(contours, key=cv2.contourArea, reverse=True)[0]
 
     def get_game_num(self):
         json_path = Path("ateball-py", "game.json")
