@@ -211,33 +211,6 @@ class WindowCapturer(threading.Thread):
             self.video_writer.release()
             self.record_event.clear()
 
-class RegionData:
-    def __init__(self, data):
-        self.window_offset = (data["window_offset"]["x"], data["window_offset"]["y"])
-
-        self.game = (data["game"]["x"], data["game"]["y"], data["game"]["width"], data["game"]["height"])
-
-        self.turn_start = (data["turn_start"]["x"], data["turn_start"]["y"], data["turn_start"]["width"], data["turn_start"]["height"])
-        self.turn_timer = (data["turn_timer"]["x"], data["turn_timer"]["y"], data["turn_timer"]["width"], data["turn_timer"]["height"])
-        self.player_turn_timer = (data["player_turn_timer"]["x"], data["player_turn_timer"]["y"], data["player_turn_timer"]["width"], data["player_turn_timer"]["height"])
-        self.opponent_turn_timer = (data["opponent_turn_timer"]["x"], data["opponent_turn_timer"]["y"], data["opponent_turn_timer"]["width"], data["opponent_turn_timer"]["height"])
-
-        self.table = (data["table"]["x"], data["table"]["y"], data["table"]["width"], data["table"]["height"])
-        #offset from top-left-corner of screen to table corner
-        # offsetx, offsety, width, height
-        self.table_offset = (data["table"]["x"], data["table"]["y"])
-        
-        # offsetx, offsety, width, height
-        self.pocketed = (data["pocketed"]["x"], data["pocketed"]["y"], data["pocketed"]["width"], data["pocketed"]["height"])
-
-        self.targets_bot = (data["targets_bot"]["x"], data["targets_bot"]["y"], data["targets_bot"]["width"], data["targets_bot"]["height"])
-        self.targets_opponent = (data["targets_opponent"]["x"], data["targets_opponent"]["y"], data["targets_opponent"]["width"], data["targets_opponent"]["height"])
-        
-        # defined as within half ball_diameter distance to wall/edge of table
-        self.hittable = (data["hittable"]["x"], data["hittable"]["y"], data["hittable"]["width"], data["hittable"]["height"])
-        # defined as within fourth ball_diameter distance to wall/edge of table - if ball is near hole
-        self.back_up = (data["back_up"]["x"], data["back_up"]["y"], data["back_up"]["width"], data["back_up"]["height"])
-
 class Wall:
     def __init__(self, startingPoint, endingPoint):
         self.startingPoint = startingPoint
@@ -248,15 +221,6 @@ class Wall:
 
     def __repr__(self):
         return str(self)
-
-class JSONHelper:
-    logger = logging.getLogger("ateball.utils.JSONHelper")
-
-    @staticmethod
-    def loadJSON(path):
-        with open(path, "r") as f:
-            data = json.load(f)
-            return data
 
 class ImageHelper:
     logger = logging.getLogger("ateball.utils.ImageHelper")

@@ -34,6 +34,10 @@ class Game(threading.Thread, ABC):
         self.name = self.__class__.__name__
         self.location = constants.locations[location] if location != "" else location
 
+        self.game_constants = None
+        with open(str(Path("ateball-py", "game_constants.json")), encoding='utf-8') as json_data:
+            self.game_constants = json.load(json_data, object_hook=lambda d: SimpleNamespace(**d))
+
         self.game_start = threading.Event()
         self.game_cancelled = threading.Event()
 
@@ -43,14 +47,8 @@ class Game(threading.Thread, ABC):
 
         self.game_path = None
         self.game_num = 0
-
-        self.game_constants = utils.JSONHelper.loadJSON(Path("ateball-py", "game_constants.json"))
-
-        self.regions = utils.RegionData(self.game_constants["regions"])
-        self.hole_locations = [ Hole(hole["name"], hole["image"], (hole["x"], hole["y"]), self.regions.table_offset) for hole in self.game_constants["hole_locations"] ]
-        self.walls = []
         
-        self.window_capturer = utils.WindowCapturer(self.regions.game, self.regions.window_offset, daemon=True)
+        self.window_capturer = utils.WindowCapturer(self.game_constants.regions.game, self.game_constants.regions.window_offset, daemon=True)
         
         self.suit = None
         self.turn_num = 0
@@ -98,9 +96,7 @@ class Game(threading.Thread, ABC):
                         self.logger.info(f"Turn #{self.turn_num}")
                         
                         round_data = self.get_round_data(round_path)
-                        game_const = { "regions" : self.regions, "hole_locations" : self.hole_locations, "balls" : self.balls}
-
-                        self.current_round = Round(round_data, game_const)
+                        self.current_round = Round(round_data, self.game_constants)
                         result = self.current_round.start()
         except Exception as e:
             self.logger.debug(e)
@@ -244,18 +240,18 @@ class Game(threading.Thread, ABC):
         # status indicated by the color of turn timer and whether timer is 'open' or 'closed' (at the start of a turn)
 
         # slice specified image to size - match size of mask
-        turn_timer = utils.CV2Helper.slice_image(image, self.regions.turn_timer)
+        turn_timer = utils.CV2Helper.slice_image(image, self.game_constants.regions.turn_timer)
 
         # mask out background - show only turn timers
         turn_timers_masked = cv2.bitwise_and(turn_timer, turn_timer, mask=mask)
 
         # slice image to seperate timers
-        p_timer = utils.CV2Helper.slice_image(turn_timers_masked, self.regions.player_turn_timer)
-        o_timer = utils.CV2Helper.slice_image(turn_timers_masked, self.regions.opponent_turn_timer)
+        p_timer = utils.CV2Helper.slice_image(turn_timers_masked, self.game_constants.regions.player_turn_timer)
+        o_timer = utils.CV2Helper.slice_image(turn_timers_masked, self.game_constants.regions.opponent_turn_timer)
 
         # match mean color to closest color
-        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, self.game_constants["turn_status"])
-        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, self.game_constants["turn_status"])
+        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, self.game_constants.turn_status.__dict__)
+        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, self.game_constants.turn_status.__dict__)
 
         # get hierarchy of turn timer contours (closed vs open)
         p_timer_hsv = cv2.cvtColor(p_timer.copy(), cv2.COLOR_BGR2HSV)
