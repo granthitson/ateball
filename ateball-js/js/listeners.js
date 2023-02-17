@@ -120,7 +120,7 @@ var cancel_btns = document.querySelectorAll(".cancel");
 Array.from(cancel_btns).forEach(btn => {
     btn.addEventListener("click", (e) => {
         document.querySelector("a[data-bs-target='#menu-controls']").click()
-        window.api.ateball.cancel();
+        window.api.ateball.game.cancel();
     });
 });
 
