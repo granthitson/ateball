@@ -32,12 +32,8 @@ class Game(threading.Thread, ABC):
 
         self.ipc = ipc
 
-        self.hwnd = win32gui.FindWindow(None, os.getenv("APP_NAME"))
-
         self.name = self.__class__.__name__
         self.location = constants.locations[location] if location != "" else location
-
-        self.image_stack = []
 
         self.game_start = threading.Event()
         self.game_cancelled = threading.Event()
@@ -54,6 +50,8 @@ class Game(threading.Thread, ABC):
         self.regions = utils.RegionData(self.game_constants["regions"])
         self.hole_locations = [ Hole(hole["name"], hole["image"], (hole["x"], hole["y"]), self.regions.table_offset) for hole in self.game_constants["hole_locations"] ]
         self.walls = []
+        
+        self.window_capturer = utils.WindowCapturer(self.regions.game, self.regions.window_offset, daemon=True)
         
         self.suit = None
         self.turn_num = 0
@@ -72,10 +70,14 @@ class Game(threading.Thread, ABC):
         try:
             self.logger.info(f"Playing {self.name}...")
 
+            self.window_capturer.start()
+
             self.wait_for_game_start()
             if self.game_start.is_set():
                 self.game_path = str(Path("ateball-py", "games", f"{self.game_num}-{self.name}-{self.location}"))
                 os.makedirs(self.game_path, exist_ok=True)
+
+                self.window_capturer.record(self.game_path, "game")
 
                 self.ipc.send_message({"type" : "GAME-START"})
                 self.logger.info(f"\nGame #{self.game_num}\n")
@@ -104,6 +106,8 @@ class Game(threading.Thread, ABC):
         except Exception as e:
             self.logger.debug(e)
         finally:
+            self.window_capturer.stop()
+
             self.game_over_event.notify(self.game_end)
             if self.game_cancelled.is_set():
                 self.ipc.send_message({"type" : "GAME-CANCELLED"})
@@ -115,48 +119,11 @@ class Game(threading.Thread, ABC):
         self.game_over_event.notify(self.game_cancelled)
         self.game_over_event.wait()
 
-    def window_capture(self):
-        w, h = (self.regions.game[2], self.regions.game[3])
-
-        if not self.hwnd:
-            raise Exception("window not found")
-
-        left, top, right, bot = win32gui.GetWindowRect(self.hwnd)
-        offset = (self.regions.window_offset[0] + left, self.regions.window_offset[1] + top)
-
-        # can't capture hardware accelerated window
-        desktop = win32gui.GetDesktopWindow()
-        wDC = win32gui.GetWindowDC(desktop)
-
-        # wDC = win32gui.GetWindowDC(self.hwnd)
-        dcObj=win32ui.CreateDCFromHandle(wDC)
-        cDC=dcObj.CreateCompatibleDC()
-        dataBitMap = win32ui.CreateBitmap()
-        dataBitMap.CreateCompatibleBitmap(dcObj, w, h)
-        cDC.SelectObject(dataBitMap)
-        cDC.BitBlt((0,0), (w, h), dcObj, offset, win32con.SRCCOPY)
-
-        signedIntsArray = dataBitMap.GetBitmapBits(True)
-        # img = np.fromstring(signedIntsArray, dtype='uint8')
-        img = np.frombuffer(signedIntsArray, dtype='uint8')
-        img.shape = (h, w, 4)
-
-        img = img[...,:3]
-        img = np.ascontiguousarray(img)
-
-        # Free Resources
-        dcObj.DeleteDC()
-        cDC.DeleteDC()
-        win32gui.ReleaseDC(self.hwnd, wDC)
-        win32gui.DeleteObject(dataBitMap.GetHandle())
-
-        return img
-
     def wait_for_game_start(self):
         self.logger.info("Waiting for game to start...")
         while not self.game_start.is_set() and not self.game_cancelled.is_set() and not self.game_over_event.is_set():
             try:
-                image = self.window_capture()
+                image = self.window_capturer.get_first()
                 if image.any():
                     pos = utils.ImageHelper.imageSearch(self.img_game_start, image, region=self.regions.turn_start)
                     if pos:
@@ -194,15 +161,10 @@ class Game(threading.Thread, ABC):
         old_player_status = None
         while not self.game_over_event.is_set():
             try:
-                image = self.window_capture()
+                image = self.window_capturer.get_first()
                 if image.any():
-                    # keep track of last 20 image frames
-                    if len(self.image_stack) >= 20:
-                        self.image_stack.pop(0)
-                    self.image_stack.append(image)
-
                     # get mean color of each turn timer - colors represent different state at beginning of round
-                    turn_status = self.get_turn_status(turn_timer_mask, turn_timer_mask_single)
+                    turn_status = self.get_turn_status(image, turn_timer_mask, turn_timer_mask_single)
 
                     # get status of player/opponent turn timer - color, open/closed, timeout
                     player_status, opponent_status = turn_status["player"]["status"], turn_status["opponent"]["status"]
@@ -256,11 +218,11 @@ class Game(threading.Thread, ABC):
                 # keep track of last frame's player status
                 old_player_status = player_status
 
-    def get_turn_status(self, mask, mask_single):
+    def get_turn_status(self, image, mask, mask_single):
         # status indicated by the color of turn timer and whether timer is 'open' or 'closed' (at the start of a turn)
 
         # slice specified image to size - match size of mask
-        turn_timer = utils.CV2Helper.slice_image(self.image_stack[-1], self.regions.turn_timer)
+        turn_timer = utils.CV2Helper.slice_image(image, self.regions.turn_timer)
 
         # mask out background - show only turn timers
         turn_timers_masked = cv2.bitwise_and(turn_timer, turn_timer, mask=mask)
@@ -310,9 +272,9 @@ class Game(threading.Thread, ABC):
     def set_round_image(self, turn_timed_out):
         if self.round_start_image is not None:
             # in case of timeout, use last recorded round_start_image
-            self.round_start_image = self.round_start_image if turn_timed_out else self.image_stack[0]
+            self.round_start_image = self.round_start_image if turn_timed_out else self.window_capturer.get_last()
         else:
-            self.round_start_image = self.image_stack[0]
+            self.round_start_image = self.window_capturer.get_last()
 
     def export_round_data(self):
         pass

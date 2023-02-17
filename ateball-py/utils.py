@@ -17,6 +17,9 @@ import pyautogui
 import cv2
 import numpy as np
 
+import win32gui, win32ui, win32con
+from pathlib import Path
+
 import constants
 
 logger = logging.getLogger("ateball.utils")
@@ -126,6 +129,87 @@ class IPC:
 
     def quit(self):
         self.stop_event.set()
+
+class WindowCapturer(threading.Thread):
+    def __init__(self, region, offset, stack_limit=20, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.hwnd = win32gui.FindWindow(None, os.getenv("APP_NAME"))
+        if not self.hwnd:
+            raise Exception("window not found")
+
+        self.region = (region[2], region[3])
+        self.offset = offset
+
+        self.image_stack = []
+        self.image_stack_limit = stack_limit
+        self.video_writer = None
+
+        self.record_event = threading.Event()
+        self.stop_event = threading.Event()
+
+        self.logger = logging.getLogger("ateball.utils.WindowCapturer")
+
+    def run(self):
+        self.stop_event.clear()
+
+        while not self.stop_event.is_set():
+            w, h = self.region
+
+            left, top, right, bot = win32gui.GetWindowRect(self.hwnd)
+            offset = (self.offset[0] + left, self.offset[1] + top)
+
+            # can't capture hardware accelerated window
+            desktop = win32gui.GetDesktopWindow()
+            wDC = win32gui.GetWindowDC(desktop)
+
+            # wDC = win32gui.GetWindowDC(self.hwnd)
+            dcObj=win32ui.CreateDCFromHandle(wDC)
+            cDC=dcObj.CreateCompatibleDC()
+            dataBitMap = win32ui.CreateBitmap()
+            dataBitMap.CreateCompatibleBitmap(dcObj, w, h)
+            cDC.SelectObject(dataBitMap)
+            cDC.BitBlt((0,0), (w, h), dcObj, offset, win32con.SRCCOPY)
+
+            signedIntsArray = dataBitMap.GetBitmapBits(True)
+            img = np.frombuffer(signedIntsArray, dtype='uint8').reshape((h, w, 4))
+            img.shape = (h, w, 4)
+
+            img = img[...,:3]
+            img = np.ascontiguousarray(img)
+
+            # Free Resources
+            dcObj.DeleteDC()
+            cDC.DeleteDC()
+            win32gui.ReleaseDC(self.hwnd, wDC)
+            win32gui.DeleteObject(dataBitMap.GetHandle())
+
+            # keep track of last x image frames - set by image_stack_limit
+            if len(self.image_stack) >= self.image_stack_limit:
+                self.image_stack.pop(0)
+            self.image_stack.append(img)
+
+            if self.record_event.is_set():
+                self.video_writer.write(img)
+    
+    def record(self, path, filename, format=cv2.VideoWriter_fourcc(*'XVID')):
+        # write images to avi file
+        self.video_writer = cv2.VideoWriter(str(Path(path, f"{filename}.avi")), format, 30.0, self.region)
+        self.record_event.set()
+
+    def get_first(self):
+        # get latest image added to stack
+        return self.image_stack[-1] if self.image_stack else np.array([])
+    
+    def get_last(self):
+        # get oldest image added to stack
+        return self.image_stack[0] if self.image_stack else np.array([])
+
+    def stop(self):
+        self.stop_event.set()
+        if self.record_event.is_set():
+            self.video_writer.release()
+            self.record_event.clear()
 
 class RegionData:
     def __init__(self, data):
