@@ -313,49 +313,49 @@ class ONE_ON_ONE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "game/bet_marker.png"
+        self.img_game_start = "bet_marker.png"
 
 class TOURNAMENT(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "game/bet_marker.png"
+        self.img_game_start = "bet_marker.png"
 
 class NO_GUIDELINE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "game/bet_marker.png"
+        self.img_game_start = "bet_marker.png"
 
 class NINE_BALL(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "game/bet_marker.png"
+        self.img_game_start = "bet_marker.png"
 
 class LUCKY_SHOT(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "game/lucky_shot.png"
+        self.img_game_start = "lucky_shot.png"
 
 class CHALLENGE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "game/bet_marker.png"
+        self.img_game_start = "bet_marker.png"
 
 class PASS_N_PLAY(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "game/practice_marker.png"
+        self.img_game_start = "practice_marker.png"
 
 class QUICK_FIRE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "game/practice_marker.png"
+        self.img_game_start = "practice_marker.png"
 
 class GUEST(Game):
     def __init__(self, location, *args, **kwargs):

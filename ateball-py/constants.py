@@ -6,115 +6,10 @@ img_turn_timers_mask_single = "turn_mask_single.png"
 img_target_mask = "targets_mask.png"
 # MASKS #
 
+img_target = "target.png"
+img_glove = "glove.png"
 # UI NAVIGATION #
 
-locations = {
-    "amsterdam" : {
-        "img" : "locations/location_amsterdam.png",
-        "bet" : 5000
-    },
-    "bangkok" : {
-        "img" : "locations/location_bangkok.png",
-        "bet" : 5000000
-    },
-    "barcelona" : {
-        "img" : "locations/location_barcelona.png",
-        "bet" : 200
-    },
-    "beijing" : {
-        "img" : "locations/location_beijing.png",
-        "bet" : "USER-CHOSEN"
-    },
-    "berlin" : {
-        "img" : "locations/location_berlin.png",
-        "bet" : 25000000
-    },
-    "buenos_aires" : {
-        "img" : "locations/location_buenos_aires.png",
-        "bet" : 500
-    },
-    "cairo" : {
-        "img" : "locations/location_cairo.png",
-        "bet" : 250000
-    },
-    "dallas" : {
-        "img" : "locations/location_dallas.png",
-        "bet" : "USER-CHOSEN"
-    },
-    "dubai" : {
-        "img" : "locations/location_dubai.png",
-        "bet" : 500000
-    },
-    "istanbul" : {
-        "img" : "locations/location_istanbul.png",
-        "bet" : "USER-CHOSEN"
-    },
-    "jakarta" : {
-        "img" : "locations/location_jakarta.png",
-        "bet" : 50000
-    },
-    "las_vegas" : {
-        "img" : "locations/location_las_vegas.png",
-        "bet" : 10000
-    },
-    "london" : {
-        "img" : "locations/location_london.png",
-        "bet" : 50
-    },
-    "miami_beach" : {
-        "img" : "locations/location_miami_beach.png",
-        "bet" : "USER-CHOSEN"
-    },
-    "monaco" : {
-        "img" : "locations/location_monaco.png",
-        "bet" : "ALL-IN",
-        "min" : 1000
-    },
-    "moscow" : {
-        "img" : "locations/location_moscow.png",
-        "bet" : 500
-    },
-    "mumbai" : {
-        "img" : "locations/location_mumbai.png",
-        "bet" : 15000000
-    },
-    "paris" : {
-        "img" : "locations/location_paris.png",
-        "bet" : 2500000
-    },
-    "rio" : {
-        "img" : "locations/location_rio.png",
-        "bet" : 3000
-    },
-    "rome" : {
-        "img" : "locations/location_rome.png",
-        "bet" : 4000000
-    },
-    "seoul" : {
-        "img" : "locations/location_seoul.png",
-        "bet" : 10000000
-    },
-    "shanghai" : {
-        "img" : "locations/location_shanghai.png",
-        "bet" : 1000000
-    },
-    "singapore" : {
-        "img" : "locations/location_singapore.png",
-        "bet" : 10000
-    },
-    "sydney" : {
-        "img" : "locations/location_sydney.png",
-        "bet" : 100
-    },
-    "tokyo" : {
-        "img" : "locations/location_tokyo.png",
-        "bet" : 2500
-    },
-    "toronto" : {
-        "img" : "locations/location_toronto.png",
-        "bet" : 100000
-    }
-}
 
 # GAME NAVIGATION #
 img_1ball = "1ball.png"
@@ -152,13 +47,6 @@ img_eightball = "eightball.png"
 
 img_ballPic1 = "ballpic1.png"
 
-img_tlh = "tlh.png"
-img_tmh = "tmh.png"
-img_trh = "trh.png"
-img_blh = "blh.png"
-img_bmh = "bmh.png"
-img_brh = "brh.png"
-
 img_luckyShotTRH = "luckyTRH.png"
 img_luckyShotTMH = "luckyTMH.png"
 img_luckyShotTLH = "luckyTLH.png"
@@ -176,22 +64,8 @@ img_rightRail = "rightrail.png"
 
 # GAME #
 
-round_time = 30
-
-hole_locations = [ 
-    ["trh", img_trh, [666, 24]],
-    ["tmh", img_tmh, [345, 4]],
-    ["tlh", img_tlh, [23, 24]],
-    ["blh", img_blh, [23, 336]],
-    ["bmh", img_bmh, [345, 356]],
-    ["brh", img_brh, [666, 336]] 
-]
-
-ball_diameter = 12 #roughly 11/12
-
 # BALLS #
 
-img_glove = "glove.png"
 img_dontHit = "dontHit.png"
 
 solids = {
@@ -237,5 +111,3 @@ stripesDark = {
 # BALLS #
 
 # GAME #
-
-debug = False
