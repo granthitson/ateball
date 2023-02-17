@@ -211,17 +211,6 @@ class WindowCapturer(threading.Thread):
             self.video_writer.release()
             self.record_event.clear()
 
-class Wall:
-    def __init__(self, startingPoint, endingPoint):
-        self.startingPoint = startingPoint
-        self.endingPoint = endingPoint
-
-    def __str__(self):
-        return "Wall"
-
-    def __repr__(self):
-        return str(self)
-
 class ImageHelper:
     logger = logging.getLogger("ateball.utils.ImageHelper")
 

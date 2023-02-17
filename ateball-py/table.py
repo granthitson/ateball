@@ -31,6 +31,8 @@ class Hole:
         self.generateBounds()
         self.generateHittablePoints()
 
+        self.logger = logging.getLogger("ateball.hole")
+
     def __str__(self):
         return self.name
 
@@ -113,4 +115,13 @@ class Hole:
         self.hittablePointsToHole2 = [self.hittablePointsToHole[eighth], self.hittablePointsToHole[eighth*3], self.hittablePointsToHole[eighth*5], self.hittablePointsToHole[eighth*7]]
         self.hittablePointsToHole3 = [self.hittablePointsToHole[sixteenth*3], self.hittablePointsToHole[sixteenth*5], self.hittablePointsToHole[sixteenth*11], self.hittablePointsToHole[sixteenth*13]]
 
-    
+class Wall:
+    def __init__(self, startingPoint, endingPoint):
+        self.startingPoint = startingPoint
+        self.endingPoint = endingPoint
+
+    def __str__(self):
+        return "Wall"
+
+    def __repr__(self):
+        return str(self)
