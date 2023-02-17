@@ -95,7 +95,7 @@ class Game(threading.Thread, ABC):
                         self.current_round = Round(round_data, self.game_constants)
                         result = self.current_round.start()
         except Exception as e:
-            self.logger.debug(e)
+            self.logger.error(traceback.format_exc())
         finally:
             self.window_capturer.stop()
 

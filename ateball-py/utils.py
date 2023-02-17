@@ -21,13 +21,6 @@ import constants
 
 logger = logging.getLogger("ateball.utils")
 
-class SetupError(Exception):
-    pass
-class IPCSetupError(SetupError):
-    pass
-class TurnCycleError(Exception):
-    pass
-
 class Formatter(logging.Formatter):
     def __init__(self):
         super().__init__()
@@ -229,8 +222,8 @@ class ImageHelper:
                 haystack = haystack[region[1]:region[1]+region[3], region[0]:region[0]+region[2]]
 
             needle = cv2.imread(ImageHelper.imagePath(needle))
+            
             w, h = needle.shape[:-1]
-
             w1, h1 = haystack.shape[:-1]
 
             res = cv2.matchTemplate(haystack, needle, cv2.TM_CCOEFF_NORMED)
