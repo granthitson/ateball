@@ -1,10 +1,7 @@
 import logging
 import traceback
 
-import time
-
 import threading
-import queue as q
 
 import os
 import cv2
@@ -18,7 +15,6 @@ from abc import ABC
 
 #files
 from round import Round
-from hole import Hole
 import utils
 import constants
 
