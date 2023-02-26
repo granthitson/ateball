@@ -13,6 +13,7 @@ import math
 import pyautogui
 import cv2
 import numpy as np
+import skimage
 
 import win32gui, win32ui, win32con
 from pathlib import Path
@@ -271,11 +272,8 @@ class CV2Helper:
         # get mean bgr color value for both timers
         mean = cv2.mean(img, mask=mask)[:3]
 
-        # convert mean color to hsv
-        mean_hsv = cv2.cvtColor(np.uint8([[mean]]), cv2.COLOR_BGR2HSV)[0][0]
-        
         # match mean color to nearest color match
-        closest_color = CV2Helper.get_color_name(mean_hsv, lookup)
+        closest_color = CV2Helper.get_color_name(mean, lookup)
 
         return closest_color
 
@@ -294,8 +292,13 @@ class CV2Helper:
     
     @staticmethod
     def color_difference(color1, color2):
-        # return sum total of differences between two colors
-        return sum([abs(value1-value2) for value1, value2 in zip(color1, color2)])
+        # measure deltaE using LAB colorspace
+
+        color1_lab = cv2.cvtColor(np.uint8([[color1]]), cv2.COLOR_BGR2LAB)[0][0]
+        color2_lab = cv2.cvtColor(np.uint8([[color2]]), cv2.COLOR_BGR2LAB)[0][0]
+
+        # return deltaE of lab colors
+        return skimage.color.deltaE_cie76(color1, color2)
 
     def resize(image, factor):
         width = int(image.shape[1] * factor)

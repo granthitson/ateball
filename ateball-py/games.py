@@ -250,8 +250,8 @@ class Game(threading.Thread, ABC):
         closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, self.game_constants.turn_status.__dict__)
 
         # get hierarchy of turn timer contours (closed vs open)
-        p_timer_hsv = cv2.cvtColor(p_timer.copy(), cv2.COLOR_BGR2HSV)
-        o_timer_hsv = cv2.cvtColor(o_timer.copy(), cv2.COLOR_BGR2HSV)
+        p_timer_hsv = cv2.cvtColor(p_timer, cv2.COLOR_BGR2HSV)
+        o_timer_hsv = cv2.cvtColor(o_timer, cv2.COLOR_BGR2HSV)
 
         p_hierarchy_mask = utils.CV2Helper.create_mask(p_timer_hsv, np.array([0, 0, 100]), np.array([180, 255, 255]), cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
         o_hierarchy_mask = utils.CV2Helper.create_mask(o_timer_hsv, np.array([0, 0, 100]), np.array([180, 255, 255]), cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
