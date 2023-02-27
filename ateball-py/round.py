@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 import math
 import os
@@ -81,102 +82,144 @@ class Round:
         self.logger = logging.getLogger("ateball.round")
 
     def start(self):
-        start_time = time.time()
+        try:
+            start_time = time.time()
 
-        pyautogui.screenshot(self.img_path + "pooltable.png", region=self.regions.table)
-        pyautogui.screenshot(self.img_path + "pocketed.png", region=(self.regions.table[0] + 725, self.regions.table[1] + 40, 50, self.regions.table[3]))
-        pyautogui.screenshot(self.img_path + "targets_bot.png", region=(self.regions.table[0] + 725, self.regions.table[1] + 40, 50, self.regions.table[3]))
-        pyautogui.screenshot(self.img_path + "targets_opponent.png", region=(self.regions.table[0] + 725, self.regions.table[1] + 40, 50, self.regions.table[3]))
+            self.logger.info("ROUND START")
 
-        threading.Thread(target=self.getTargets, daemon=True).start()
+            self.images["table"] = self.images["game"].copy()[self.regions.table[1]:self.regions.table[1]+self.regions.table[3], self.regions.table[0]:self.regions.table[0]+self.regions.table[2]]
+            self.images["pocketed"] = self.images["game"].copy()[self.regions.pocketed[1]:self.regions.pocketed[1]+self.regions.pocketed[3], self.regions.pocketed[0]:self.regions.pocketed[0]+self.regions.pocketed[2]]
+            self.images["targets_bot"] = self.images["game"].copy()[self.regions.targets_bot[1]:self.regions.targets_bot[1]+self.regions.targets_bot[3], self.regions.targets_bot[0]:self.regions.targets_bot[0]+self.regions.targets_bot[2]]
+            self.images["targets_opponent"] = self.images["game"].copy()[self.regions.targets_opponent[1]:self.regions.targets_opponent[1]+self.regions.targets_opponent[3], self.regions.targets_opponent[0]:self.regions.targets_opponent[0]+self.regions.targets_opponent[2]]
 
-        # clean = cv2.imread(self.img_path + "pooltable.png", 1)
-        
-        # for hole in self.hole_locations:
-        #     self.openCVDrawHoles(clean, hole)
+            cv2.imwrite(str(Path(self.img_path, "table.png")), self.images["table"])
+            cv2.imwrite(str(Path(self.img_path, "pocketed.png")), self.images["pocketed"])
+            cv2.imwrite(str(Path(self.img_path, "targets_bot.png")), self.images["targets_bot"])
+            cv2.imwrite(str(Path(self.img_path, "targets_opponent.png")), self.images["targets_opponent"])
 
-        # cv2.imshow("test", clean)
-        # cv2.waitKey(0)
-        # print("\n\n\n\n")
+            threading.Thread(target=self.get_targets_on_table).start()
 
-        print("done")
-
-        self.complete_event.set()
-
-        # self.getCleanRoundImage()
-        # #print(f"Cueball: {self.cueball.center}")
-
-        # self.outlineBall()
-        # self.sortBalls()
-
-        
-        # cfb = self.checkForBreak()
-        # if cfb is False:
-        #     qDS = self.queryDirectShot()
-        #     if qDS is True:
-        #         self.hitBall(self.chosen_ball)
-        #     else:
-        #         #self.queryReboundedShot()
-        #         print("Unable to query ball.")
-        #         return False
-
-        # time_passed = time.time() - start_time
-        # print(f"Time taken: {time_passed}")
-
-        # return True
+            self.round_complete.set()
+        except Exception as e:
+            self.logger.error(traceback.format_exc())
+            self.round_exception.set()
+        finally:
+            self.logger.debug("ROUND COMPLETE")
 
 ### Gather info on balls to hit ###
 
-    def getTargets(self):
-        """
-        Checks which pool balls the bot needs to target. In the beginning of a game when no suit is assigned, bot will target
-        balls that come first in dictionary.
+    def create_targets(self):
+        # count number of targets at start of round
+        self.logger.debug("Counting targets...\n")
 
-        Needs to be reworked to target based on a variety of different variables, not just what comes first.
-        :return: None - Appends balls to an existing list,
-        """
-
-        if self.suit is None:
-            self.determineSuit(unpocketed_bot)
-            if self.suit is not None:
-                self.determineTargets(unpocketed_bot, unpocketed_opponent)
-            else:
-                self.addTargetBalls("solid", constants.solids)
-                self.addTargetBalls("stripe", constants.stripes)
-        else:
-            self.determineTargets(unpocketed_bot, unpocketed_opponent)
-
-        if len(self.all_balls) == 0:
-            self.all_balls["eightball"] = ball.Eight(True)
-        else:
-            self.all_balls["eightball"] = ball.Eight(False)
-
-    def determineSuit(self, region):
-        np.array(pyautogui.screenshot("unpocketed_bot.png", region=region))
-
-        upper_color_mask = np.array([180, 255, 255])
-        lower_color_mask = np.array([0, 70, 90])
+        image = self.images["targets_bot"].copy()
+        mask = cv2.imread(utils.ImageHelper.imagePath(constants.img_target_mask), 0)
         
-        for k, v in constants.solids.items():
-            pos = utils.ImageHelper.imageSearch(k, region, confidence=.90)
+        # mask out background of player targets
+        image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        upper_gray = np.array([255, 255, 255])
+        lower_gray = np.array([0, 0, 32])
+
+        image_hsv = cv2.inRange(image_hsv, lower_gray, upper_gray)
+        image_hsv1 = cv2.morphologyEx(image_hsv, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+
+        mask1 = cv2.bitwise_and(mask, image_hsv1)
+        mask1 = cv2.morphologyEx(mask1, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+
+        # combine mask with targets image
+        masked = utils.CV2Helper.mask_image(image, mask1)
+        
+        # count targets by # of contours
+        contours = utils.CV2Helper.getContours(mask1)
+        num_of_targets = len(contours)
+
+        if len(self.targets) != num_of_targets:
+            for i in range(num_of_targets):
+                self.targets.append(Ball(self.suit))
+        else:
+            if not self.targets:
+                for i in range(14):
+                    self.targets.append(Ball(self.suit))
+
+        self.logger.debug(f"total targets: {num_of_targets}")
+
+    def get_targets_on_table(self):
+        self.logger.debug("Finding targets...")
+
+        table = self.images["table"].copy()
+        self.table_hsv = cv2.cvtColor(table, cv2.COLOR_BGR2HSV)
+
+        table_masked = self.mask_out_table(table, self.table_hsv)
+        table_masked_gray = cv2.cvtColor(table_masked, cv2.COLOR_BGR2GRAY)
+
+        # identify pool balls using hough circles
+        circles = cv2.HoughCircles(table_masked_gray, cv2.HOUGH_GRADIENT, 1, 17, param1=20, param2=9, minRadius=9, maxRadius=11)
+        circles = np.uint16(np.around(circles))
+        
+        hough_points = []
+        for i in circles[0, :]:
+            cv2.circle(table, (i[0], i[1]), i[2], (0, 255, 0), 1)
+            hough_points.append((i[0], i[1]))
+
+        self.logger.debug(f"targets on table: {len(hough_points)}")
+
+        cv2.imwrite(str(Path(self.img_path, "hough.png")), table)
+
+    def mask_out_table(self, img, hsv):
+        # mask for table color - table color masked out for visibility
+        blue_lower = np.array([90, 80, 0])
+        blue_higher = np.array([106, 255, 255])
+        table_mask = cv2.inRange(hsv, blue_lower, blue_higher)
+        table_mask = cv2.bitwise_not(table_invert_mask)
+
+        black_lower = np.array([0, 0, 35])
+        black_higher = np.array([180, 255, 255])
+        hole_mask = cv2.inRange(hsv, black_lower, black_higher)
+
+        table_hole_mask = cv2.bitwise_and(table_mask, hole_mask)
+        table_masked_out = cv2.bitwise_and(img, img, mask=table_hole_mask)
+
+        return table_masked_out
+
+    def get_targets(self):
+        start = time.time()
+
+        image = self.images["targets_bot"].copy()
+        mask = cv2.imread(utils.ImageHelper.imagePath(constants.img_target_mask), 0)
+
+        image = cv2.bitwise_and(image, image, mask=mask)
+        image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+        for color, color_data in self.colors.items():
+            ball_mask = utils.CV2Helper.create_mask(image_hsv, color_data["mask_lower"], color_data["mask_upper"], cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+
+            contours = utils.CV2Helper.getContours(ball_mask)
+
+        self.get_targets_event.set()
+        print(time.time() - start)
+
+
+    def determine_suit(self, region):
+        for name, data in solid_balls.items():
+            pos = utils.ImageHelper.imageSearch(name, region, confidence=.90)
             if pos is not None:
                 self.suit = "solid"
                 break
         
-        for k, v in constants.stripes.items():
+        for b in constants.stripes.items():
             pos = utils.ImageHelper.imageSearch(k, region, confidence=.90)
             if pos is not None:
                 self.suit = "stripe"
                 break
 
-    def determineTargets(self, leftReg, rightReg):
-        self.addTargetBalls(self.suit, constants.solids, leftReg)
+    def determine_targets(self, leftReg, rightReg):
+        self.add_target_balls(self.suit, constants.solids, leftReg)
         if self.suit == "solid":
-            self.addTargetBalls("stripe", constants.stripesDark, rightReg, False)
+            self.add_target_balls("stripe", constants.stripesDark, rightReg, False)
         elif self.suit == "stripe":
-            self.addTargetBalls("solid", constants.solidsDark, rightReg, False)
+            self.add_target_balls("solid", constants.solidsDark, rightReg, False)
 
-    def addTargetBalls(self, suit, diction, region=None, target=True):
+    def add_target_balls(self, suit, diction, region=None, target=True):
         for k, v in diction.items():
             if region == None:
                 name = k.replace(".png", "")
@@ -202,7 +245,7 @@ class Round:
 
 ### Outline Balls - Determine center/suit ###
 
-    def outlineBall(self):
+    def outline_balls(self):
         """
         Outlines pool balls using Hough Circles and Contours. Hough Circles, while sometimes inaccurate, find the center
         of each ball on the screen more accurately than contours. This includes extraneous/uneeded circles found.
@@ -229,42 +272,48 @@ class Round:
         :return: None - only updates paramters in each ball
         """
         self.logger.debug("Outlining pool balls...\n")
-        self.round_image = cv2.imread(self.img_path + "pooltable.png", 1)
 
-        roundImageCopy = self.round_image.copy()
-        hsvRndImg = cv2.cvtColor(roundImageCopy, cv2.COLOR_BGR2HSV)
+        table = self.images["table"].copy()
+        table_hsv = cv2.cvtColor(table, cv2.COLOR_BGR2HSV)
 
         # image of area where sunk balls go
-        pocketed_balls_img = cv2.imread(self.img_path + "pocketed.png", 1)
-        hsvSunkBall = cv2.cvtColor(pocketed_balls_img, cv2.COLOR_BGR2HSV)
+        pocketed = self.images["pocketed"].copy()
+        pocketed_hsv = cv2.cvtColor(pocketed, cv2.COLOR_BGR2HSV)
 
         # white mask of all balls (except cue)
         upper_white = np.array([0, 255, 255])
         lower_white = np.array([0, 0, 125])
-        maskwhite = cv2.inRange(hsvRndImg, lower_white, upper_white)
-        maskwhiteSunk = cv2.inRange(hsvSunkBall, lower_white, upper_white)
+        white_mask_table = cv2.inRange(table_hsv, lower_white, upper_white)
+        white_mask_pocketed = cv2.inRange(pocketed_hsv, lower_white, upper_white)
 
-        tableMaskedOut = cv2.imread(self.img_path + "quickBallCount.png", 1)
-        tableMaskedOutBW = cv2.imread(self.img_path + "quickBallCount.png", 0)
-        hsvTableMaskedOut = cv2.cvtColor(tableMaskedOut, cv2.COLOR_BGR2HSV)
+        table_masked = self.mask_out_table(table, table_hsv)
+        table_masked_hsv = cv2.cvtColor(table_masked, cv2.COLOR_BGR2HSV)
+        table_masked_gray = cv2.cvtColor(table_masked, cv2.COLOR_BGR2GRAY)
 
         # Hough Circles for identifying ball locations more accurate than contours
-        circles = cv2.HoughCircles(tableMaskedOutBW, cv2.HOUGH_GRADIENT, 1, 17,
-                                   param1=20, param2=9, minRadius=9, maxRadius=11)
+        circles = cv2.HoughCircles(table_masked_gray, cv2.HOUGH_GRADIENT, 1, 17, param1=20, param2=9, minRadius=9, maxRadius=11)
         circles = np.uint16(np.around(circles))
         
-        houghPoints = []
+        hough_points = []
         for i in circles[0, :]:
-            cv2.circle(roundImageCopy, (i[0], i[1]), i[2], (0, 0, 0), 2)
-            houghPoints.append((i[0], i[1]))
+            cv2.circle(table, (i[0], i[1]), i[2], (0, 255, 0), 1)
+            hough_points.append((i[0], i[1]))
 
-        cv2.imwrite(self.img_path + "hough.png", roundImageCopy)
+        # cv2.imshow("table", table)
+        # cv2.imshow("table_masked", table_masked)
+        # cv2.imshow("table_masked_gray", table_masked_gray)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+
+        return
+
+        cv2.imwrite(str(Path(self.img_path, "hough.png")), table)
 
         ignore = set()
 
         unidentified = self.all_balls.copy()
         for name, b in unidentified.items():
-            b.maskSetup(hsvTableMaskedOut) # prepare each ball's mask based on its color
+            b.create_mask(table_masked) # prepare each ball's mask based on its color
 
             contours = self.contourSetup(b.mask, True)  # list of contours found
 
@@ -298,22 +347,22 @@ class Round:
                 if center not in ignore and carea > 25:
                     count += 1
                     if radius < 13:
-                        roiMask = self.roi(maskwhite, utils.PointHelper.roundTuple(center), 10)
+                        roiMask = self.roi(white_mask_table, utils.PointHelper.roundTuple(center), 10)
                         roiContours = self.contourSetup(roiMask, False)
                         whiteArea, whiteCount = self.whiteMaskedArea(roiContours, True, 0)
 
-                        closestIndex, closest, dist = self.matchHoughCircleToMask(houghPoints, center, 10)
+                        closestIndex, closest, dist = self.matchHoughCircleToMask(hough_points, center, 10)
                         if dist == math.inf:
                             continue
                         else:
                             if ball_1 is None:
-                                ball_1 = (houghPoints[closestIndex][0], houghPoints[closestIndex][1], carea, whiteArea, whiteCount, center)
+                                ball_1 = (hough_points[closestIndex][0], hough_points[closestIndex][1], carea, whiteArea, whiteCount, center)
                             else:
-                                ball_2 = (houghPoints[closestIndex][0], houghPoints[closestIndex][1], carea, whiteArea, whiteCount, center)
+                                ball_2 = (hough_points[closestIndex][0], hough_points[closestIndex][1], carea, whiteArea, whiteCount, center)
                     else:
                         large = True
 
-                        closestIndex, closestIndex1 = self.matchHoughCircleToMask(houghPoints, center, 15, True)
+                        closestIndex, closestIndex1 = self.matchHoughCircleToMask(hough_points, center, 15, True)
                         
                         closestIndex, closest, dist = closestIndex
                         closestIndex1, closest1, dist1 = closestIndex1
@@ -332,7 +381,7 @@ class Round:
                                     center1 = (x1,y1)
 
                                     if carea > 30:
-                                        roiMask = self.roi(maskwhite, utils.PointHelper.roundTuple(p), 10)
+                                        roiMask = self.roi(white_mask_table, utils.PointHelper.roundTuple(p), 10)
                                         contours = self.contourSetup(roiMask, False)
                                         whiteArea, whiteCount = self.whiteMaskedArea(contours, True, 0)
 
@@ -345,18 +394,18 @@ class Round:
 
             if b.name == "eightball":
                 if ball_1 is None:
-                    ball_1 = self.backUpCenter(contours, maskwhite)
+                    ball_1 = self.backUpCenter(contours, white_mask_table)
                     b.center = (ball_1[0], ball_1[1])
                 else:
                     b.center = (ball_1[0], ball_1[1])
 
                 b.offsetCenter = (b.center[0] + self.regions.table_offset[0], b.center[1] + self.regions.table_offset[1])
-                self.drawStripe(b.center, b.RGB)
+                self.drawStripe(b.center, b.bgr)
             else:
                 if ball_2 is None and count == 1: #looking for pocketed balls
                     b1 = unidentified[f"{b.number+8}ball"]
 
-                    b1.maskSetup(hsvSunkBall)
+                    b1.create_mask(pocketed_hsv)
                     contours = self.contourSetup(b1.mask, True)
                     contours = contours[len(contours) - 2:len(contours)]
 
@@ -366,7 +415,7 @@ class Round:
                         center = utils.PointHelper.roundTuple((x,y))
 
                         if carea > 15:
-                            roiMask1 = self.roi(maskwhiteSunk, center, 10)
+                            roiMask1 = self.roi(white_mask_pocketed, center, 10)
                             contours1 = self.contourSetup(roiMask1, False)
                             whiteArea, whiteCount = self.whiteMaskedArea(contours1, True, 0)
 
@@ -378,13 +427,13 @@ class Round:
                 if ball_2 is None:
                     if ball_1 is not None:
                         if b.suit == "solid":
-                            b.setCenter(ball_1[5], self.regions.table)
+                            b.set_center(ball_1[5], self.regions.table)
 
-                            self.drawSolid(b.center, b.RGB)
+                            self.drawSolid(b.center, b.bgr)
                         elif b.suit == "stripe":
-                            b.setCenter(ball_1[5], self.regions.table)
+                            b.set_center(ball_1[5], self.regions.table)
                             
-                            self.drawStripe(b.center, b.RGB)
+                            self.drawStripe(b.center, b.bgr)
 
                         ignore.add(ball_1[5])
                     else:
@@ -394,57 +443,57 @@ class Round:
 
                     if confidence > 0:
                         if b.suit == "solid":
-                            b.setCenter(ball_1[5], self.regions.table)
+                            b.set_center(ball_1[5], self.regions.table)
                             
                             b1 = unidentified[f"{b.number+8}ball"]
-                            b1.setCenter(ball_2[5], self.regions.table)
+                            b1.set_center(ball_2[5], self.regions.table)
 
-                            self.drawSolid(b.center, b.RGB)
-                            self.drawStripe(b1.center, b.RGB)
+                            self.drawSolid(b.center, b.bgr)
+                            self.drawStripe(b1.center, b.bgr)
                         elif b.suit == "stripe":
-                            b.setCenter(ball_2[5], self.regions.table)
+                            b.set_center(ball_2[5], self.regions.table)
 
                             b1 = unidentified[f"{b.number+8}ball"]
-                            b1.setCenter(ball_1[5], self.regions.table)
+                            b1.set_center(ball_1[5], self.regions.table)
 
-                            self.drawStripe(b.center, b.RGB)
-                            self.drawSolid(b1.center, b.RGB)
+                            self.drawStripe(b.center, b.bgr)
+                            self.drawSolid(b1.center, b.bgr)
                     elif confidence < 0:
                         if b.suit == "stripe":
-                            b.setCenter(ball_1[5], self.regions.table)
+                            b.set_center(ball_1[5], self.regions.table)
                             
                             b1 = unidentified[f"{b.number+8}ball"]
-                            b1.setCenter(ball_2[5], self.regions.table)
+                            b1.set_center(ball_2[5], self.regions.table)
 
-                            self.drawStripe(b.center, b.RGB)
-                            self.drawSolid(b1.center, b.RGB)
+                            self.drawStripe(b.center, b.bgr)
+                            self.drawSolid(b1.center, b.bgr)
                         elif b.suit == "solid":
-                            b.setCenter(ball_2[5], self.regions.table)
+                            b.set_center(ball_2[5], self.regions.table)
                             
                             b1 = unidentified[f"{b.number+8}ball"]
-                            b1.setCenter(ball_1[5], self.regions.table)
+                            b1.set_center(ball_1[5], self.regions.table)
 
-                            self.drawSolid(b.center, b.RGB)
-                            self.drawStripe(b1.center, b.RGB)
+                            self.drawSolid(b.center, b.bgr)
+                            self.drawStripe(b1.center, b.bgr)
                     else:
                         # random chance at this point
                         #print("confidence is 0")
                         if b.suit == "solid":
-                            b.setCenter(ball_1[5], self.regions.table)
+                            b.set_center(ball_1[5], self.regions.table)
                             
                             b1 = unidentified[f"{b.number+8}ball"]
-                            b1.setCenter(ball_2[5], self.regions.table)
+                            b1.set_center(ball_2[5], self.regions.table)
 
-                            self.drawSolid(b.center, b.RGB)
-                            self.drawStripe(b1.center, b.RGB)
+                            self.drawSolid(b.center, b.bgr)
+                            self.drawStripe(b1.center, b.bgr)
                         elif b.suit == "stripe":
-                            b.setCenter(ball_1[5], self.regions.table)
+                            b.set_center(ball_1[5], self.regions.table)
                             
                             b1 = unidentified[f"{b.number+8}ball"]
-                            b1.setCenter(ball_2[5], self.regions.table)
+                            b1.set_center(ball_2[5], self.regions.table)
 
-                            self.drawStripe(b.center, b.RGB)
-                            self.drawSolid(b1.center, b.RGB)
+                            self.drawStripe(b.center, b.bgr)
+                            self.drawSolid(b1.center, b.bgr)
 
                     ignore.add(ball_1[5])
                     ignore.add(ball_2[5])
@@ -782,7 +831,7 @@ class Round:
         for hole in self.hole_locations:
             for points in hole.points:
                 for point in points:
-                    p = Path(self.cueball, ball, hole, point, self.img_path)
+                    p = path.Path(self.cueball, ball, hole, point, self.img_path)
 
                     if p.isHittable(self.regions.hittable, self.regions.back_up):
                         viable = p.isViableTarget()
@@ -1243,12 +1292,3 @@ class Round:
         pass
 
 ### Pre-round info collection ###
-
-def main():
-    import login
-    r = Round(None, (515, 311, 690, 360), (409, 135, 901, 600), f"games\gameTest-PASSNPLAY\\round0\\")
-    constants.debug = True
-    r.start()
-
-if __name__ == "__main__":
-    main()
