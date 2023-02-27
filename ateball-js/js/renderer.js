@@ -56,6 +56,7 @@ webview.addEventListener('console-message', (e) => {
 window.api.ateball.on_start( (e) => {
     console.log("Ateball started");
     toggleAteballControls(true);
+    document.querySelector("#debug_console_1").innerHTML = "";
 });
 
 window.api.ateball.on_connected( (e) => {
