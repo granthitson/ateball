@@ -120,7 +120,7 @@ class Game(threading.Thread, ABC):
         while not self.game_start.is_set() and not self.game_cancelled.is_set() and not self.game_over_event.is_set():
             try:
                 image = self.window_capturer.get_first()
-                if image.any():
+                if image.any() and needle_contours.any():
                     # get contour of (potential) marker of current game
                     haystack = utils.CV2Helper.slice_image(image, self.game_constants.regions.turn_start)
                     haystack_contours = self.get_game_marker_contours(haystack)
@@ -131,22 +131,27 @@ class Game(threading.Thread, ABC):
                         self.get_game_num()
                         self.game_start.set()
             except Exception as e:
-                self.logger.error(f"error monitoring game start: {e}")
+                self.logger.error(traceback.format_exc())
 
     def get_game_marker_contours(self, image):
-        # resize & blur to get clearer contours
-        image = utils.CV2Helper.resize(image, 4)
-        image_blur = cv2.GaussianBlur(image, (9,9), 0)
+        try:
+            # resize & blur to get clearer contours
+            image = utils.CV2Helper.resize(image, 4)
+            image_blur = cv2.GaussianBlur(image, (9,9), 0)
 
-        image_hsv = cv2.cvtColor(image_blur, cv2.COLOR_BGR2HSV)
+            image_hsv = cv2.cvtColor(image_blur, cv2.COLOR_BGR2HSV)
 
-        # filter out gray background to get shape of marker
-        image_mask = cv2.inRange(image_hsv, np.array([0, 0, 40]), np.array([180, 255, 255]))
-        image_mask = cv2.morphologyEx(image_mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8), iterations=3)
+            # filter out gray background to get shape of marker
+            image_mask = cv2.inRange(image_hsv, np.array([0, 0, 40]), np.array([180, 255, 255]))
+            image_mask = cv2.morphologyEx(image_mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8), iterations=3)
 
-        # return largest contour
-        contours, hierarchy = cv2.findContours(image_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        return sorted(contours, key=cv2.contourArea, reverse=True)[0]
+            # return largest contour
+            contours, hierarchy = cv2.findContours(image_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+            contours = sorted(contours, key=cv2.contourArea, reverse=True)[0]
+        except IndexError as e:
+            return np.array([])
+        else:
+            return contours
 
     def get_game_num(self):
         json_path = Path("ateball-py", "game.json")
