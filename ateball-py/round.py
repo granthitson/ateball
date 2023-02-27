@@ -13,7 +13,10 @@ import numpy as np
 
 from pathlib import Path
 
-import ball
+from ball import Ball
+from ball import Cue
+from ball import Eight
+import path
 import utils
 import constants
 
@@ -21,26 +24,48 @@ logger = logging.getLogger("ateball.round")
 
 class Round:
 
-    def __init__(self, suit, regions, hole_locations, img_path):   
-        self.regions = regions   
+    def __init__(self, data, game_const):   
+        # game constants
+        self.constants = game_const
+
+        self.regions = game_const.regions
+        self.hole_locations = game_const.hole_locations
+
+        self.solid_balls = game_const.balls.solid
+        self.stripe_balls = game_const.balls.stripe
+        self.colors = game_const.balls.colors
+
+        self.available_targets = [*self.solid_balls, game_const.balls.eight, *self.stripe_balls]
+        # game constants
         
-        self.img_path = img_path
-        self.round_image = None
+        # round constants
+        self.img_path = data["save_image_path"]
+        self.images = { 
+            "game" : data["round_image"],
+            "table" : None,
+            "pocketed" : None,
+            "targets_bot" : None,
+            "targets_opponent" : None,
+        }
+        #round constants
 
-        self.all_balls = {}
+        self.table_hsv = None
 
-        self.unpocketed_balls = {}
-        self.pocketed_balls = {}
+        self.get_targets_event = threading.Event()
 
-        self.suit = suit
-        self.targets = {}
-        self.nontargets = {}
 
-        self.hole_locations = hole_locations
+        self.all_balls = data["all_balls"]
+
+        self.unpocketed_balls = data["unpocketed_balls"]
+        self.pocketed_balls = data["pocketed_balls"]
+
+        self.suit = data["suit"]
+        self.targets = data["targets"]
+        self.nontargets = data["nontargets"]
 
         self.chosen_ball = None
 
-        self.cueball = ball.Cue()
+        # self.cueball = Cue()
 
         self.viable_paths = []
         self.unviable_paths = []
@@ -48,12 +73,12 @@ class Round:
         self.clear_table = (0,0)
         self.can_pick_up = False
 
-        self.early_exit_event = threading.Event()
-        self.complete_event = threading.Event()
+        self.round_cancel = threading.Event()
+        self.round_complete = threading.Event()
+        self.round_exception = threading.Event()
+        self.round_over_event = utils.OrEvent(self.round_complete, self.round_cancel, self.round_exception)
 
-        self.game_over_event = threading.Event()
-
-        self.logger = logging.getLogger
+        self.logger = logging.getLogger("ateball.round")
 
     def start(self):
         start_time = time.time()
