@@ -41,7 +41,7 @@ class OrEvent:
         self.events = [event1, event2, *args]
         self.timeout = threading.Event()
 
-    def wait(self, timeout):
+    def wait(self, timeout=None):
         logger.debug("or event start")
         with self.condition:
             while not any([e.is_set() for e in self.events]) and not self.timeout.is_set():
@@ -319,21 +319,7 @@ class CV2Helper:
             mask = cv2.morphologyEx(mask, op, kernal)
 
         return mask
-    @staticmethod
-    def getContours(mask, key=None):
-        contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours = contours[0] if len(contours) == 2 else contours[1]
-
-        return sorted(contours, key=key) if key is not None else contours
-
-    @staticmethod
-    def contourCenter(c):
-        try:
-            M = cv2.moments(c)
-            return int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
-        except ZeroDivisionError as e:
-            raise TurnCycleError("zerodivisionerror getting center of contour")
-
+        
 class PointHelper:
     logger = logging.getLogger("ateball.utils.PointHelper")
 

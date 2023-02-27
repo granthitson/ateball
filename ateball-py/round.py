@@ -10,11 +10,10 @@ import threading
 import cv2
 import imutils
 import numpy as np
-import pyautogui
+
+from pathlib import Path
 
 import ball
-from path import Path
-from utils import Wall
 import utils
 import constants
 
