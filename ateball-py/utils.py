@@ -122,7 +122,7 @@ class IPC:
         self.stop_event.set()
 
 class WindowCapturer(threading.Thread):
-    def __init__(self, region, offset, stack_limit=20, *args, **kwargs):
+    def __init__(self, region, offset, fps, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.hwnd = win32gui.FindWindow(None, os.getenv("APP_NAME"))
@@ -132,8 +132,12 @@ class WindowCapturer(threading.Thread):
         self.region = (region[2], region[3])
         self.offset = offset
 
+        self.fps = fps
+        self.last_tick = 0
+        self.on_tick = threading.Condition()
+
         self.image_stack = []
-        self.image_stack_limit = stack_limit
+        self.image_stack_limit = 20
         self.video_writer = None
 
         self.record_event = threading.Event()
@@ -141,10 +145,24 @@ class WindowCapturer(threading.Thread):
 
         self.logger = logging.getLogger("ateball.utils.WindowCapturer")
 
+    def tick(self, fps):
+        # synchronize loop with fps
+
+        interval = 1 / fps 
+        current_time = time.time()
+        delta = current_time - self.last_tick
+
+        if delta < interval:
+            time.sleep(interval - delta)
+
+        self.last_tick = time.time()
+
     def run(self):
         self.stop_event.clear()
 
         while not self.stop_event.is_set():
+            self.tick(self.fps)
+
             w, h = self.region
 
             left, top, right, bot = win32gui.GetWindowRect(self.hwnd)
@@ -180,21 +198,29 @@ class WindowCapturer(threading.Thread):
                 self.image_stack.pop(0)
             self.image_stack.append(img)
 
+            # allow threads to retrieve latest
+            with self.on_tick:
+                self.on_tick.notify()
+
             if self.record_event.is_set():
                 self.video_writer.write(img)
     
     def record(self, path, filename, format=cv2.VideoWriter_fourcc(*'XVID')):
         # write images to avi file
-        self.video_writer = cv2.VideoWriter(str(Path(path, f"{filename}.avi")), format, 30.0, self.region)
+        self.video_writer = cv2.VideoWriter(str(Path(path, f"{filename}.avi")), format, self.fps, self.region)
         self.record_event.set()
 
     def get_first(self):
         # get latest image added to stack
-        return self.image_stack[-1] if self.image_stack else np.array([])
+        with self.on_tick:
+            self.on_tick.wait()
+            return self.image_stack[-1] if self.image_stack else np.array([])
     
     def get_last(self):
         # get oldest image added to stack
-        return self.image_stack[0] if self.image_stack else np.array([])
+        with self.on_tick:
+            self.on_tick.wait()
+            return self.image_stack[0] if self.image_stack else np.array([])
 
     def stop(self):
         self.stop_event.set()
@@ -319,7 +345,7 @@ class CV2Helper:
             mask = cv2.morphologyEx(mask, op, kernal)
 
         return mask
-        
+
 class PointHelper:
     logger = logging.getLogger("ateball.utils.PointHelper")
 

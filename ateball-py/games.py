@@ -43,8 +43,8 @@ class Game(threading.Thread, ABC):
 
         self.game_path = None
         self.game_num = 0
-        
-        self.window_capturer = utils.WindowCapturer(self.game_constants.regions.game, self.game_constants.regions.window_offset, daemon=True)
+
+        self.window_capturer = utils.WindowCapturer(self.game_constants.regions.game, self.game_constants.regions.window_offset, 30, daemon=True)
         
         self.suit = None
         self.turn_num = 0
