@@ -19,24 +19,23 @@ from ball import Cue
 from ball import Eight
 import path
 import utils
-import constants
+from constants import constants
 
 logger = logging.getLogger("ateball.round")
 
 class Round:
 
-    def __init__(self, data, game_const):   
+    def __init__(self, data):   
         # game constants
-        self.constants = game_const
 
-        self.regions = game_const.regions
-        self.hole_locations = game_const.hole_locations
+        self.regions = constants.regions
+        self.hole_locations = constants.table.hole_locations
 
-        self.solid_balls = game_const.balls.solid
-        self.stripe_balls = game_const.balls.stripe
-        self.colors = game_const.balls.colors
+        self.solid_balls = constants.balls.solid
+        self.stripe_balls = constants.balls.stripe
+        self.colors = constants.balls.colors
 
-        self.available_targets = [*self.solid_balls, game_const.balls.eight, *self.stripe_balls]
+        self.available_targets = [*self.solid_balls, constants.balls.eight, *self.stripe_balls]
         # game constants
         
         # round constants

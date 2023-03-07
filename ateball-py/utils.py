@@ -292,6 +292,15 @@ class ImageHelper:
 class CV2Helper:
     logger = logging.getLogger("ateball.utils.CV2Helper")
 
+    @staticmethod
+    def imread(path, *args):
+        image = cv2.imread(path, *args)
+        if image is None:
+            raise Exception(f"image does not exist at path: {path}")
+
+        return image
+
+    @staticmethod
     def get_closest_color(img, mask, lookup):
         # get mean bgr color value for both timers
         mean = cv2.mean(img, mask=mask)[:3]
@@ -301,6 +310,7 @@ class CV2Helper:
 
         return closest_color
 
+    @staticmethod
     def get_color_name(color, color_lookup):
         # match color to closest color listed in lookup
 
@@ -377,11 +387,6 @@ class PointHelper:
     @staticmethod
     def clamp(n, mini, maxi):
         return max(min(maxi, n), mini)
-
-    @staticmethod
-    def measureDistance(firstInput, secondInput):
-        dist = math.sqrt((int(secondInput[0]) - int(firstInput[0])) ** 2 + (int(secondInput[1]) - int(firstInput[1])) ** 2)
-        return dist
 
     @staticmethod
     def findAngle(p1, p2, p3):

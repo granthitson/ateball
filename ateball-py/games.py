@@ -8,7 +8,6 @@ import cv2
 import numpy as np
 
 import json
-from types import SimpleNamespace
 from pathlib import Path
 import base64
 
@@ -19,7 +18,7 @@ from round import Round
 from ball import Ball
 
 import utils
-import constants
+from constants import constants
 
 class Game(threading.Thread, ABC):
     location: str
@@ -33,10 +32,6 @@ class Game(threading.Thread, ABC):
         self.name = self.__class__.__name__
         self.location = constants.locations[location] if location != "" else location
 
-        self.game_constants = None
-        with open(str(Path("ateball-py", "game_constants.json")), encoding='utf-8') as json_data:
-            self.game_constants = json.load(json_data, object_hook=lambda d: SimpleNamespace(**d))
-
         self.game_start = threading.Event()
         self.game_cancelled = threading.Event()
 
@@ -46,7 +41,7 @@ class Game(threading.Thread, ABC):
 
         self.game_num = 0
 
-        self.window_capturer = utils.WindowCapturer(self.game_constants.regions.game, self.game_constants.regions.window_offset, 30, daemon=True)
+        self.window_capturer = utils.WindowCapturer(constants.regions.game, constants.regions.window_offset, 30, daemon=True)
         
         self.ball_locations = []
 
@@ -108,7 +103,7 @@ class Game(threading.Thread, ABC):
                         self.logger.info(f"Turn #{self.turn_num}")
                         
                         round_data = self.get_round_data(round_path)
-                        self.current_round = Round(round_data, self.game_constants)
+                        self.current_round = Round(round_data)
                         result = self.current_round.start()
         except Exception as e:
             self.logger.error(traceback.format_exc())
@@ -135,7 +130,7 @@ class Game(threading.Thread, ABC):
         self.logger.info("Waiting for game to start...")
 
         # get contour of marker
-        needle = cv2.imread(utils.ImageHelper.imagePath(self.img_game_start))
+        needle = utils.CV2Helper.imread(utils.ImageHelper.imagePath(self.img_game_start))
         needle_contours = self.get_game_marker_contours(needle)
 
         while not self.game_start.is_set() and not self.game_cancelled.is_set() and not self.game_over_event.is_set():
@@ -143,7 +138,7 @@ class Game(threading.Thread, ABC):
                 image = self.window_capturer.get_first()
                 if image.any() and needle_contours.any():
                     # get contour of (potential) marker of current game
-                    haystack = utils.CV2Helper.slice_image(image, self.game_constants.regions.turn_start)
+                    haystack = utils.CV2Helper.slice_image(image, constants.regions.turn_start)
                     haystack_contours = self.get_game_marker_contours(haystack)
                     
                     # match shape of contours - contours similar closer to 0
@@ -195,8 +190,8 @@ class Game(threading.Thread, ABC):
         self.logger.info("Waiting for turn to start...")
 
         # load turn timer masks
-        turn_timer_mask = cv2.imread(utils.ImageHelper.imagePath(constants.img_turn_timers_mask), 0)
-        turn_timer_mask_single =cv2.imread(utils.ImageHelper.imagePath(constants.img_turn_timers_mask_single), 0)
+        turn_timer_mask = utils.CV2Helper.imread(utils.ImageHelper.imagePath(constants.images.img_turn_timers_mask), 0)
+        turn_timer_mask_single = utils.CV2Helper.imread(utils.ImageHelper.imagePath(constants.images.img_turn_timers_mask_single), 0)
 
         old_player_status = None
         while not self.game_over_event.is_set():
@@ -262,18 +257,18 @@ class Game(threading.Thread, ABC):
         # status indicated by the color of turn timer and whether timer is 'open' or 'closed' (at the start of a turn)
 
         # slice specified image to size - match size of mask
-        turn_timer = utils.CV2Helper.slice_image(image, self.game_constants.regions.turn_timer)
+        turn_timer = utils.CV2Helper.slice_image(image, constants.regions.turn_timer)
 
         # mask out background - show only turn timers
         turn_timers_masked = cv2.bitwise_and(turn_timer, turn_timer, mask=mask)
 
         # slice image to seperate timers
-        p_timer = utils.CV2Helper.slice_image(turn_timers_masked, self.game_constants.regions.player_turn_timer)
-        o_timer = utils.CV2Helper.slice_image(turn_timers_masked, self.game_constants.regions.opponent_turn_timer)
+        p_timer = utils.CV2Helper.slice_image(turn_timers_masked, constants.regions.player_turn_timer)
+        o_timer = utils.CV2Helper.slice_image(turn_timers_masked, constants.regions.opponent_turn_timer)
 
         # match mean color to closest color
-        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, self.game_constants.turn_status.__dict__)
-        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, self.game_constants.turn_status.__dict__)
+        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, constants.turn_status.__dict__)
+        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, constants.turn_status.__dict__)
 
         # get hierarchy of turn timer contours (closed vs open)
         p_timer_hsv = cv2.cvtColor(p_timer, cv2.COLOR_BGR2HSV)
@@ -332,7 +327,7 @@ class Game(threading.Thread, ABC):
         }
 
     def is_game_over(self, image):
-        pos = utils.ImageHelper.imageSearch(self.img_game_end, image, region=self.game_constants.regions.table)
+        pos = utils.ImageHelper.imageSearch(self.img_game_end, image, region=constants.regions.table)
         return True if pos else False
 
     def get_ball_locations(self):
