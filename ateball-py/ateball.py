@@ -1,16 +1,8 @@
 import logging
 import traceback
-from contextlib import suppress
-
-import math
-import time
-import pyautogui
 
 import threading
 import queue as q
-
-from enum import Enum
-from enum import IntEnum
 
 #files
 import games
@@ -38,9 +30,7 @@ class AteBall():
 
                 msg = self.ipc.incoming.get()
 
-                m_type = msg["type"]
-                # self.logger.debug(f"incoming msg: {msg}")
-                
+                m_type = msg["type"]                
                 if m_type == "play":
                     if not self.processing_play_request.is_set() and self.active_game is None:
                         threading.Thread(target=self.play, args=(msg,), daemon=True).start()
@@ -80,7 +70,6 @@ class AteBall():
     def start(self):
         try:
             self.logger.info("Starting Ateball...")
-            self.init_start_time = time.time()
 
             threading.Thread(target=self.ipc.listen, daemon=True).start()
             threading.Thread(target=self.ipc.send, daemon=True).start()
@@ -108,13 +97,14 @@ class AteBall():
             self.active_game = Game(self.ipc, location, daemon=True)
             self.active_game.start()
         except Exception as e:
-            self.logger.debug(e)
             if isinstance(e, KeyError):
                 self.logger.error(f"error playing game: invalid gamemode location - {data['location']}")
             elif isinstance(e, AttributeError):
                 self.logger.error(f"error playing game: invalid gamemode - {data['gamemode']}")
             else:
                 self.logger.error(f"error playing game: {traceback.format_exc()}")
+
+            self.ipc.send_message({"type" : "GAME-CANCELLED"})
         finally:
             self.processing_play_request.clear()
 
