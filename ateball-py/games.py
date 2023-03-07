@@ -44,7 +44,6 @@ class Game(threading.Thread, ABC):
         self.game_exception = threading.Event()
         self.game_over_event = utils.OrEvent(self.game_end, self.game_cancelled, self.game_exception)
 
-        self.game_path = None
         self.game_num = 0
 
         self.window_capturer = utils.WindowCapturer(self.game_constants.regions.game, self.game_constants.regions.window_offset, 30, daemon=True)
@@ -81,12 +80,12 @@ class Game(threading.Thread, ABC):
 
             self.wait_for_game_start()
             if self.game_start.is_set():
-                self.game_path = str(Path("ateball-py", "games", f"{self.game_num}-{self.name}-{self.location}"))
-                os.makedirs(self.game_path, exist_ok=True)
+                game_path = str(Path("ateball-py", "games", f"{self.game_num}-{self.name}-{self.location}"))
+                os.makedirs(game_path, exist_ok=True)
 
-                self.configure_logging(self.game_path)
+                self.configure_logging(game_path)
 
-                self.window_capturer.record(self.game_path, "game")
+                self.window_capturer.record(game_path, "game")
 
                 self.ipc.send_message({"type" : "GAME-START"})
                 self.logger.info(f"\nGame #{self.game_num}\n")
@@ -101,7 +100,7 @@ class Game(threading.Thread, ABC):
 
                         self.ipc.send_message({"type" : "ROUND-START"})
 
-                        round_path = Path(self.game_path, f"round-{self.turn_num}")
+                        round_path = Path(game_path, f"round-{self.turn_num}")
                         os.makedirs(round_path, exist_ok=True)
 
                         cv2.imwrite(str(Path(round_path, "round_start.png")), self.round_start_image)
