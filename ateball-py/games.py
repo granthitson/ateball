@@ -10,11 +10,14 @@ import numpy as np
 import json
 from types import SimpleNamespace
 from pathlib import Path
+import base64
 
 from abc import ABC
 
 #files
 from round import Round
+from ball import Ball
+
 import utils
 import constants
 
@@ -46,6 +49,8 @@ class Game(threading.Thread, ABC):
 
         self.window_capturer = utils.WindowCapturer(self.game_constants.regions.game, self.game_constants.regions.window_offset, 30, daemon=True)
         
+        self.ball_locations = []
+
         self.suit = None
         self.turn_num = 0
         self.round_start_image = None
@@ -75,6 +80,7 @@ class Game(threading.Thread, ABC):
                 self.ipc.send_message({"type" : "GAME-START"})
                 self.logger.info(f"\nGame #{self.game_num}\n")
                 
+                threading.Thread(target=self.get_ball_locations, daemon=True).start()
                 threading.Thread(target=self.wait_for_turn_start, daemon=True).start()
 
                 while not self.game_over_event.is_set():
@@ -309,6 +315,57 @@ class Game(threading.Thread, ABC):
             "targets" : {},
             "nontargets" : {},
         }
+
+    def is_game_over(self, image):
+        pos = utils.ImageHelper.imageSearch(self.img_game_end, image, region=self.game_constants.regions.table)
+        return True if pos else False
+
+    def get_ball_locations(self):
+        self.logger.debug("Outlining pool balls...\n")
+
+        while not self.game_over_event.is_set():
+            try:
+                image = self.window_capturer.get_first()
+                if image.any():
+                    table = utils.CV2Helper.slice_image(image, constants.regions.table)
+                    table_hsv = cv2.cvtColor(table, cv2.COLOR_BGR2HSV)
+
+                    table_masked = self.mask_out_table(table, table_hsv)
+                    table_masked_gray = cv2.cvtColor(table_masked, cv2.COLOR_BGR2GRAY)
+
+                    # Hough Circles for identifying ball locations more accurate than contours
+                    points = cv2.HoughCircles(table_masked_gray, cv2.HOUGH_GRADIENT, 1, 17, param1=20, param2=9, minRadius=9, maxRadius=11)
+                    points = np.uint16(np.around(points))
+
+                    self.ball_locations = [Ball((p[0], p[1])) for p in points[0, :]]
+
+                    for b in self.ball_locations:
+                        b.draw(table)
+
+                    retval, image_buffer = cv2.imencode('.png', table)
+                    image_buffer = base64.b64encode(image_buffer.tobytes()).decode('ascii')
+                    image_b64 = f"data:image/png;base64,{image_buffer}"
+
+                    self.ipc.send_message({"type" : "REALTIME-STREAM", "data" : image_b64})
+            except Exception as e:
+                self.logger.error(traceback.format_exc())
+
+    def mask_out_table(self, img, hsv):
+        # mask for table color - table color masked out for visibility
+        blue_lower = np.array([90, 80, 0])
+        blue_upper = np.array([106, 255, 255])
+        black_lower = np.array([0, 0, 35])
+        black_high = np.array([180, 255, 255])
+
+        table_invert_mask = cv2.inRange(hsv, blue_lower, blue_upper)
+        table_invert_mask = cv2.bitwise_not(table_invert_mask)
+
+        hole_mask = cv2.inRange(hsv, black_lower, black_high)
+
+        table_mask = cv2.bitwise_and(table_invert_mask, hole_mask)
+        table_masked_out = cv2.bitwise_and(img, img, mask=table_mask)
+
+        return table_masked_out
 
 class ONE_ON_ONE(Game):
     def __init__(self, location, pipe, *args, **kwargs):

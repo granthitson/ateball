@@ -134,7 +134,7 @@ class WindowCapturer(threading.Thread):
 
         self.fps = fps
         self.last_tick = 0
-        self.on_tick = threading.Condition()
+        self.on_tick = threading.Event()
 
         self.image_stack = []
         self.image_stack_limit = 20
@@ -147,6 +147,7 @@ class WindowCapturer(threading.Thread):
 
     def tick(self, fps):
         # synchronize loop with fps
+        self.on_tick.clear()
 
         interval = 1 / fps 
         current_time = time.time()
@@ -199,8 +200,7 @@ class WindowCapturer(threading.Thread):
             self.image_stack.append(img)
 
             # allow threads to retrieve latest
-            with self.on_tick:
-                self.on_tick.notify()
+            self.on_tick.set()
 
             if self.record_event.is_set():
                 self.video_writer.write(img)
@@ -212,15 +212,13 @@ class WindowCapturer(threading.Thread):
 
     def get_first(self):
         # get latest image added to stack
-        with self.on_tick:
-            self.on_tick.wait()
-            return self.image_stack[-1] if self.image_stack else np.array([])
+        self.on_tick.wait()
+        return self.image_stack[-1] if self.image_stack else np.array([])
     
     def get_last(self):
         # get oldest image added to stack
-        with self.on_tick:
-            self.on_tick.wait()
-            return self.image_stack[0] if self.image_stack else np.array([])
+        self.on_tick.wait()
+        return self.image_stack[0] if self.image_stack else np.array([])
 
     def stop(self):
         self.stop_event.set()

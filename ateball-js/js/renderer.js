@@ -69,6 +69,17 @@ window.api.ateball.on_play( (e) => {
     toggleGUIElements(get_state());
 });
 
+window.api.ateball.game.realtime.on_stream( (e, msg) => {
+    var realtime = document.querySelector("#realtime canvas");
+    var context = realtime.getContext("2d");
+
+    var image = new Image();
+    image.onload = function() {
+        context.drawImage(image, 0, 0);
+    };
+    image.src = msg.data;
+});
+
 window.api.ateball.game.on_cancel( (e) => {
     console.log("Game cancelled");
     toggleGUIElements(get_state());

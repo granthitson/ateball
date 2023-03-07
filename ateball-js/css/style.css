@@ -55,6 +55,11 @@ webview {
     text-align: center;
 }
 
+#ateball-realtime {
+    width: 900px;
+    height: 360px;
+}
+
 #controlpanel, #debugpanel {
     width: 300px;
     max-width: 300px;
@@ -157,6 +162,11 @@ webview {
     position: relative;
     top: 50%;
     transform: translateY(-50%);
+}
+
+#realtime {
+    width: inherit;
+    height: inherit;
 }
 
 /* Menu button colors */

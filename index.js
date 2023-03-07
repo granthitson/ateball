@@ -31,11 +31,12 @@ if (instance_lock) {
 
 app.on('ready', async () => {
 	// Create the browser window.
-	let factor = screen.getPrimaryDisplay().scaleFactor;
 	window = new BrowserWindow({
 		icon: "",
-		width: 1200, // / factor,
-		height: 600, // / factor,
+		width: 1200,
+		height: 600,
+		minHeight: 600,
+		menuBarVisible: !app.isPackaged,
 		autoHideMenuBar: !app.isPackaged,
 		minimizable: false,
 		resizable: false,
@@ -121,6 +122,10 @@ app.on('ready', async () => {
 		
 	});
 
+	ipcMain.on('show-realtime', (e) => {
+		ateball.show_realtime();
+	});
+	
 	ipcMain.on('game-cancel', (e) => {
 		ateball.cancel_game();
 	});

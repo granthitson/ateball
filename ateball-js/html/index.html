@@ -15,13 +15,32 @@
 		<main>
 			<div class="container-fluid">
 				<div class="row justify-content-center">
-					<div id="ateball-webview" class="col-sm-auto p-0">
-						<div id="loading-overlay">
-							<img id="loading-header" src="https://static-web-pool-production.pool.miniclippt.com/game/wasm_guest_1.0.0_73372/images/Generic_Logo-hd.png">
-							<img id="loading-spinner" src="https://static-web-pool-production.pool.miniclippt.com/site/master_173/img/spinner.svg">
-							<img id="loading-background" src="https://static-web-pool-production.pool.miniclippt.com/site/master_173/img/bg.jpg">
+					<div class="col-sm-auto">
+						<div class="row">
+							<div id="ateball-webview" class="col p-0">
+								<div id="loading-overlay">
+									<img id="loading-header" src="https://static-web-pool-production.pool.miniclippt.com/game/wasm_guest_1.0.0_73372/images/Generic_Logo-hd.png">
+									<img id="loading-spinner" src="https://static-web-pool-production.pool.miniclippt.com/site/master_173/img/spinner.svg">
+									<img id="loading-background" src="https://static-web-pool-production.pool.miniclippt.com/site/master_173/img/bg.jpg">
+								</div>
+								
+								<webview src="https://8ballpool.com/en/game" sandbox="" disablewebsecurity=""preload="../js/webview-preload.js"></webview>
+							</div>
 						</div>
-						<webview src="https://8ballpool.com/en/game" sandbox="" disablewebsecurity=""preload="../js/webview-preload.js"></webview>
+
+						<div id="ateball-realtime" class="row">
+							<div class="col-sm-auto p-0">
+								<canvas id="realtime" width="690px" height="360px"></canvas>
+							</div>
+
+							<div class="col p-0 d-flex flex-column">
+								<button id="" class="_btn col">Button</button>
+								<button id="" class="_btn col">Button</button>
+								<button id="" class="_btn col">Button</button>
+								<button id="" class="_btn col">Button</button>
+								<button id="" class="_btn col">Button</button>
+							</div>
+						</div>
 					</div>
 
 					<div class="col-sm-auto d-flex flex-column" id="ateballpanel">

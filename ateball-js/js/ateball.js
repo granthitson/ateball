@@ -42,19 +42,21 @@ class Ateball {
 	}
 
 	play_game(msg) {
-		var self = this;
 		this.state.ateball.pending = true;
 
 		this.window.setAlwaysOnTop(true, 'pop-up-menu');
-		self.send_message(msg, (resp) => {
-			console.log(resp);
-			return resp;
-		});
+		this.send_message(msg);
 	}
 
 	cancel_game() {
 		this.window.setAlwaysOnTop(false);
 		this.send_message({ "type" : "cancel" });
+	}
+
+	end_game() {
+		this.window.setAlwaysOnTop(false);
+		this.reset_game_state();
+		this.toggle_game_controls();
 	}
 
 	stop() {
@@ -113,7 +115,8 @@ class Ateball {
 				if (!self.window.isDestroyed()) {
 					self.window.setAlwaysOnTop(false);
 
-					self.reset_state();
+					self.reset_ateball_state();
+					self.toggle_game_controls();
 					self.process = null;
 					self.window.webContents.send("ateball-stopped");
 				}
@@ -144,29 +147,30 @@ class Ateball {
 				case "GAME-START":
 					this.state.ateball.pending = false;
 					this.state.ateball.game.started = true;
-					this.window.webContents.send("game-playing");
+
+					this.toggle_game_controls();
 					break;
 				case "ROUND-START":
 					this.state.ateball.game.round.started = true;
 					this.window.webContents.send("game-round-start");
+					break;
+				case "REALTIME-STREAM":
+					this.window.webContents.send("realtime-stream", { data: msg.data});
 					break;
 				case "ROUND-END":
 					this.state.ateball.game.round.started = false;
 					this.window.webContents.send("game-round-end");
 					break;
 				case "GAME-CANCELLED":
-					console.log("cancelling");
-					this.state.ateball.pending = false;
-					this.state.ateball.game.started = false;
-					this.state.ateball.game.round.started = false;
-					this.window.webContents.send("game-cancelled");
+					console.log("game cancelled");
+					this.end_game();
 					break;
 				case "GAME-END":
-					console.log("ending game");
-					this.state.ateball.pending = false;
-					this.state.ateball.game.started = false;
-					this.state.ateball.game.round.started = false;
-					this.window.webContents.send("game-stopped");
+					console.log("game ended");
+					this.end_game();
+					break;
+				default:
+					console.log("unrecognized message type: ", msg.type);
 					break;
 			}
 		}
@@ -192,11 +196,29 @@ class Ateball {
 		}
 	}
 
+	toggle_game_controls() {
+		var bounds = this.window.getContentBounds();
+
+		if (this.state.ateball.game.started) {
+			bounds.height = 960;
+		} else {
+			bounds.height = 600;
+		}
+		
+		this.window.setContentBounds(bounds);
+	}
+
 	get_state() {
 		return this.state;
 	}
 
-	reset_state() {
+	reset_game_state() {
+		this.state.ateball.pending = false;
+		this.state.ateball.game.started = false;
+		this.state.ateball.game.round.started = false;
+	}
+
+	reset_ateball_state() {
 		this.state = {
 			process : {
 				started: false,

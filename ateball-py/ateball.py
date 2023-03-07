@@ -46,6 +46,12 @@ class AteBall():
                         threading.Thread(target=self.play, args=(msg,), daemon=True).start()
                     else:
                         response = { "type" : "BUSY"}
+                elif m_type == "show-realtime":
+                    if self.active_game:
+                        if self.active_game.show_realtime_event.is_set():
+                            self.active_game.show_realtime_event.clear()
+                        else:
+                            self.active_game.show_realtime_event.set()
                 elif m_type == "cancel":
                     self.cancel()
                 elif m_type == "quit":
