@@ -103,10 +103,7 @@ selects.forEach(select => {
 var play_btns = document.getElementsByClassName("play-btn");
 Array.from(play_btns).forEach(btn => {
     btn.addEventListener("click", function(e) {
-        window.api.ateball.play(btn.dataset).then(() => {
-            toggleGUIElements(get_state());
-            document.querySelector("a[data-bs-target='#game-controls']").click()
-        });
+        window.api.ateball.play(btn.dataset);
     });
 });
 
@@ -119,7 +116,6 @@ start.addEventListener("click", (e) => {
 var cancel_btns = document.querySelectorAll(".cancel");
 Array.from(cancel_btns).forEach(btn => {
     btn.addEventListener("click", (e) => {
-        document.querySelector("a[data-bs-target='#menu-controls']").click()
         window.api.ateball.game.cancel();
     });
 });
@@ -156,56 +152,61 @@ const toggleAteballControls = (state) => {
     }
 }
 
-const toggleGUIElements = (state, parent_id=undefined) => {
+const toggleGUIElements = () => {
 	var elem_list = ["button:not(.static)", "input.ateball-input", "select.menu-select"];
 
-	var parent = document.getElementById("controlpanel");
-	if (parent_id !== undefined) {
-		parent = document.getElementById(parent_id);
-	}
-	
-	if (parent) {
-        state.then((s) => {
-            console.log(s);
-            if (s !== null /*&& s.loaded*/) {
-                document.querySelector("#loading-overlay").style.display = (s.loaded) ? "none" : "block";
-                document.querySelector("#pending-overlay").style.display = (s.ateball.pending) ? "block" : "none"; 
-            }
+    window.api.get_state().then((s) => {
+        if (s !== null) {
+            toggleAteballControls(s.process.started);
 
-            elem_list.forEach(function(elemName) {
-                parent.querySelectorAll(elemName).forEach(function(elem) {
-                    if (s !== null && s.loaded) {
-                        if (s.process.started && s.process.connected) {
-                            if (s.menu && s.menu == "/en/game") {
-                                let interact = false;
+            document.querySelector("webview").style.display = (s.webview.formatted) ? "flex" : "none";
 
-                                if (s.ateball.pending || s.ateball.game.started) {
-                                    // disable gamemode selection buttons / enable game controls if started
-                                    interact = (elem.closest(".root-menu").id == "game-controls") ? s.ateball.game.started : false;
+            document.querySelector("#loading-overlay").style.display = (s.webview.loaded) ? "none" : "block";
+            document.querySelector("#pending-overlay").style.display = (s.ateball.pending) ? "block" : "none"; 
+            document.querySelector("#game-controls").style.display = (s.ateball.game.started) ? "flex" : "none"; 
+        }
+
+        elem_list.forEach(function(elemName) {
+            document.querySelectorAll(elemName).forEach(function(elem) {
+                if (s !== null && s.webview.loaded) {
+                    if (s.process.started && s.process.connected) {
+                        if (s.webview.menu && s.webview.menu == "/en/game") {
+                            let interact = false;
+
+                            if (s.ateball.game.started) {
+                                // disable gamemode selection buttons / enable game controls if started
+                                
+                                if (elem.closest(".controls").id == "game-controls") {
+                                    console.log(elem, elem.closest(".controls").id);
+                                }
+                                interact = (elem.closest(".controls").id == "game-controls") ? true : false;
+                            } else {
+                                if (elem.closest(".controls").id == "game-controls") {
+                                    interact = false;
                                 } else {
-                                    if (elem.closest(".root-menu").id == "game-controls") {
-                                        interact = false;
+                                    if (s.webview.logged_in) {
+                                        interact = (elem.id == "guest-btn") ? false : true;
+                                        elem.style.display = (elem.id == "guest-btn") ? "none" : "block";
                                     } else {
-                                        if (s.logged_in) {
-                                            interact = (elem.id == "guest-btn") ? false : true;
-                                        } else {
-                                            interact = (elem.id == "guest-btn") ? true : false;
-                                        }
+                                        interact = (elem.id == "guest-btn") ? true : false;
+                                        elem.style.display = "block";
                                     }
                                 }
-
-                                elem.disabled = !interact;
-                            } else {
-                                elem.disabled = true;
                             }
+
+                            elem.disabled = !interact;
                         } else {
                             elem.disabled = true;
                         }
                     } else {
                         elem.disabled = true;
                     }
-                });
+                } else {
+                    elem.disabled = true;
+                }
             });
-		});
-	}
+        });
+    });
 }
+
+setInterval(toggleGUIElements, 1000 / 10);

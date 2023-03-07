@@ -4,8 +4,8 @@ const { app, BrowserWindow, session, screen, globalShortcut, ipcMain, webContent
 const dotenv = require('dotenv');
 const path = require('path');
 const URL = require('url').URL
-const fs = require('fs');
 
+const { Webview } = require('./ateball-js/js/webview');
 const { Ateball } = require('./ateball-js/js/ateball');
 
 dotenv.config();
@@ -47,32 +47,14 @@ app.on('ready', async () => {
 			title: process.env.APP_NAME,
 			devTools: !app.isPackaged,
 			sandbox: true,
-			webSecurity: false,
 			webviewTag: true,
 			preload: path.join(__dirname, '/ateball-js/js/preload.js'),
 		}
 	});
-	window.setMenuBarVisibility(false);
 	window.webContents.openDevTools();
 
 	// clear persistent data
 	session.defaultSession.clearStorageData();
-
-	var ateball = new Ateball(window);
-	
-	window.loadFile(path.join(__dirname, "/ateball-js/html/index.html"));
-	window.webContents.on('did-finish-load', () => {
-		window.focus();
-	});
-
-	window.on('closed', () => {
-		try {
-			ateball.kill("SIGINT");
-		} catch (e) {
-			console.log("couldnt close ateball");
-		}
-	});
-
 	session.defaultSession.webRequest.onBeforeRequest({ urls: process.env.ACCEPTED_FULL_FILTER_LIST.split(" ") }, (details, callback) => {
 		var parsed_url = new URL(details.url);
 		if (parsed_url.protocol != "file:") {
@@ -86,44 +68,58 @@ app.on('ready', async () => {
 		}
 	});
 
-	ipcMain.handle('get-css', (e, type) => {
-		console.log("injecting css: ", type);
-		return new Promise((resolve, reject) => {
-			fs.readFile(path.join(__dirname, 'ateball-js/css/' + type + '.css'), 'utf8', (err, data) => {
-				if (err) reject();
-				resolve(data);
-			});
-		})
+	var webview = new Webview(window);
+	var ateball = new Ateball(window);
+	
+	window.loadFile(path.join(__dirname, "/ateball-js/html/index.html"));
+	window.webContents.on('did-finish-load', (e) => {
+		window.focus();
 	});
 
-	window.webContents.once('dom-ready', () => {
+	window.webContents.once('dom-ready', (e) => {
 		ateball.start();
 	});
 
-	ipcMain.on('ateball-start', () => {
+	window.on('closed', (e) => {
+		try {
+			ateball.kill("SIGINT");
+		} catch (e) {
+			console.log("couldnt close ateball");
+		}
+	});
+
+	ipcMain.handle('get-state', (e) => {
+		return {
+			webview : webview.get_state(),
+			...ateball.get_state()
+		}
+	});
+
+	// --- webview events ---
+
+	ipcMain.handle('webview-format', (e, type) => {
+		return webview.format(type);
+	});
+
+	ipcMain.on('webview-formatted', (e) => {
+		webview.state.formatted = true;
+	});
+
+	ipcMain.on('webview-loaded', (e, location, logged_in) => {
+		webview.state.loaded = true;
+
+		webview.state.menu = (location || null);
+		webview.state.logged_in = (logged_in !== null);
+	});
+
+	// --- ateball events ---
+
+	ipcMain.on('ateball-start', (e) => {
 		ateball.start();
 	});
 
-	ipcMain.handle('ateball-state', (e) => {
-		return ateball.get_state();
-	});
-
-	ipcMain.handle('game-play', (e, data) => {
-		return (new Promise((resolve, reject) => {
-			if (ateball.process != null) {
-				ateball.play_game({ type: "play", ...data});
-				resolve(true);
-			} else {
-				resolve(null);
-			}
-		})).catch((e) => {
-			console.log("could not get play game", e);
-		});
-		
-	});
-
-	ipcMain.on('show-realtime', (e) => {
-		ateball.show_realtime();
+	ipcMain.on('game-play', (e, data) => {
+		ateball.play_game({ type: "play", ...data});
 	});
 	
 	ipcMain.on('game-cancel', (e) => {

@@ -132,35 +132,36 @@ class Ateball {
 	};
 	
 	process_message(msg) {
-		console.log("processing message: ", msg);
 		if (msg.id) {
 			this.pending[id]()
 		} else {
 			switch (msg.type) {
 				case "BUSY":
-					this.window.webContents.send("ateball-busy");
+					console.log("ateball busy");
 					break;
 				case "INIT":
+					console.log("ateball initialized");
 					this.state.process.connected = true;
-					this.window.webContents.send("ateball-connected");
 					break;
 				case "GAME-START":
+					console.log("game started");
 					this.state.ateball.pending = false;
 					this.state.ateball.game.started = true;
 
 					this.toggle_game_controls();
 					break;
 				case "ROUND-START":
+					console.log("round started");
 					this.state.ateball.game.round.started = true;
-					this.window.webContents.send("game-round-start");
 					break;
 				case "REALTIME-STREAM":
 					this.window.webContents.send("realtime-stream", { data: msg.data});
 					break;
 				case "ROUND-END":
+					console.log("round ended");
 					this.state.ateball.game.round.started = false;
-					this.window.webContents.send("game-round-end");
 					break;
+				case "GAME-EXCEPTION":
 				case "GAME-CANCELLED":
 					console.log("game cancelled");
 					this.end_game();

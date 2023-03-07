@@ -28,17 +28,78 @@
 							</div>
 						</div>
 
-						<div id="ateball-realtime" class="row">
-							<div class="col-sm-auto p-0">
-								<canvas id="realtime" width="690px" height="360px"></canvas>
+						<div id="game-controls" class="row controls">
+							<div id="realtime" class="col-sm-auto p-0">
+								<canvas width="690px" height="360px"></canvas>
 							</div>
 
-							<div class="col p-0 d-flex flex-column">
-								<button id="" class="_btn col">Button</button>
-								<button id="" class="_btn col">Button</button>
-								<button id="" class="_btn col">Button</button>
-								<button id="" class="_btn col">Button</button>
-								<button id="" class="_btn col">Button</button>
+							<div id="pool_balls" class="col">
+								<div class="row">
+									<div id="pool-balls" class="col p-0">
+										<div class="d-flex flex-wrap">
+											<button id="cueball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/1ball.png"/>
+												<!-- <img src="../images/balls/cue.png"/> -->
+											</button>
+
+											<button id="1ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/1ball.png"/>
+											</button>
+											<button id="2ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/2ball.png"/>
+											</button>
+											<button id="3ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/3ball.png"/>
+											</button>
+											<button id="4ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/4ball.png"/>
+											</button>
+											<button id="5ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/5ball.png"/>
+											</button>
+											<button id="6ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/6ball.png"/>
+											</button>
+											<button id="7ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/7ball.png"/>
+											</button>
+
+											<button id="8ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/8ball.png"/>
+											</button>
+
+											<button id="9ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/9ball.png"/>
+											</button>
+											<button id="10ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/10ball.png"/>
+											</button>
+											<button id="11ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/11ball.png"/>
+											</button>
+											<button id="12ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/12ball.png"/>
+											</button>
+											<button id="13ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/13ball.png"/>
+											</button>
+											<button id="14ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/14ball.png"/>
+											</button>
+											<button id="15ball" class="_btn pool-ball" disabled="">
+												<img src="../images/balls/15ball.png"/>
+											</button>
+										</div>
+									</div>
+								</div>
+
+								<div class="row">
+									<div class="col p-0">
+										<button id="" class="_btn slim" disabled="">Button</button>
+										<button id="" class="_btn slim" disabled="">Button</button>
+										<button id="game-cancel-btn" class="_btn slim cancel ld-over-inverse" disabled="">Cancel</button>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -46,22 +107,8 @@
 					<div class="col-sm-auto d-flex flex-column" id="ateballpanel">
 						<div class="row">
 							<div class="col" id="controlpanel">
-								<div class="row" id="ateball-header">
-									<ul class="nav nav-tabs p-0" role="tablist">
-										<a class="col-sm-auto d-flex navbar-brand m-0 p-0" href="#">
-											<img src="../images/calibration.svg" alt="" width="32px" height="32px">
-										</a>
-										<li class="col nav-item">
-											<a class="panel-btn active" data-bs-toggle="tab" data-bs-toggle="tab" data-bs-target="#menu-controls" type="button" role="tab">Menu</a>
-										</li>
-										<li class="col nav-item">
-											<a class="panel-btn" data-bs-toggle="tab" data-bs-toggle="tab" data-bs-target="#game-controls" type="button" role="tab">Game</a>
-										</li>
-									</ul>
-								</div>
-
 								<div class="tab-content">
-									<div class="row tab-pane root-menu fade show active" id="menu-controls" role="tabpanel">
+									<div id="menu-controls" class="row controls">
 										<div class="col">
 											<div id="guest_dropdown" class="row">
 												<button id="guest-btn" class="_btn play-btn" data-gamemode="guest" disabled="">Guest</button>
@@ -183,7 +230,14 @@
 											</div>
 
 											<div id="minigames_dropdown" class="row">
-												<button id="luckyshot-btn" class="_btn play-btn" data-gamemode="lucky_shot" disabled="">Lucky Shot</button>
+												<button id="minigames-btn" class="_btn menu-btn dropdown" data-target="#minigames-menu" disabled="">Minigames</button>
+												<div class="col menu" style="display: none;" id="minigames-menu">
+													<div class="row">
+														<div class="col p-0 h-50">
+															<button id="luckyshot-btn" class="_btn play-btn" data-gamemode="lucky_shot" disabled="">Lucky Shot</button>
+														</div>
+													</div>
+												</div>
 											</div>
 
 											<div id="friends_dropdown" class="row">
@@ -221,94 +275,28 @@
 													</div>
 												</div>
 											</div>
-										</div>
-									</div>
 
-									<div class="row tab-pane root-menu fade" id="game-controls" role="tabpanel">
-										<div class="col">
-											<div id="rules_dropdown" class="row">
-												<div class="col p-0">
-													<select class="menu-select" name="game-rule-type">
-														<option value="standard">Standard</option>
-														<option value="nine-ball">Nine Ball</option>
-														<option value="lucky-shot">Lucky Shot</option>
-													</select>
-												</div>
-
-												<div class="col-sm-auto p-0">
-													<select class="menu-select" name="game-pocket-type">
-														<option value="pocket-on-eight">Call Pocket on Eight Ball</option>
-														<option value="pocket-on-all">Call Pocket on All Shots</option>
-														<option value="no-guidelines">No Guidelines</option>
-													</select>
-												</div>
-											</div>
-											<div id="pool_balls" class="row">
-												<div class="col">
+											<div id="custom_dropdown" class="row">
+												<button id="custom-btn" class="_btn menu-btn dropdown" data-target="#custom-menu" disabled="">Custom</button>
+												<div class="col menu" style="display: none;" id="custom-menu">
 													<div class="row">
 														<div class="col p-0">
-															<div class="d-flex flex-wrap">
-																<a id="cueball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/1ball.png"/>
-																	<!-- <img src="../images/balls/cue.png"/> -->
-																</a>
-
-																<a id="1ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/1ball.png"/>
-																</a>
-																<a id="2ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/2ball.png"/>
-																</a>
-																<a id="3ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/3ball.png"/>
-																</a>
-																<a id="4ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/4ball.png"/>
-																</a>
-																<a id="5ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/5ball.png"/>
-																</a>
-																<a id="6ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/6ball.png"/>
-																</a>
-																<a id="7ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/7ball.png"/>
-																</a>
-
-																<a id="8ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/8ball.png"/>
-																</a>
-
-																<a id="9ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/9ball.png"/>
-																</a>
-																<a id="10ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/10ball.png"/>
-																</a>
-																<a id="11ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/11ball.png"/>
-																</a>
-																<a id="12ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/12ball.png"/>
-																</a>
-																<a id="13ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/13ball.png"/>
-																</a>
-																<a id="14ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/14ball.png"/>
-																</a>
-																<a id="15ball" class="_btn pool-ball" disabled="">
-																	<img src="../images/balls/15ball.png"/>
-																</a>
-															</div>
+															<select class="menu-select" name="game-rule-type">
+																<option value="standard">Standard</option>
+																<option value="nine-ball">Nine Ball</option>
+																<option value="lucky-shot">Lucky Shot</option>
+															</select>
 														</div>
 
-														<div class="col p-0">
-															<button id="" class="_btn slim" disabled="">Button</button>
-															<button id="" class="_btn slim" disabled="">Button</button>
-															<button id="" class="_btn slim" disabled="">Button</button>
-															<button class="_btn slim cancel ld-over-inverse" disabled="">Cancel</button>
+														<div class="col-sm-auto p-0">
+															<select class="menu-select" name="game-pocket-type">
+																<option value="pocket-on-eight">Call Pocket on Eight Ball</option>
+																<option value="pocket-on-all">Call Pocket on All Shots</option>
+																<option value="no-guidelines">No Guidelines</option>
+															</select>
 														</div>
+
+														<button id="custom-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Play</button>
 													</div>
 												</div>
 											</div>

@@ -55,11 +55,6 @@ webview {
     text-align: center;
 }
 
-#ateball-realtime {
-    width: 900px;
-    height: 360px;
-}
-
 #controlpanel, #debugpanel {
     width: 300px;
     max-width: 300px;
@@ -84,7 +79,8 @@ webview {
 }
 
 #game-controls {
-    position: relative;
+    width: 900px;
+    height: 360px;
 }
 
 #logo_header {
@@ -129,6 +125,10 @@ webview {
     
 }
 
+#menu-controls {
+    position: relative;
+}
+
 #pending-overlay {
     background-color: rgba(0,0,0,.6);
     width: 100%;
@@ -164,11 +164,6 @@ webview {
     transform: translateY(-50%);
 }
 
-#realtime {
-    width: inherit;
-    height: inherit;
-}
-
 /* Menu button colors */
 
 #ateball-start {
@@ -190,6 +185,16 @@ webview {
     border-color: #e02020;
     background-image: -webkit-linear-gradient(top, #e02020, #ff4747, #e02020);
 }
+
+/* #ball-outline-btn {
+    border-color: #8c8e91;
+    background-image: -webkit-linear-gradient(top, #3c4854, #aebcc9, #3c4854);
+}
+
+#ball-outline-btn:not([disabled]):hover {
+    border-color: #8c8e91;
+    background-image: -webkit-linear-gradient(top, #4c5966, #c3d0dd, #4c5966);
+} */
 
 #call-pocket-all-btn {
     border-color: #660f0f;
@@ -259,6 +264,16 @@ webview {
 #luckyshot-btn:not([disabled]):hover {
     border-color: #fdc064;
     background-image: -webkit-linear-gradient(top, #fdc064, #fff48f, #fdc064);
+}
+
+#nine-ball-btn {
+    border-color: #15b9b1;
+    background-image: -webkit-linear-gradient(top, #15b9b1, #23e7dd, #15b9b1)
+}
+
+#nine-ball-btn:not([disabled]):hover {
+    border-color: #2cc7bf;
+    background-image: -webkit-linear-gradient(top, #2cc7bf, #23e7dd, #2cc7bf)
 }
 
 #nine-ball-btn {
@@ -476,9 +491,10 @@ webview {
 }
 
 .pool-ball {
-    width: 30px;
-    height: 30px;
+    width: 26.25px;
+    height: 26.25px;
     padding: 0;
+    background-image: unset;
 }
 
 .pool-ball img {

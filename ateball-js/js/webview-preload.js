@@ -14,7 +14,7 @@ window.addEventListener("DOMContentLoaded", () => {
                     document.querySelector("#login-btn").parentElement.style.width = "100%";
                     document.querySelector("#login-btn").style.width = "100%";
 
-                    ipcRenderer.sendToHost("loaded");
+                    ipcRenderer.send("webview-loaded", location.pathname, localStorage.getItem("accessToken"));
                 });
             }
         } else if (location.pathname == "/en/game" || (location.pathname == "/login" && location.search)) {
@@ -41,13 +41,13 @@ window.addEventListener("DOMContentLoaded", () => {
                     var iframe_doc = iframe.contentDocument || iframe.contentWindow.document;
                     var style = document.createElement('style');
     
-                    ipcRenderer.invoke('get-css', "iframe").then((data) => {
+                    ipcRenderer.invoke('webview-format', "iframe").then((data) => {
                         iframe_doc.head.appendChild(style);
                         style.appendChild(document.createTextNode(data));
                     }).then(() => {
                         if (location.pathname == "/en/game") {
                             waitForElement("#loadingBox", iframe_doc, false).then(() => {
-                                ipcRenderer.sendToHost("loaded");
+                                ipcRenderer.send("webview-loaded", location.pathname, localStorage.getItem("accessToken"));
                             });
                         }
                     });
@@ -62,7 +62,7 @@ window.addEventListener("DOMContentLoaded", () => {
 	} catch (error) {
 		console.error(error);
 	} finally {
-        ipcRenderer.sendToHost("formatting-complete");
+        ipcRenderer.send("webview-formatted");
     }
 });
 
