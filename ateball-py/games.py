@@ -112,14 +112,19 @@ class Game(threading.Thread, ABC):
                         result = self.current_round.start()
         except Exception as e:
             self.logger.error(traceback.format_exc())
+
+            self.game_over_event.notify(self.game_exception)
         finally:
             self.window_capturer.stop()
 
-            self.game_over_event.notify(self.game_end)
-            if self.game_cancelled.is_set():
-                self.ipc.send_message({"type" : "GAME-CANCELLED"})
-            elif self.game_end.is_set():
-                self.ipc.send_message({"type" : "GAME-END"})
+            if self.game_exception.is_set():
+                self.ipc.send_message({"type" : "GAME-EXCEPTION"})
+            else:
+                self.game_over_event.notify(self.game_end)
+                if self.game_cancelled.is_set():
+                    self.ipc.send_message({"type" : "GAME-CANCELLED"})
+                elif self.game_end.is_set():
+                    self.ipc.send_message({"type" : "GAME-END"})
 
     def cancel(self):
         self.logger.debug("cancelling current game")
