@@ -153,7 +153,7 @@ const toggleAteballControls = (state) => {
 }
 
 const toggleGUIElements = () => {
-	var elem_list = ["button:not(.static)", "input.ateball-input", "select.menu-select"];
+	var elem_list = ["button", "input", "select.menu-select"];
 
     window.api.get_state().then((s) => {
         if (s !== null) {
@@ -167,19 +167,15 @@ const toggleGUIElements = () => {
         }
 
         elem_list.forEach(function(elemName) {
-            document.querySelectorAll(elemName).forEach(function(elem) {
+            Array.from(document.querySelectorAll(elemName)).filter(el => !el.closest('#debug-controls')).forEach(function(elem) {
                 if (s !== null && s.webview.loaded) {
                     if (s.process.started && s.process.connected) {
                         if (s.webview.menu && s.webview.menu == "/en/game") {
                             let interact = false;
 
-                            if (s.ateball.game.started) {
+                            if (s.ateball.pending || s.ateball.game.started) {
                                 // disable gamemode selection buttons / enable game controls if started
-                                
-                                if (elem.closest(".controls").id == "game-controls") {
-                                    console.log(elem, elem.closest(".controls").id);
-                                }
-                                interact = (elem.closest(".controls").id == "game-controls") ? true : false;
+                                interact = (elem.closest(".controls").id == "game-controls") ? s.ateball.game.started : false;
                             } else {
                                 if (elem.closest(".controls").id == "game-controls") {
                                     interact = false;

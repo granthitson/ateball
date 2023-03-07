@@ -31,21 +31,7 @@ webview {
     height: 600px;
 }
 
-#ateballpanel {
-    z-index: 2;
-}
-
-#ateballpanel.portrait {
-    width: min-content;
-    margin-left: 6px;
-}
-
-#ateballpanel.landscape {
-    width: fit-content;
-    margin: 6px auto 0;
-}
-
-#ateballpanel button {
+#ateball button {
     font-weight: 600;
 }
 
@@ -53,12 +39,6 @@ webview {
     height: 30px;
     font-weight: 600;
     text-align: center;
-}
-
-#controlpanel, #debugpanel {
-    width: 300px;
-    max-width: 300px;
-    height: 100%;
 }
 
 #calibration {
@@ -69,6 +49,12 @@ webview {
 }
 
 #debug_1, #debug_2 {
+    height: 100%;
+}
+
+#debug-controls {
+    width: 300px;
+    max-width: 300px;
     height: 100%;
 }
 
@@ -125,8 +111,14 @@ webview {
     
 }
 
-#menu-controls {
+#menu-controls .controls {
     position: relative;
+}
+
+#menu-controls {
+    width: 300px;
+    max-width: 300px;
+    height: 100%;
 }
 
 #pending-overlay {
