@@ -64,6 +64,15 @@ class Game(threading.Thread, ABC):
 
         self.logger = logging.getLogger("ateball.games")
 
+    def configure_logging(self, path):
+        formatter = utils.Formatter()
+
+        fHandler = logging.FileHandler(f"{path}/log.log", mode="w")
+        fHandler.setFormatter(formatter)
+        fHandler.setLevel(logging.DEBUG)
+
+        self.logger.addHandler(fHandler)
+
     def run(self):
         try:
             self.logger.info(f"Playing {self.name}...")
@@ -74,6 +83,8 @@ class Game(threading.Thread, ABC):
             if self.game_start.is_set():
                 self.game_path = str(Path("ateball-py", "games", f"{self.game_num}-{self.name}-{self.location}"))
                 os.makedirs(self.game_path, exist_ok=True)
+
+                self.configure_logging(self.game_path)
 
                 self.window_capturer.record(self.game_path, "game")
 
