@@ -7,7 +7,6 @@ import queue as q
 #files
 import games
 import utils
-import constants
 
 class AteBall():
     def __init__(self, port):

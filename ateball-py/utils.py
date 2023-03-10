@@ -18,8 +18,6 @@ import skimage
 import win32gui, win32ui, win32con
 from pathlib import Path
 
-import constants
-
 logger = logging.getLogger("ateball.utils")
 
 class Formatter(logging.Formatter):
@@ -317,7 +315,7 @@ class CV2Helper:
         # create list of differences for each lookup value
         differences = [
             [CV2Helper.color_difference(color, bgr), name]
-            for name, bgr in color_lookup.items()
+            for name, bgr in color_lookup.__dict__.items()
         ]
 
         # sort differences (ascending) - and return color with least difference

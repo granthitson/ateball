@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 import utils
-import constants
+from constants import constants
 
 logger = logging.getLogger("ateball.path")
 
