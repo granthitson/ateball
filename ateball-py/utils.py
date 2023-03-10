@@ -138,7 +138,6 @@ class WindowCapturer(threading.Thread):
         self.image_stack_limit = 20
         self.video_writer = None
 
-        self.record_event = threading.Event()
         self.stop_event = threading.Event()
 
         self.logger = logging.getLogger("ateball.utils.WindowCapturer")
@@ -200,14 +199,6 @@ class WindowCapturer(threading.Thread):
             # allow threads to retrieve latest
             self.on_tick.set()
 
-            if self.record_event.is_set():
-                self.video_writer.write(img)
-    
-    def record(self, path, filename, format=cv2.VideoWriter_fourcc(*'XVID')):
-        # write images to avi file
-        self.video_writer = cv2.VideoWriter(str(Path(path, f"{filename}.avi")), format, self.fps, self.region)
-        self.record_event.set()
-
     def get_first(self):
         # get latest image added to stack
         self.on_tick.wait()
@@ -220,9 +211,6 @@ class WindowCapturer(threading.Thread):
 
     def stop(self):
         self.stop_event.set()
-        if self.record_event.is_set():
-            self.video_writer.release()
-            self.record_event.clear()
 
 class ImageHelper:
     logger = logging.getLogger("ateball.utils.ImageHelper")

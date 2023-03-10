@@ -2,6 +2,7 @@ import logging
 import traceback
 
 import threading
+import queue as q
 
 import os
 import cv2
@@ -42,6 +43,7 @@ class Game(threading.Thread, ABC):
         self.game_num = 0
 
         self.window_capturer = utils.WindowCapturer(constants.regions.game, constants.regions.window_offset, 30, daemon=True)
+        self.recording = q.Queue()
         
         self.ball_locations = []
 
@@ -80,10 +82,10 @@ class Game(threading.Thread, ABC):
 
                 self.configure_logging(game_path)
 
-                self.window_capturer.record(game_path, "game")
-
                 self.ipc.send_message({"type" : "GAME-START"})
                 self.logger.info(f"\nGame #{self.game_num}\n")
+
+                threading.Thread(target=self.record, args=(game_path, "game",)).start()
                 
                 threading.Thread(target=self.get_ball_locations, daemon=True).start()
                 threading.Thread(target=self.wait_for_turn_start, daemon=True).start()
@@ -331,8 +333,9 @@ class Game(threading.Thread, ABC):
         return True if pos else False
 
     def get_ball_locations(self):
-        self.logger.debug("Outlining pool balls...\n")
+        self.logger.debug("Outlining pool balls...")
 
+        prev_ball_positions = []
         while not self.game_over_event.is_set():
             try:
                 image = self.window_capturer.get_first()
@@ -343,22 +346,34 @@ class Game(threading.Thread, ABC):
                     table_masked = self.mask_out_table(table, table_hsv)
                     table_masked_gray = cv2.cvtColor(table_masked, cv2.COLOR_BGR2GRAY)
 
-                    # Hough Circles for identifying ball locations more accurate than contours
+                    # approximate location with hough circles - TODO improve approximation
                     points = cv2.HoughCircles(table_masked_gray, cv2.HOUGH_GRADIENT, 1, 17, param1=20, param2=9, minRadius=9, maxRadius=11)
                     points = np.uint16(np.around(points))
 
                     self.ball_locations = [Ball((p[0], p[1])) for p in points[0, :]]
 
+                    # draw result
+                    draw_table = table.copy()
                     for b in self.ball_locations:
                         b.draw(table)
 
-                    retval, image_buffer = cv2.imencode('.png', table)
-                    image_buffer = base64.b64encode(image_buffer.tobytes()).decode('ascii')
-                    image_b64 = f"data:image/png;base64,{image_buffer}"
+                    # send result if it differs from last
+                    current_ball_positions = [b.center for b in self.ball_locations]
+                    difference = set(current_ball_positions) - set(prev_ball_positions)
+                    if difference:
+                        prev_ball_positions = current_ball_positions
 
-                    self.ipc.send_message({"type" : "REALTIME-STREAM", "data" : image_b64})
+                        retval, image_buffer = cv2.imencode('.png', draw_table)
+                        image_buffer = base64.b64encode(image_buffer.tobytes()).decode('ascii')
+                        image_b64 = f"data:image/png;base64,{image_buffer}"
+
+                        self.ipc.send_message({"type" : "REALTIME-STREAM", "data" : image_b64})
+
+                    self.recording.put((table, draw_table))
             except Exception as e:
                 self.logger.error(traceback.format_exc())
+
+        self.recording.put((np.array([]), np.array([])))
 
     def mask_out_table(self, img, hsv):
         # mask for table color - table color masked out for visibility
@@ -376,6 +391,25 @@ class Game(threading.Thread, ABC):
         table_masked_out = cv2.bitwise_and(img, img, mask=table_mask)
 
         return table_masked_out
+   
+    def record(self, path, filename, fmt=cv2.VideoWriter_fourcc(*'XVID')):
+        # write images to avi file
+        region = (constants.regions.table[2], constants.regions.table[3] * 2)
+        video_writer = cv2.VideoWriter(str(Path(path, f"{filename}.avi")), fmt, self.window_capturer.fps, region)
+
+        while not self.game_over_event.is_set():
+            try:
+                images = self.recording.get()
+                table, draw_table = images[0], images[1]
+                if not table.any() and not draw_table.any():
+                    break
+                
+                stack = np.concatenate((table, draw_table), axis=0)
+                video_writer.write(stack)
+            except Exception as e:
+                self.logger.error(traceback.format_exc())
+        
+        video_writer.release()
 
 class ONE_ON_ONE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
