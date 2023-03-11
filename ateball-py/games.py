@@ -60,15 +60,20 @@ class Game(threading.Thread, ABC):
         self.current_round = None
 
         self.logger = logging.getLogger("ateball.games")
+        self.fhandler = None
 
     def configure_logging(self, path):
         formatter = utils.Formatter()
 
-        fHandler = logging.FileHandler(f"{path}/log.log", mode="w")
-        fHandler.setFormatter(formatter)
-        fHandler.setLevel(logging.DEBUG)
+        self.fhandler = logging.FileHandler(f"{path}/log.log", mode="w")
+        self.fhandler.setFormatter(formatter)
+        self.fhandler.setLevel(logging.DEBUG)
 
-        self.logger.addHandler(fHandler)
+        logging.getLogger("ateball").addHandler(self.fhandler)
+
+    def clear_logging(self):
+        logging.getLogger("ateball").removeHandler(self.fhandler)
+        self.fhandler = None
 
     def run(self):
         try:
@@ -114,6 +119,7 @@ class Game(threading.Thread, ABC):
             self.game_over_event.notify(self.game_exception)
         finally:
             self.window_capturer.stop()
+            self.clear_logging()
 
             if self.game_exception.is_set():
                 self.ipc.send_message({"type" : "GAME-EXCEPTION"})
