@@ -340,63 +340,30 @@ class CV2Helper:
 
         return mask
 
-class PointHelper:
-    logger = logging.getLogger("ateball.utils.PointHelper")
+class Point:
+    def __init__(self, center):
+        self.center = (center[0], center[1])
 
-    @staticmethod
-    def getBrightness(p):
-        return sum([pyautogui.pixel(p[0], p[1])[0], pyautogui.pixel(p[0], p[1])[1], pyautogui.pixel(p[0], p[1])[2]])/3
-     
-    @staticmethod
-    def averagePoint(p1, p2):
-        return ((p1[0] + p2[0])/2,(p1[1] + p2[1])/2)
+        self.logger = logging.getLogger("ateball.utils.Point")
 
-    @staticmethod
-    def isTupleInRange(t1, t2, xRange, yRange):
-        if (abs(t1[0]-t2[0]) < xRange and abs(t1[1]-t2[1]) < yRange):
-            return True
-        else:
-            return False
+    def __str__(self):
+        return f"{self.center}"
 
-    @staticmethod
-    def roundTuple(tuple):
-        return (round(tuple[0]),round(tuple[1]))
+    def __repr__(self):
+        return str(self)
 
-    @staticmethod
-    def tupleToInt(tuple):
-        return (int(tuple[0]),int(tuple[1]))
+    def add(self, p):
+        return (self.center[0] + p.center[0], self.center[1] + p.center[0])
 
-    @staticmethod
-    def tupleToFloat(tuple):
-        return (float(tuple[0]),float(tuple[1]))
+    def distance(self, p):
+        return round(math.hypot(self.center[0] - p.center[0], self.center[1] - p.center[1]), 2)
 
-    @staticmethod
-    def clamp(n, mini, maxi):
-        return max(min(maxi, n), mini)
+    def average(self, p):
+        return (int((self.center[0] + p.center[0])/2),int((self.center[1] + p.center[1])/2))
 
-    @staticmethod
-    def findAngle(p1, p2, p3):
-        a = tupleToFloat(p1)
-        b = tupleToFloat(p2)
-        c = tupleToFloat(p3)
-
-        try:
-            angle = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
-        except ZeroDivisionError:
-            return 90.0
-
-        if (angle < 0):
-            if math.fabs(angle) > 180:
-                angle = 360 - math.fabs(angle)
-            else:
-                angle = math.fabs(angle)
-
-        return angle
-
-    @staticmethod
-    def findRiseRunSlope(p1, p2):
-        rise = float(p1[1]) - float(p2[1])
-        run = float(p1[0]) - float(p2[0])
+    def get_rise_run_slope(self, p):
+        rise = float(self.center[1]) - float(p.center[1])
+        run = float(self.center[0]) - float(p.center[0])
         if run != 0:
             slope = rise / run
         else:
@@ -404,8 +371,26 @@ class PointHelper:
 
         return rise, run, slope
 
-    @staticmethod
-    def findPointsOnEitherSideOf(p, distance, rise, run, invert=False):
+    def get_angle(self, p1, p2):
+        # get angle where point is vertex
+
+        a = p1.center
+        b = self.center
+        c = p2.center
+
+        ang = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
+        return ang + 360 if ang < 0 else ang
+
+    def to_float(self):
+        return (float(self.center[0]), float(self.center[1]))
+
+    def to_int(self):
+        return (int(self.center[0]), int(self.center[1]))
+
+    def round(self, precision=2):
+        return (round(self.center[0]), round(self.center[1]))
+
+    def findPointsOnEitherSideOf(self, distance, rise, run, invert=False):
         try:
             slope = rise/run
         except ZeroDivisionError:
@@ -413,48 +398,46 @@ class PointHelper:
 
         if invert is False:
             if slope != 0:
-                left = findPointsAlongSlope(p, distance, slope, True)
-                right = findPointsAlongSlope(p, distance, slope)
+                left = findPointsAlongSlope(self.center, distance, slope, True)
+                right = findPointsAlongSlope(self.center, distance, slope)
             else:
                 if math.fabs(rise) > 0:
-                    left = (p[0], p[1]-distance)
-                    right = (p[0], p[1]+distance)
+                    left = (self.center[0], self.center[1]-distance)
+                    right = (self.center[0], self.center[1]+distance)
                 else:
-                    left = (p[0]-distance, p[1])
-                    right = (p[0]+distance, p[1])
+                    left = (self.center[0]-distance, self.center[1])
+                    right = (self.center[0]+distance, self.center[1])
         else:
             if slope != 0:
-                left = findPointsAlongSlope(p, distance, slope)
-                right = findPointsAlongSlope(p, distance, slope, True)
+                left = findPointsAlongSlope(self.center, distance, slope)
+                right = findPointsAlongSlope(self.center, distance, slope, True)
             else:
                 if math.fabs(rise) > 0:
-                    left = (p[0], p[1]+distance)
-                    right = (p[0], p[1]-distance)
+                    left = (self.center[0], self.center[1]+distance)
+                    right = (self.center[0], self.center[1]-distance)
                 else:
-                    left = (p[0]+distance, p[1])
-                    right = (p[0]-distance, p[1])
+                    left = (self.center[0]+distance, self.center[1])
+                    right = (self.center[0]-distance, self.center[1])
 
         return left, right
 
-    @staticmethod
-    def findPointsAlongSlope(p, distance, slope, subtract=False):
+    def findPointsAlongSlope(self, distance, slope, subtract=False):
         if subtract:
-            x = (p[0] - (distance * math.sqrt(1 / (1 + slope ** 2))))
-            y = (p[1] - ((slope * distance) * math.sqrt(1 / (1 + slope ** 2))))
+            x = (self.center[0] - (distance * math.sqrt(1 / (1 + slope ** 2))))
+            y = (self.center[1] - ((slope * distance) * math.sqrt(1 / (1 + slope ** 2))))
         else:
-            x = (p[0] + (distance * math.sqrt(1 / (1 + slope ** 2))))
-            y = (p[1] + ((slope * distance) * math.sqrt(1 / (1 + slope ** 2))))
+            x = (self.center[0] + (distance * math.sqrt(1 / (1 + slope ** 2))))
+            y = (self.center[1] + ((slope * distance) * math.sqrt(1 / (1 + slope ** 2))))
 
         return x, y
 
-    @staticmethod
-    def rotateAround(anchor, point, angle):
+    def rotateAround(self, anchor, angle):
         angle = math.radians(angle)
         s = math.sin(angle)
         c = math.cos(angle)
 
-        pX = int(point[0]) - int(anchor[0])
-        pY = int(point[1]) - int(anchor[1])
+        pX = int(self.center[0]) - int(self.center[0])
+        pY = int(self.center[1]) - int(self.center[1])
 
         newX = (pX * c - pY * s) + anchor[0]
         newY = (pX * s + pY * c) + anchor[1]
@@ -463,8 +446,7 @@ class PointHelper:
 
         return center
 
-    @staticmethod
-    def line_intersection(line1, line2, xmin=None, xmax=None, ymin=None, ymax=None):
+    def line_intersection(self, line1, line2, xmin=None, xmax=None, ymin=None, ymax=None):
         xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
         ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
 
@@ -496,3 +478,9 @@ class PointHelper:
                 return None
 
         return x, y
+
+    def draw(self, image, radius=1, rgb=(0, 255, 0), dtype=1):
+        cv2.circle(image, self.center, radius, rgb, dtype)
+
+def clamp(n, low, high):
+    return max(min(high, n), low)

@@ -1,23 +1,10 @@
 import logging
 
-import math
-
 import cv2
 import numpy as np
 
+from utils import Point
 from constants import constants
-
-class Point:
-    def __init__(self, center):
-        self.center = (center[0], center[1])
-
-        self.logger = logging.getLogger("ateball.balls.point")
-
-    def distance(self, point):
-        return round(math.hypot(self.center[0] - point[0], self.center[1] - point[1]), 2)
-
-    def average(self, point):
-        return (int((self.center[0] + point[0])/2),int((self.center[1] + point[1])/2))
 
 class Ball(Point):
     def __init__(self, center, suit=None, name=None, color=None, target=False):
