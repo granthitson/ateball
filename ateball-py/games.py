@@ -15,6 +15,7 @@ import base64
 from abc import ABC
 
 #files
+from table import Table
 from round import Round
 from ball import Ball
 
@@ -45,7 +46,7 @@ class Game(threading.Thread, ABC):
         self.window_capturer = utils.WindowCapturer(constants.regions.game, constants.regions.window_offset, 30, daemon=True)
         self.recording = q.Queue()
         
-        self.ball_locations = []
+        self.table = Table()
 
         self.suit = None
         self.turn_num = 0
@@ -350,15 +351,15 @@ class Game(threading.Thread, ABC):
                     points = cv2.HoughCircles(table_masked_gray, cv2.HOUGH_GRADIENT, 1, 17, param1=20, param2=9, minRadius=9, maxRadius=11)
                     points = np.uint16(np.around(points))
 
-                    self.ball_locations = [Ball((p[0], p[1])) for p in points[0, :]]
+                    # update table with current location
+                    self.table.balls = [Ball((p[0], p[1])) for p in points[0, :]]
 
                     # draw result
                     draw_table = table.copy()
-                    for b in self.ball_locations:
-                        b.draw(table)
+                    self.table.draw(draw_table)
 
                     # send result if it differs from last
-                    current_ball_positions = [b.center for b in self.ball_locations]
+                    current_ball_positions = self.table.get_ball_positions()
                     difference = set(current_ball_positions) - set(prev_ball_positions)
                     if difference:
                         prev_ball_positions = current_ball_positions
