@@ -110,6 +110,7 @@ class AteBall():
     def cancel(self):
         if self.active_game:
             self.active_game.cancel()
+            self.active_game.join()
             self.active_game = None
             self.ipc.send_message({"type" : "GAME-CANCELLED"})
 

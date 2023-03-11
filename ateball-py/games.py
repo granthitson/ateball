@@ -55,7 +55,8 @@ class Game(threading.Thread, ABC):
         self.player_turn = threading.Event()
         self.opponent_turn = threading.Event()
         self.turn_start = threading.Event()
-        self.turn_start_event = utils.OrEvent(self.turn_start, self.game_over_event)
+        self.turn_end = threading.Event()
+        self.turn_start_event = utils.OrEvent(self.turn_start, self.turn_end)
 
         self.current_round = None
 
@@ -132,8 +133,8 @@ class Game(threading.Thread, ABC):
 
     def cancel(self):
         self.logger.debug("cancelling current game")
+        self.turn_start_event.notify(self.turn_end)
         self.game_over_event.notify(self.game_cancelled)
-        self.game_over_event.wait()
 
     def wait_for_game_start(self):
         self.logger.info("Waiting for game to start...")
@@ -142,7 +143,7 @@ class Game(threading.Thread, ABC):
         needle = utils.CV2Helper.imread(utils.ImageHelper.imagePath(self.img_game_start))
         needle_contours = self.get_game_marker_contours(needle)
 
-        while not self.game_start.is_set() and not self.game_cancelled.is_set() and not self.game_over_event.is_set():
+        while not self.game_start.is_set() and not self.game_over_event.is_set():
             try:
                 image = self.window_capturer.get_first()
                 if image.any() and needle_contours.any():
