@@ -39,6 +39,10 @@ window.api.ateball.game.realtime.on_stream( (e, msg) => {
 window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
 
+    var realtime = document.querySelector("#realtime canvas");
+    var context = realtime.getContext("2d");
+    context.clearRect(0, 0, realtime.width, realtime.height);
+
     var empty = document.createElement('div')
     empty.classList.add('empty')
     log_message(empty);
