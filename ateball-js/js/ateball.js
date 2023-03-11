@@ -57,6 +57,8 @@ class Ateball {
 		this.window.setAlwaysOnTop(false);
 		this.reset_game_state();
 		this.toggle_game_controls();
+
+		this.window.webContents.send("game-ended");
 	}
 
 	stop() {
@@ -201,7 +203,7 @@ class Ateball {
 		var bounds = this.window.getContentBounds();
 
 		if (this.state.ateball.game.started) {
-			bounds.height = 960;
+			bounds.height = 956;
 		} else {
 			bounds.height = 600;
 		}

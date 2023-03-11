@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('api', {
                 on_stream: (callback) => ipcRenderer.on('realtime-stream', callback)
             },
             cancel: () => ipcRenderer.send('game-cancel'),
+            on_end: (callback) => ipcRenderer.on('game-ended', callback),
         },
         stop: () => ipcRenderer.send('ateball-stop'),
         on_stop: (callback) => ipcRenderer.on('ateball-stopped', callback),

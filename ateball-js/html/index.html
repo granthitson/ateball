@@ -30,7 +30,7 @@
 
 						<div id="game-controls" class="row controls">
 							<div id="realtime" class="col-sm-auto p-0">
-								<canvas width="690px" height="360px"></canvas>
+								<canvas width="687px" height="356px"></canvas>
 							</div>
 
 							<div id="pool_balls" class="col">
@@ -97,7 +97,11 @@
 									<div class="col p-0">
 										<button id="" class="_btn slim" disabled="">Button</button>
 										<button id="" class="_btn slim" disabled="">Button</button>
-										<button id="game-cancel-btn" class="_btn slim cancel ld-over-inverse" disabled="">Cancel</button>
+										<button id="game-cancel-btn" class="_btn slim ld-over-inverse" disabled="">
+											<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
+											<div class="ld ld-ring ld-spin"></div>
+											Cancel
+										</button>
 									</div>
 								</div>
 							</div>
@@ -305,7 +309,7 @@
 										<div id="pending-overlay">
 											<div id="pending-container">
 												<span class="loader"></span>
-												<a id="pending-cancel" class="cancel">✕</a>
+												<a id="pending-cancel">✕</a>
 											</div>
 										</div>
 									</div>
@@ -331,20 +335,20 @@
 								<div class="row flex-grow-1">	
 									<div class="tab-content position-relative p-0 " role="tabpanel">
 										<div id="debug_1" class="tab-pane fade show active">
-											<div id="ateball-btns" class="nav nav-tabs">
-												<div class="col">
-													<button id="ateball-start" class="_btn slim ld-over-inverse" disabled="">
-														<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
-														<div class="ld ld-ring ld-spin"></div>
-														Start
-													</button>
-												</div>
-												<div class="col">
-													<button id="ateball-stop" class="_btn slim ld-over-inverse" disabled="">
-														<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
-														<div class="ld ld-ring ld-spin"></div>
-														Stop
-													</button>
+											<div id="ateball-btns">
+												<div class="row">
+													<div class="col d-flex">
+														<button id="ateball-start" class="_btn slim ld-over-inverse p-0" disabled="">
+															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
+															<div class="ld ld-ring ld-spin"></div>
+															Start
+														</button>
+														<button id="ateball-stop" class="_btn slim ld-over-inverse p-0" disabled="">
+															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
+															<div class="ld ld-ring ld-spin"></div>
+															Stop
+														</button>
+													</div>
 												</div>
 											</div>
 											<pre id="debug_console_1" class="console"></pre>

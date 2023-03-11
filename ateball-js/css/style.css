@@ -66,7 +66,7 @@ webview {
 
 #game-controls {
     width: 900px;
-    height: 360px;
+    height: 356px;
 }
 
 #logo_header {
@@ -161,6 +161,7 @@ webview {
 #ateball-start {
     border-color: #40cb23;
     background: -webkit-linear-gradient(top,#1a8f01,#60fd02,#1a8f01);
+    transition: width 300ms ease-in-out;
 }
 
 #ateball-start:not([disabled]):hover {
@@ -171,6 +172,7 @@ webview {
 #ateball-stop {
     border-color: #c91717;
     background-image: -webkit-linear-gradient(top, #c91717, #ff2a2a, #c91717);
+    transition: width 300ms ease-in-out;
 }
 
 #ateball-stop:not([disabled]):hover {

@@ -22,6 +22,7 @@ webview.addEventListener("did-navigate", () => {
 
 window.api.ateball.on_start( (e) => {
     console.log("Ateball started");
+    toggleButtonSpinner(start, false);
     document.querySelector("#debug_console_1").innerHTML = "";
 });
 
@@ -36,8 +37,18 @@ window.api.ateball.game.realtime.on_stream( (e, msg) => {
     image.src = msg.data;
 });
 
+window.api.ateball.game.on_end((e) => {
+    console.log("game ended");
+    toggleButtonSpinner(game_cancel, false);
+
+    var realtime = document.querySelector("#realtime canvas");
+    var context = realtime.getContext("2d");
+    context.clearRect(0, 0, realtime.width, realtime.height);
+});
+
 window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
+    toggleButtonSpinner(stop, false);
 
     var realtime = document.querySelector("#realtime canvas");
     var context = realtime.getContext("2d");
