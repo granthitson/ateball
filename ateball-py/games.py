@@ -277,8 +277,8 @@ class Game(threading.Thread, ABC):
         o_timer = utils.CV2Helper.slice_image(turn_timers_masked, constants.regions.opponent_turn_timer)
 
         # match mean color to closest color
-        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, constants.turn_status.__dict__)
-        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, constants.turn_status.__dict__)
+        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, constants.turn_status)
+        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, constants.turn_status)
 
         # get hierarchy of turn timer contours (closed vs open)
         p_timer_hsv = cv2.cvtColor(p_timer, cv2.COLOR_BGR2HSV)
