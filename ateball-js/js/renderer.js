@@ -48,6 +48,7 @@ window.api.ateball.game.on_end((e) => {
 
 window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
+    toggleButtonSpinner(game_cancel, false);
     toggleButtonSpinner(stop, false);
 
     var realtime = document.querySelector("#realtime canvas");
