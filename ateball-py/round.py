@@ -29,7 +29,7 @@ class Round:
         # game constants
 
         self.regions = constants.regions
-        self.hole_locations = constants.table.hole_locations
+        self.hole_locations = constants.table.holes
 
         self.solid_balls = constants.balls.solid
         self.stripe_balls = constants.balls.stripe
