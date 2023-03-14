@@ -31,7 +31,7 @@ webview {
     height: 600px;
 }
 
-#ateball button {
+#ateball button, label {
     font-weight: 600;
 }
 

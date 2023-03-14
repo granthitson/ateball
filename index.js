@@ -121,6 +121,10 @@ app.on('ready', async () => {
 	ipcMain.on('game-play', (e, data) => {
 		ateball.play_game({ type: "play", ...data});
 	});
+
+	ipcMain.on('realtime-configure', (e, draw) => {
+		ateball.realtime_configure(draw);
+	});
 	
 	ipcMain.on('game-cancel', (e) => {
 		ateball.cancel_game();

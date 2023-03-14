@@ -83,7 +83,7 @@ type_btns.forEach(btn => {
     });
 });
 
-var selects = document.querySelectorAll("select");
+var selects = document.querySelectorAll("#menu-controls select");
 selects.forEach(select => {
     select.addEventListener("change", function(e) {
         var parent_menu = select.closest("div.menu");
@@ -103,7 +103,8 @@ selects.forEach(select => {
 var play_btns = document.getElementsByClassName("play-btn");
 Array.from(play_btns).forEach(btn => {
     btn.addEventListener("click", function(e) {
-        window.api.ateball.play(btn.dataset);
+        var realtime_config = get_realtime_config();
+        window.api.ateball.play({ "game_config" : btn.dataset, "realtime_config" : realtime_config});
     });
 });
 
@@ -111,6 +112,12 @@ var start = document.querySelector("#ateball-start");
 start.addEventListener("click", (e) => {
     toggleButtonSpinner(start, true);
     window.api.ateball.start();
+});
+
+var realtime_menu = document.querySelector("#realtime-menu");
+realtime_menu.addEventListener("change", (e) => {
+    var data = get_realtime_config();
+    window.api.ateball.game.realtime.configure(data);
 });
 
 var pending_cancel = document.querySelector("#pending-cancel");
@@ -129,6 +136,15 @@ stop.addEventListener("click", (e) => {
     toggleButtonSpinner(stop, true);
     window.api.ateball.stop();
 });
+
+const get_realtime_config = () => {
+    // formdata doesnt return disabled fields
+    return data = {
+        "image_type" : document.querySelector("select[name='image_type']").value,
+        "show_walls" : document.querySelector("input[name='show_walls']").checked,
+        "show_holes" : document.querySelector("input[name='show_holes']").checked
+    };
+}
 
 const toggleButtonSpinner = (elem, state) => {
     state ? elem.classList.add("running") : elem.classList.remove("running");

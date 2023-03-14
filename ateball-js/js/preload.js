@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('api', {
         play: (data) => ipcRenderer.send('game-play', data),
         game : {
             realtime : {
+                configure: (data) => ipcRenderer.send('realtime-configure', data),
                 on_stream: (callback) => ipcRenderer.on('realtime-stream', callback)
             },
             cancel: () => ipcRenderer.send('game-cancel'),

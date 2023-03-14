@@ -22,13 +22,15 @@ class Table:
     def get_ball_positions(self):
         return [b.center for b in self.balls]
 
-    def draw(self, image):
-        for w in self.walls:
-            w.draw(image)
+    def draw(self, config, image):
+        if "show_walls" in config and config["show_walls"]:
+            for w in self.walls:
+                w.draw(image)
 
-        for h in self.holes:
-            h.draw(image)
-            h.draw_points(image)
+        if "show_holes" in config and config["show_holes"]:
+            for h in self.holes:
+                h.draw(image)
+                h.draw_points(image)
 
         for b in self.balls:
             b.draw(image)

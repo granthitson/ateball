@@ -26,7 +26,7 @@ class Game(threading.Thread, ABC):
     location: str
     img_game_start: str
     
-    def __init__(self, ipc, location, *args, **kwargs):
+    def __init__(self, ipc, location, realtime_config={}, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.ipc = ipc
@@ -45,6 +45,14 @@ class Game(threading.Thread, ABC):
 
         self.window_capturer = utils.WindowCapturer(constants.regions.game, constants.regions.window_offset, 30, daemon=True)
         self.recording = q.Queue()
+
+        self.realtime_config = realtime_config
+        self.realtime_update = threading.Event()
+        self.realtime_images = {
+            "table" : None,
+            "combined_mask" : None,
+            "mask" : None
+        }
         
         self.table = Table()
 
@@ -349,9 +357,8 @@ class Game(threading.Thread, ABC):
                 image = self.window_capturer.get_first()
                 if image.any():
                     table = utils.CV2Helper.slice_image(image, constants.regions.table)
-                    table_hsv = cv2.cvtColor(table, cv2.COLOR_BGR2HSV)
 
-                    table_masked = self.mask_out_table(table, table_hsv)
+                    table_masked = self.mask_out_table(table)
                     table_masked_gray = cv2.cvtColor(table_masked, cv2.COLOR_BGR2GRAY)
 
                     # approximate location with hough circles - TODO improve approximation
@@ -361,29 +368,37 @@ class Game(threading.Thread, ABC):
                     # update table with current location
                     self.table.balls = [Ball((p[0], p[1])) for p in points[0, :]]
 
+                    # send correct image type
+                    if "image_type" in self.realtime_config:
+                        draw_image = (self.realtime_images[self.realtime_config["image_type"]]).copy()
+                    else:
+                        draw_image = table.copy()
+
                     # draw result
-                    draw_table = table.copy()
-                    self.table.draw(draw_table)
+                    self.table.draw(self.realtime_config, draw_image)
 
                     # send result if it differs from last
                     current_ball_positions = self.table.get_ball_positions()
                     difference = set(current_ball_positions) - set(prev_ball_positions)
-                    if difference:
+                    if difference or self.realtime_update.is_set():
+                        self.realtime_update.clear()
                         prev_ball_positions = current_ball_positions
 
-                        retval, image_buffer = cv2.imencode('.png', draw_table)
+                        retval, image_buffer = cv2.imencode('.png', draw_image)
                         image_buffer = base64.b64encode(image_buffer.tobytes()).decode('ascii')
                         image_b64 = f"data:image/png;base64,{image_buffer}"
 
                         self.ipc.send_message({"type" : "REALTIME-STREAM", "data" : image_b64})
 
-                    self.recording.put((table, draw_table))
+                    self.recording.put((table, draw_image))
             except Exception as e:
                 self.logger.error(traceback.format_exc())
 
         self.recording.put((np.array([]), np.array([])))
 
-    def mask_out_table(self, img, hsv):
+    def mask_out_table(self, img):
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
         # mask for table color - table color masked out for visibility
         blue_lower = np.array([90, 80, 0])
         blue_upper = np.array([106, 255, 255])
@@ -398,6 +413,10 @@ class Game(threading.Thread, ABC):
         table_mask = cv2.bitwise_and(table_invert_mask, hole_mask)
         table_masked_out = cv2.bitwise_and(img, img, mask=table_mask)
 
+        self.realtime_images["table"] = img
+        self.realtime_images["combined_mask"] = table_masked_out
+        self.realtime_images["mask"] = table_mask
+
         return table_masked_out
    
     def record(self, path, filename, fmt=cv2.VideoWriter_fourcc(*'XVID')):
@@ -411,6 +430,9 @@ class Game(threading.Thread, ABC):
                 table, draw_table = images[0], images[1]
                 if not table.any() and not draw_table.any():
                     break
+
+                if len(draw_table.shape) != 3:
+                    draw_table = np.stack((draw_table,)*3, axis=-1)
                 
                 stack = np.concatenate((table, draw_table), axis=0)
                 video_writer.write(stack)

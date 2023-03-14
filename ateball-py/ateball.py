@@ -41,6 +41,10 @@ class AteBall():
                             self.active_game.show_realtime_event.clear()
                         else:
                             self.active_game.show_realtime_event.set()
+                elif m_type == "realtime-configure":
+                    if self.active_game:
+                        self.active_game.realtime_config.update(msg["data"])
+                        self.active_game.realtime_update.set()
                 elif m_type == "cancel":
                     self.cancel()
                 elif m_type == "quit":
@@ -89,11 +93,14 @@ class AteBall():
     def play(self, data):
         try:
             self.processing_play_request.set()
+
+            game_config = data['game_config'] if "game_config" in data else {}
+            realtime_config = data['realtime_config'] if "realtime_config" in data else {}
         
-            location = data['location'] if "location" in data else ""
+            location = game_config['location'] if "location" in game_config else ""
         
-            Game = getattr(games, data['gamemode'].upper())
-            self.active_game = Game(self.ipc, location, daemon=True)
+            Game = getattr(games, game_config['gamemode'].upper())
+            self.active_game = Game(self.ipc, location, realtime_config, daemon=True)
             self.active_game.start()
         except Exception as e:
             if isinstance(e, KeyError):

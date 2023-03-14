@@ -48,6 +48,10 @@ class Ateball {
 		this.send_message(msg);
 	}
 
+	realtime_configure(data) {
+		this.send_message({ "type" : "realtime-configure", "data" : data});
+	}
+
 	cancel_game() {
 		this.window.setAlwaysOnTop(false);
 		this.send_message({ "type" : "cancel" });
