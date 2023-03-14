@@ -161,7 +161,7 @@ class Game(threading.Thread, ABC):
                     
                     # match shape of contours - contours similar closer to 0
                     match = cv2.matchShapes(haystack_contours, needle_contours, cv2.CONTOURS_MATCH_I1 , 0.0)
-                    if match <= .05:
+                    if match <= .02:
                         self.get_game_num()
                         self.game_start.set()
             except Exception as e:
