@@ -24,7 +24,6 @@ from constants import constants
 
 class Game(threading.Thread, ABC):
     location: str
-    img_game_start: str
     
     def __init__(self, ipc, location, realtime_config={}, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -34,6 +33,8 @@ class Game(threading.Thread, ABC):
         self.name = self.__class__.__name__
         self.location = constants.locations[location] if location != "" else location
 
+        self.img_game_start = constants.gamemodes.__dict__[self.__class__.__name__].img_game_start
+
         self.game_start = threading.Event()
         self.game_cancelled = threading.Event()
 
@@ -42,39 +43,48 @@ class Game(threading.Thread, ABC):
         self.game_over_event = utils.OrEvent(self.game_end, self.game_cancelled, self.game_exception)
 
         self.game_num = 0
+        self.game_path = ""
 
         self.window_capturer = utils.WindowCapturer(constants.regions.game, constants.regions.window_offset, 30, daemon=True)
         self.recording = q.Queue()
 
         self.realtime_config = realtime_config
         self.realtime_update = threading.Event()
-        self.realtime_images = {
-            "table" : None,
-            "combined_mask" : None,
-            "mask" : None
-        }
-        
-        self.table = Table()
 
-        self.suit = None
-        self.turn_num = 0
-        self.round_start_image = None
+        self.available_targets = {c : d for c, d in constants.table.balls.identity.__dict__.items()}
+        
+        self.table = Table(self.__class__.__name__)
+        self.table_history = []
+
+        self.round_data = {
+            "suit" : None,
+            "turn_num" : 0, 
+            "table_data" : None,
+            "round_image" : None,
+            "all_balls" : {},
+            "unpocketed_balls" : [],
+            "pocketed_balls" : {},
+            "targets" : {},
+            "nontargets" : {},
+        }
 
         self.player_turn = threading.Event()
         self.opponent_turn = threading.Event()
+
         self.turn_start = threading.Event()
         self.turn_end = threading.Event()
         self.turn_start_event = utils.OrEvent(self.turn_start, self.turn_end)
+        self.timed_out = threading.Event()
 
         self.current_round = None
 
         self.logger = logging.getLogger("ateball.games")
         self.fhandler = None
 
-    def configure_logging(self, path):
+    def configure_logging(self):
         formatter = utils.Formatter()
 
-        self.fhandler = logging.FileHandler(f"{path}/log.log", mode="w")
+        self.fhandler = logging.FileHandler(f"{self.game_path}/log.log", mode="w")
         self.fhandler.setFormatter(formatter)
         self.fhandler.setLevel(logging.DEBUG)
 
@@ -92,36 +102,66 @@ class Game(threading.Thread, ABC):
 
             self.wait_for_game_start()
             if self.game_start.is_set():
-                game_path = str(Path("ateball-py", "games", f"{self.game_num}-{self.name}-{self.location}"))
-                os.makedirs(game_path, exist_ok=True)
+                self.game_path = str(Path("ateball-py", "games", f"{self.game_num}-{self.name}-{self.location}"))
+                os.makedirs(self.game_path, exist_ok=True)
 
-                self.configure_logging(game_path)
+                self.configure_logging()
 
                 self.ipc.send_message({"type" : "GAME-START"})
                 self.logger.info(f"\nGame #{self.game_num}\n")
 
-                threading.Thread(target=self.record, args=(game_path, "game",)).start()
+                threading.Thread(target=self.record, args=("game",)).start()
+                threading.Thread(target=self.roi_balls, daemon=True).start()
                 
-                threading.Thread(target=self.get_ball_locations, daemon=True).start()
                 threading.Thread(target=self.wait_for_turn_start, daemon=True).start()
 
+                # game loop
                 while not self.game_over_event.is_set():
-                    self.turn_start_event.wait()
-                    if self.player_turn.is_set() and self.turn_start.is_set():
-                        self.turn_start.clear()
+                    image = self.window_capturer.get()
+                    if image.any():
+                        # table image processing + get location of pool balls
+                        self.table.prepare_table(image)
+                        self.table.get_ball_locations(self.available_targets)
 
-                        self.ipc.send_message({"type" : "ROUND-START"})
+                        # keep history of image and table data
+                        if len(self.table_history) >= 20:
+                            self.table_history.pop(0)
+                        self.table_history.append((image, self.table.copy()))
 
-                        round_path = Path(game_path, f"round-{self.turn_num}")
-                        os.makedirs(round_path, exist_ok=True)
+                        if self.turn_start.is_set():
+                            # update round start image on turn start (play or opponent)
+                            self.turn_start.clear()
+                            self.set_round_image()
+                            
+                            if self.player_turn.is_set():
+                                self.round_data["turn_num"] += 1
 
-                        cv2.imwrite(str(Path(round_path, "round_start.png")), self.round_start_image)
+                                self.current_round = Round(self.ipc, self.game_path, self.round_data)
+                                self.current_round.start()
 
-                        self.logger.info(f"Turn #{self.turn_num}")
-                        
-                        round_data = self.get_round_data(round_path)
-                        self.current_round = Round(round_data)
-                        result = self.current_round.start()
+                            self.timed_out.clear()
+
+                        # collect data for ml model
+                        if self.capture_event.is_set():
+                            self.capture_queue.put(self.table.capture())
+                            self.capture_event.clear()
+
+                        # draw table
+                        image, draw_image = self.table.draw(self.realtime_config)
+
+                        # send updated table image if it differs from last
+                        if self.table.updated.is_set() or self.realtime_update.is_set():
+                            self.realtime_update.clear()
+
+                            retval, image_buffer = cv2.imencode('.png', draw_image)
+                            image_buffer = base64.b64encode(image_buffer.tobytes()).decode('ascii')
+                            image_b64 = f"data:image/png;base64,{image_buffer}"
+
+                            self.ipc.send_message({"type" : "REALTIME-STREAM", "data" : image_b64})
+
+                        self.recording.put((image, draw_image))
+
+                self.recording.put((np.array([]), np.array([])))
         except Exception as e:
             self.logger.error(traceback.format_exc())
 
@@ -153,7 +193,7 @@ class Game(threading.Thread, ABC):
 
         while not self.game_start.is_set() and not self.game_over_event.is_set():
             try:
-                image = self.window_capturer.get_first()
+                image = self.window_capturer.get()
                 if image.any() and needle_contours.any():
                     # get contour of (potential) marker of current game
                     haystack = utils.CV2Helper.slice_image(image, constants.regions.turn_start)
@@ -214,7 +254,7 @@ class Game(threading.Thread, ABC):
         old_player_status = None
         while not self.game_over_event.is_set():
             try:
-                image = self.window_capturer.get_first()
+                image = self.window_capturer.get()
                 if image.any():
                     # get mean color of each turn timer - colors represent different state at beginning of round
                     turn_status = self.get_turn_status(image, turn_timer_mask, turn_timer_mask_single)
@@ -224,6 +264,9 @@ class Game(threading.Thread, ABC):
                     player_timer_start, opponent_timer_start = turn_status["player"]["hierarchy"], turn_status["opponent"]["hierarchy"]
                     timed_out = ((player_status == "timeout" and player_timer_start) or (opponent_status == "timeout" and opponent_timer_start))
 
+                    if timed_out:
+                        self.timed_out.set()
+
                     if self.player_turn.is_set():
                         if opponent_status != "pending":
                             if opponent_status == "successive":
@@ -232,8 +275,6 @@ class Game(threading.Thread, ABC):
                                 if (player_status == "started" and player_timer_start) and old_player_status != "started":
                                     self.end_existing_round()
 
-                                    self.turn_num += 1
-                                    self.set_round_image(timed_out)
                                     self.player_turn.set()
                                     self.turn_start_event.notify(self.turn_start)
                             else:
@@ -241,15 +282,13 @@ class Game(threading.Thread, ABC):
                                 if opponent_status == "started" and opponent_timer_start:
                                     self.end_existing_round()
 
-                                    self.set_round_image(timed_out)
                                     self.opponent_turn.set()
+                                    self.turn_start_event.notify(self.turn_start)
                     elif self.opponent_turn.is_set():
                         # player turn starts when player timer flashes white and contour is 'closed'
                         if player_status == "started" and player_timer_start:
                             self.end_existing_round()
 
-                            self.turn_num += 1
-                            self.set_round_image(timed_out)
                             self.player_turn.set()
                             self.turn_start_event.notify(self.turn_start)
                     else:
@@ -258,13 +297,13 @@ class Game(threading.Thread, ABC):
                         if player_status != "pending":
                             self.end_existing_round()
 
-                            self.turn_num += 1
-                            self.set_round_image(timed_out)
+                            self.opponent_turn.clear()
                             self.player_turn.set()
                             self.turn_start_event.notify(self.turn_start)
                         else:
                             self.player_turn.clear()
                             self.opponent_turn.set()
+                            self.turn_start_event.notify(self.turn_start)
             except Exception as e:
                 self.logger.error(traceback.format_exc())
             finally:
@@ -285,8 +324,8 @@ class Game(threading.Thread, ABC):
         o_timer = utils.CV2Helper.slice_image(turn_timers_masked, constants.regions.opponent_turn_timer)
 
         # match mean color to closest color
-        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, constants.turn_status)
-        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, constants.turn_status)
+        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, constants.turn_status.__dict__)
+        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, constants.turn_status.__dict__)
 
         # get hierarchy of turn timer contours (closed vs open)
         p_timer_hsv = cv2.cvtColor(p_timer, cv2.COLOR_BGR2HSV)
@@ -309,6 +348,25 @@ class Game(threading.Thread, ABC):
             },
         }
 
+    def set_round_image(self):
+        if self.round_data["table_data"] is None:
+            self.round_data["round_image"], self.round_data["table_data"] = self.table_history[0]
+        else:
+            if not self.timed_out.is_set():
+                self.round_data["round_image"], self.round_data["table_data"] = self.table_history[0]
+
+    def mask_out_background(self, hsv, mask):
+        upper_gray = np.array([255, 255, 255])
+        lower_gray = np.array([0, 85, 20])
+
+        image_masked = cv2.inRange(hsv, lower_gray, upper_gray)
+        image_masked = cv2.morphologyEx(image_masked, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+
+        mask1 = cv2.bitwise_and(mask, image_masked)
+        # mask1 = cv2.morphologyEx(mask1, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+
+        return mask1
+
     def end_existing_round(self):
         self.opponent_turn.clear()
         self.player_turn.clear()
@@ -318,111 +376,16 @@ class Game(threading.Thread, ABC):
         if self.current_round is not None and not self.current_round.round_over_event.is_set():
             self.current_round.round_over_event.notify(self.current_round.round_cancel)
             self.current_round = None
-            self.logger.info(f"Turn #{self.turn_num} Complete")
-
-        self.export_round_data()
-
-    def set_round_image(self, turn_timed_out):
-        if self.round_start_image is not None:
-            # in case of timeout, use last recorded round_start_image
-            self.round_start_image = self.round_start_image if turn_timed_out else self.window_capturer.get_last()
-        else:
-            self.round_start_image = self.window_capturer.get_last()
-
-    def export_round_data(self):
-        pass
-
-    def get_round_data(self, image_path):
-        return {
-            "save_image_path" : image_path,
-            "round_image" : self.round_start_image,
-            "suit" : self.suit,
-            "all_balls" : {},
-            "unpocketed_balls" : [],
-            "pocketed_balls" : {},
-            "targets" : {},
-            "nontargets" : {},
-        }
+            self.logger.info("Turn #{} Complete".format(self.round_data["turn_num"]))
 
     def is_game_over(self, image):
         pos = utils.ImageHelper.imageSearch(self.img_game_end, image, region=constants.regions.table)
         return True if pos else False
 
-    def get_ball_locations(self):
-        self.logger.debug("Outlining pool balls...")
-
-        prev_ball_positions = []
-        while not self.game_over_event.is_set():
-            try:
-                image = self.window_capturer.get_first()
-                if image.any():
-                    table = utils.CV2Helper.slice_image(image, constants.regions.table)
-
-                    table_masked = self.mask_out_table(table)
-                    table_masked_gray = cv2.cvtColor(table_masked, cv2.COLOR_BGR2GRAY)
-
-                    # approximate location with hough circles - TODO improve approximation
-                    points = cv2.HoughCircles(table_masked_gray, cv2.HOUGH_GRADIENT, 1, 17, param1=20, param2=9, minRadius=9, maxRadius=11)
-                    points = np.uint16(np.around(points))
-
-                    # update table with current location
-                    self.table.balls = [Ball((p[0], p[1])) for p in points[0, :]]
-
-                    # send correct image type
-                    if "image_type" in self.realtime_config:
-                        draw_image = (self.realtime_images[self.realtime_config["image_type"]]).copy()
-                    else:
-                        draw_image = table.copy()
-
-                    # draw result
-                    self.table.draw(self.realtime_config, draw_image)
-
-                    # send result if it differs from last
-                    current_ball_positions = self.table.get_ball_positions()
-                    difference = set(current_ball_positions) - set(prev_ball_positions)
-                    if difference or self.realtime_update.is_set():
-                        self.realtime_update.clear()
-                        prev_ball_positions = current_ball_positions
-
-                        retval, image_buffer = cv2.imencode('.png', draw_image)
-                        image_buffer = base64.b64encode(image_buffer.tobytes()).decode('ascii')
-                        image_b64 = f"data:image/png;base64,{image_buffer}"
-
-                        self.ipc.send_message({"type" : "REALTIME-STREAM", "data" : image_b64})
-
-                    self.recording.put((table, draw_image))
-            except Exception as e:
-                self.logger.error(traceback.format_exc())
-
-        self.recording.put((np.array([]), np.array([])))
-
-    def mask_out_table(self, img):
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-        # mask for table color - table color masked out for visibility
-        blue_lower = np.array([90, 80, 0])
-        blue_upper = np.array([106, 255, 255])
-        black_lower = np.array([0, 0, 35])
-        black_high = np.array([180, 255, 255])
-
-        table_invert_mask = cv2.inRange(hsv, blue_lower, blue_upper)
-        table_invert_mask = cv2.bitwise_not(table_invert_mask)
-
-        hole_mask = cv2.inRange(hsv, black_lower, black_high)
-
-        table_mask = cv2.bitwise_and(table_invert_mask, hole_mask)
-        table_masked_out = cv2.bitwise_and(img, img, mask=table_mask)
-
-        self.realtime_images["table"] = img
-        self.realtime_images["combined_mask"] = table_masked_out
-        self.realtime_images["mask"] = table_mask
-
-        return table_masked_out
-   
-    def record(self, path, filename, fmt=cv2.VideoWriter_fourcc(*'XVID')):
+    def record(self, filename, fmt=cv2.VideoWriter_fourcc(*'XVID')):
         # write images to avi file
         region = (constants.regions.table[2], constants.regions.table[3] * 2)
-        video_writer = cv2.VideoWriter(str(Path(path, f"{filename}.avi")), fmt, self.window_capturer.fps, region)
+        video_writer = cv2.VideoWriter(str(Path(self.game_path, f"{filename}.avi")), fmt, self.window_capturer.fps, region)
 
         while not self.game_over_event.is_set():
             try:
@@ -445,52 +408,34 @@ class ONE_ON_ONE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "bet_marker.png"
-
 class TOURNAMENT(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
-
-        self.img_game_start = "bet_marker.png"
 
 class NO_GUIDELINE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "bet_marker.png"
-
 class NINE_BALL(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
-
-        self.img_game_start = "bet_marker.png"
 
 class LUCKY_SHOT(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "lucky_shot.png"
-
 class CHALLENGE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
-
-        self.img_game_start = "bet_marker.png"
 
 class PASS_N_PLAY(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "practice_marker.png"
-
 class QUICK_FIRE(Game):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-        self.img_game_start = "practice_marker.png"
-
 class GUEST(Game):
     def __init__(self, location, *args, **kwargs):
         super().__init__(location, *args, **kwargs)
-
-        self.img_game_start = "game\\bet_marker.png"

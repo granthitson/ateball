@@ -134,9 +134,7 @@ class WindowCapturer(threading.Thread):
         self.last_tick = 0
         self.on_tick = threading.Event()
 
-        self.image_stack = []
-        self.image_stack_limit = 20
-        self.video_writer = None
+        self.image = None
 
         self.stop_event = threading.Event()
 
@@ -183,7 +181,7 @@ class WindowCapturer(threading.Thread):
             img.shape = (h, w, 4)
 
             img = img[...,:3]
-            img = np.ascontiguousarray(img)
+            self.image = np.ascontiguousarray(img)
 
             # Free Resources
             dcObj.DeleteDC()
@@ -191,23 +189,13 @@ class WindowCapturer(threading.Thread):
             win32gui.ReleaseDC(self.hwnd, wDC)
             win32gui.DeleteObject(dataBitMap.GetHandle())
 
-            # keep track of last x image frames - set by image_stack_limit
-            if len(self.image_stack) >= self.image_stack_limit:
-                self.image_stack.pop(0)
-            self.image_stack.append(img)
-
             # allow threads to retrieve latest
             self.on_tick.set()
 
-    def get_first(self):
+    def get(self):
         # get latest image added to stack
         self.on_tick.wait()
-        return self.image_stack[-1] if self.image_stack else np.array([])
-    
-    def get_last(self):
-        # get oldest image added to stack
-        self.on_tick.wait()
-        return self.image_stack[0] if self.image_stack else np.array([])
+        return self.image if self.image.any() else np.array([])
 
     def stop(self):
         self.stop_event.set()
@@ -292,23 +280,23 @@ class CV2Helper:
         mean = cv2.mean(img, mask=mask)[:3]
 
         # match mean color to nearest color match
-        closest_color = CV2Helper.get_color_name(mean, lookup)
+        deltas = CV2Helper.color_deltas(mean, lookup)
 
-        return closest_color
+        return deltas[0][1]
 
     @staticmethod
-    def get_color_name(color, color_lookup):
+    def color_deltas(color, color_lookup):
         # match color to closest color listed in lookup
 
         # create list of differences for each lookup value
         differences = [
             [CV2Helper.color_difference(color, bgr), name]
-            for name, bgr in color_lookup.__dict__.items()
+            for name, bgr in color_lookup.items()
         ]
 
         # sort differences (ascending) - and return color with least difference
         differences.sort()
-        return differences[0][1]
+        return differences
     
     @staticmethod
     def color_difference(color1, color2):
@@ -329,8 +317,15 @@ class CV2Helper:
 
     @staticmethod
     def slice_image(image, region):
-        # cut image to size
-        return image[region[1]:region[1] + region[3], region[0]:region[0] + region[2]]
+        # cut image to size (within confines of image)
+        height, width, channels = image.shape
+        x, y, width, height = max(0, region[0]), max(0, region[1]), min(region[2], width), min(region[3], height)
+        return image[y:y + height, x:x + width]
+    
+    @staticmethod
+    def roi(image, center, radius):
+        region = (center[0] - radius, center[1] - radius, radius * 2, radius * 2)
+        return CV2Helper.slice_image(image, region), region
 
     @staticmethod
     def create_mask(hsv, lower, upper, op=None, kernal=None):

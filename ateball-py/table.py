@@ -1,28 +1,85 @@
 import logging
+import copy
+
+import threading
 
 import cv2
 import math
+import numpy as np
 
-from utils import Point
+from ball import Ball
+from utils import Point, CV2Helper
 from constants import constants
 
-class Table:
-    def __init__(self):
+class Table(object):
+    def __init__(self, gamemode):
         self.table = constants.regions.table
         self.table_end = Point((self.table[2], self.table[3]/2))
         self.table_center = Point((self.table[2]/2, self.table[3]/2))
 
+        self.table_background_mask = np.array(constants.gamemodes.__dict__[gamemode].table_mask_lower), np.array(constants.gamemodes.__dict__[gamemode].table_mask_upper)
+        self.table_background_black_mask = np.array(constants.table.black_mask.lower), np.array(constants.table.black_mask.upper)
+
         self.balls = []
+        self.updated = threading.Event()
 
         self.walls = [Wall(name, data) for i, (name, data) in enumerate(constants.table.walls.__dict__.items())]
         self.holes = [Hole(name, data, self) for i, (name, data) in enumerate(constants.table.holes.__dict__.items())]
 
+        self.images = {
+            "table" : None,
+            "combined_mask" : None,
+            "mask" : None,
+            "none" : None
+        }
+
         self.logger = logging.getLogger("ateball.table")
 
-    def get_ball_positions(self):
-        return [b.center for b in self.balls]
+    def copy(self):
+        return copy.copy(self)
 
-    def draw(self, config, image):
+    def prepare_table(self, img):
+        table = CV2Helper.slice_image(img, constants.regions.table)
+
+        height, width, channels = table.shape
+        hsv = cv2.cvtColor(table, cv2.COLOR_BGR2HSV)
+
+        # mask out table color for visibility
+        table_invert_mask = cv2.inRange(hsv, *self.table_background_mask)
+        table_invert_mask = cv2.bitwise_not(table_invert_mask)
+
+        # mask out holes
+        hole_mask = cv2.inRange(hsv, *self.table_background_black_mask)
+
+        # combine masks
+        table_mask = cv2.bitwise_and(table_invert_mask, hole_mask)
+        table_masked_out = cv2.bitwise_and(table, table, mask=table_mask)
+
+        self.images["table"] = table
+        self.images["combined_mask"] = table_masked_out
+        self.images["mask"] = table_mask
+        self.images["none"] = np.zeros((height, width, channels), np.uint8)
+
+    def get_ball_locations(self, available_identities):
+        self.updated.clear()
+
+        image = self.images["combined_mask"].copy()
+        table_masked_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # approximate location with hough circles - TODO improve approximation
+        points = cv2.HoughCircles(table_masked_gray, cv2.HOUGH_GRADIENT, 1, 17, param1=20, param2=9, minRadius=9, maxRadius=11)
+        points = np.uint16(np.around(points))[0, :]
+
+        # create list of Balls from points
+        self.balls = [Ball((p[0], p[1])) for p in points]
+   
+        self.updated.set()
+
+    def draw(self, config):
+        # draw on correct image type
+        i_type = config["image_type"] if "image_type" in config else "table"
+        image = self.images[i_type].copy()
+
         if "show_walls" in config and config["show_walls"]:
             for w in self.walls:
                 w.draw(image)
@@ -34,6 +91,11 @@ class Table:
 
         for b in self.balls:
             b.draw(image)
+
+        return self.images["table"], image
+
+    def capture(self):
+        return (self.images["combined_mask"], self.balls)
 
 class Wall:
     def __init__(self, name, data):
