@@ -104,15 +104,11 @@ class Ateball {
 
 			self.process.stdout.removeAllListeners('data');
 			self.process.stdout.on('data', function (data) {
-				var data = data.toString().trim().split(/\r?\n|\r/g);
-				data.forEach((msg) => {
-					try {
-						var p_msg = JSON.parse(msg);
-						self.process_message(p_msg);
-					} catch (e) {
-						self.window.webContents.send("ateball-log", msg);
-					}
-				});
+				self.process_message(data);
+			});
+
+			self.process.stderr.on('data', function(data) {
+				self.process_message(data);
 			});
 	
 			self.process.once('exit', function () {
@@ -130,57 +126,65 @@ class Ateball {
 		});
 
 		this.process.once('error', (err) => {
-			console.error('ateball process failed to start');
+			console.error('ateball process failed to start', err);
 			start_reject();
 		});
 
 		return this.started;
 	};
 	
-	process_message(msg) {
-		if (msg.id) {
-			this.pending[id]()
-		} else {
-			switch (msg.type) {
-				case "BUSY":
-					console.log("ateball busy");
-					break;
-				case "INIT":
-					console.log("ateball initialized");
-					this.state.process.connected = true;
-					break;
-				case "GAME-START":
-					console.log("game started");
-					this.state.ateball.pending = false;
-					this.state.ateball.game.started = true;
-
-					this.toggle_game_controls();
-					break;
-				case "ROUND-START":
-					console.log("round started");
-					this.state.ateball.game.round.started = true;
-					break;
-				case "REALTIME-STREAM":
-					this.window.webContents.send("realtime-stream", { data: msg.data});
-					break;
-				case "ROUND-END":
-					console.log("round ended");
-					this.state.ateball.game.round.started = false;
-					break;
-				case "GAME-EXCEPTION":
-				case "GAME-CANCELLED":
-					console.log("game cancelled");
-					this.end_game();
-					break;
-				case "GAME-END":
-					console.log("game ended");
-					this.end_game();
-					break;
-				default:
-					console.log("unrecognized message type: ", msg.type);
-					break;
+	process_message(data) {
+		var messages = data.toString().trim().split(/\r?\n|\r/g);
+		messages.forEach((msg) => {
+			try {
+				var p_msg = JSON.parse(msg);
+				if (p_msg.id) {
+					this.pending[id]()
+				} else {
+					switch (p_msg.type) {
+						case "BUSY":
+							console.log("ateball busy");
+							break;
+						case "INIT":
+							console.log("ateball initialized");
+							this.state.process.connected = true;
+							break;
+						case "GAME-START":
+							console.log("game started");
+							this.state.ateball.pending = false;
+							this.state.ateball.game.started = true;
+		
+							this.toggle_game_controls();
+							break;
+						case "ROUND-START":
+							console.log("round started");
+							this.state.ateball.game.round.started = true;
+							break;
+						case "REALTIME-STREAM":
+							this.window.webContents.send("realtime-stream", { data: p_msg.data});
+							break;
+						case "ROUND-END":
+							console.log("round ended");
+							this.state.ateball.game.round.started = false;
+							break;
+						case "GAME-EXCEPTION":
+						case "GAME-CANCELLED":
+							console.log("game cancelled");
+							this.end_game();
+							break;
+						case "GAME-END":
+							console.log("game ended");
+							this.end_game();
+							break;
+						default:
+							console.log("unrecognized message type: ", p_msg.type);
+							break;
+					}
+				}
+			} catch (e) {
+				this.window.webContents.send("ateball-log", msg);
 			}
-		}
+		});
 	}
 
 	send_message(msg, callback = null) {
