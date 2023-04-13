@@ -80,12 +80,12 @@ class Ball(Point):
         self.color_total = np.sum(np.count_nonzero(self.ball_mask, axis=-1)) / 3
         self.ratio = ((self.white_total / solid_white_total) + (self.color_total / solid_color_total)) / 2
 
-    def set_identity(self, data):
+    def set_identity(self, data, color_info):
         self.suit = data.suit if "suit" in data.__dict__ else None
         self.name = data.name
         self.number = data.number if "number" in data.__dict__ else None
         self.color = data.color if "color" in data.__dict__ else None
-        self.bgr = constants.table.balls.colors.__dict__[self.color].bgr if "color" in data.__dict__ else (0, 255, 0)
+        self.bgr = color_info.bgr if "color" in data.__dict__ else (0, 255, 0)
 
     def draw(self, image):
         if self.suit == "solid":

@@ -30,16 +30,11 @@ class Round(threading.Thread):
 
         self.ipc = ipc
 
-        # game constants
-        self.table = data["table_data"]
-
         self.regions = constants.regions
-        self.hole_locations = constants.table.holes
 
-        self.colors = constants.table.balls.colors
-        # game constants
-        
         # round constants
+        self.table = data["table_data"]
+        
         self.turn_num = data['turn_num']
         self.round_path = str(Path(path, f"round-{self.turn_num}"))
         self.images = { 

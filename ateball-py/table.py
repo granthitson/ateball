@@ -12,19 +12,22 @@ from utils import Point, CV2Helper
 from constants import constants
 
 class Table(object):
-    def __init__(self, gamemode):
+    def __init__(self, gamemode_info):
+        self.gamemode_info = gamemode_info
+
         self.table = constants.regions.table
         self.table_end = Point((self.table[2], self.table[3]/2))
         self.table_center = Point((self.table[2]/2, self.table[3]/2))
 
-        self.table_background_mask = np.array(constants.gamemodes.__dict__[gamemode].table_mask_lower), np.array(constants.gamemodes.__dict__[gamemode].table_mask_upper)
+        self.table_background_mask = np.array(self.gamemode_info.table_mask.mask_lower), np.array(self.gamemode_info.table_mask.mask_upper)
         self.table_background_black_mask = np.array(constants.table.black_mask.lower), np.array(constants.table.black_mask.upper)
 
         self.stick_mask = np.array(constants.table.stick_mask.lower), np.array(constants.table.stick_mask.upper)
         self.glove_mask = np.array(constants.table.glove_mask.lower), np.array(constants.table.glove_mask.upper)
         self.white_mask = np.array(constants.table.white_mask.lower), np.array(constants.table.white_mask.upper)
 
-        self.ball_color_look_up = {i : c.match_bgr for i, c in constants.table.balls.colors.__dict__.items()}
+        self._ball_colors = constants.table.balls.__dict__[self.gamemode_info.balls].colors.__dict__
+        self.ball_color_look_up = {c : d.match_bgr for c, d in self._ball_colors.items()}
 
         self.balls = []
         self.updated = threading.Event()
@@ -92,12 +95,14 @@ class Table(object):
             self.__identify_ball(b, available_identities, to_identify, identified)
         
         # identify any leftover balls - likely one of the pairs is obstructed by view
-        for c, d in to_identify.items():
-            b = d[0]
+        for c, balls in to_identify.items():
+            b = balls[0]
+            color_info = self._ball_colors[c]
+
             if b.ratio > .15:
-                b.set_identity(available_identities[c].stripe)
+                b.set_identity(available_identities[c].stripe, color_info)
             else:
-                b.set_identity(available_identities[c].solid)
+                b.set_identity(available_identities[c].solid, color_info)
 
             identified.append(b)
 
@@ -186,7 +191,7 @@ class Table(object):
         for dist, c in color_proximities:
             # color should be in list of currently available targets
             if c in available_identities:
-                color_info = constants.table.balls.colors.__dict__[c]
+                color_info = self._ball_colors[c]
 
                 # verify color identifiction - hue should be within its mask range
                 if color_hsv[0] >= color_info.mask_lower[0] and color_hsv[0] <= color_info.mask_upper[0]:
@@ -194,7 +199,7 @@ class Table(object):
                     # set identity after identifying all balls of same color (except cue/eightball)
                     if c in ["white", "black"]:
                         if b.color_total > 17:
-                            b.set_identity(available_identities[c])
+                            b.set_identity(available_identities[c], color_info)
                         identified.append(b)
                         break
                     else:
@@ -207,7 +212,7 @@ class Table(object):
                             # identify with only available identity
                             if total_identities == 1:
                                 identity = list(available_identities[c].__dict__.items())[0]
-                                b.set_identity(identity)
+                                b.set_identity(identity, color_info)
                                 identified.append(b)
                                 del to_identify[c]
                             elif total_identities == 2:
@@ -215,11 +220,11 @@ class Table(object):
                                 b1 = to_identify[c][0]
                                 
                                 if (b.ratio) > (b1.ratio):
-                                    b.set_identity(available_identities[c].stripe)
-                                    b1.set_identity(available_identities[c].solid)
+                                    b.set_identity(available_identities[c].stripe, color_info)
+                                    b1.set_identity(available_identities[c].solid, color_info)
                                 else:
-                                    b.set_identity(available_identities[c].solid)
-                                    b1.set_identity(available_identities[c].stripe)
+                                    b.set_identity(available_identities[c].solid, color_info)
+                                    b1.set_identity(available_identities[c].stripe, color_info)
 
                                 identified.append(b)
                                 identified.append(b1)

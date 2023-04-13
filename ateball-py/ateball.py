@@ -104,9 +104,9 @@ class AteBall():
             self.active_game.start()
         except Exception as e:
             if isinstance(e, KeyError):
-                self.logger.error(f"error playing game: invalid gamemode location - {data['location']}")
+                self.logger.error(f"error playing game: invalid gamemode location - {data['game_config']['location']}")
             elif isinstance(e, AttributeError):
-                self.logger.error(f"error playing game: invalid gamemode - {data['gamemode']}")
+                self.logger.error(f"error playing game: invalid gamemode - {data['game_config']['gamemode']}")
             else:
                 self.logger.error(f"error playing game: {traceback.format_exc()}")
 

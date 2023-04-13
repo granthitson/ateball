@@ -31,7 +31,10 @@ class Game(threading.Thread, ABC):
         self.ipc = ipc
 
         self.name = self.__class__.__name__
-        self.location = constants.locations[location] if location != "" else location
+        self.location = constants.locations.__dict__[location] if location != "" else location
+
+        self.gamemode_info = constants.gamemodes.__dict__[self.__class__.__name__]
+        self.gamemode_rules = constants.rules.__dict__[self.gamemode_info.rules] if "rules" in self.gamemode_info.__dict__ else constants.rules.__dict__[self.location.rules]
 
         self.img_game_start = constants.gamemodes.__dict__[self.__class__.__name__].img_game_start
 
@@ -51,9 +54,9 @@ class Game(threading.Thread, ABC):
         self.realtime_config = realtime_config
         self.realtime_update = threading.Event()
 
-        self.available_targets = {c : d for c, d in constants.table.balls.identity.__dict__.items()}
+        self.available_targets = {c : d for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
         
-        self.table = Table(self.__class__.__name__)
+        self.table = Table(self.gamemode_info)
         self.table_history = []
 
         self.round_data = {
@@ -102,7 +105,9 @@ class Game(threading.Thread, ABC):
 
             self.wait_for_game_start()
             if self.game_start.is_set():
-                self.game_path = str(Path("ateball-py", "games", f"{self.game_num}-{self.name}-{self.location}"))
+                full_game_name = "-".join(str(d) for d in [self.game_num, self.name, self.location] if d is not None)
+                
+                self.game_path = str(Path("ateball-py", "games", full_game_name))
                 os.makedirs(self.game_path, exist_ok=True)
 
                 self.configure_logging()
