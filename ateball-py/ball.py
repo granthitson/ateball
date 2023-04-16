@@ -18,20 +18,7 @@ class Ball(Point):
 
         self.bgr = (0, 255, 0)
 
-        self.ball_mask = None
-        self.white_mask = None
-        self.stick_mask = None
-        self.glove_mask = None
-
-        self.white_total = None
-        self.color_total = None
-        self.ratio = None
-
-        self.pocketed = False
-
-        self.offset_center = (0, 0)
-        self.rotated_center = (0, 0)
-        self.area = 0
+        self.mask_info = BallMaskInfo()
 
         self.logger = logging.getLogger("ateball.ball")
 
@@ -47,8 +34,6 @@ class Ball(Point):
     def __eq__(self, other):
         if isinstance(other, Ball):
             dist = self.distance(other)
-            if dist:
-                self.logger.debug(f"{self} - {other} : {dist}")
             return (dist < 5)
         else:
             return False
@@ -62,23 +47,6 @@ class Ball(Point):
     def update(self, center):
         self.center = (center[0], center[1])
         self.offset_center = (center[0] + constants.regions.table[0], center[1] + constants.regions.table[1])
-
-    def get_features(self):
-        # not happy with this process - works most of the time, but want more reliable
-
-        # compensate for stick blocking
-        stick_total = np.sum(np.count_nonzero(self.stick_mask, axis=-1))
-        if stick_total > 9:
-            solid_white_total =  80 - (stick_total * .33)
-            solid_color_total =  230 - (stick_total * .66)
-        else:
-            solid_white_total =  80 - stick_total
-            solid_color_total =  230
-
-        # generate avg ratio comparing total white pixels and colored pixels against their max totals of solids
-        self.white_total = np.sum(np.count_nonzero(self.white_mask, axis=-1))
-        self.color_total = np.sum(np.count_nonzero(self.ball_mask, axis=-1)) / 3
-        self.ratio = ((self.white_total / solid_white_total) + (self.color_total / solid_color_total)) / 2
 
     def set_identity(self, data, color_info):
         self.suit = data.suit if "suit" in data.__dict__ else None
@@ -110,3 +78,40 @@ class Eight(Ball):
         self.bgr = (0, 0, 0)
         self.number = 8
 
+class BallMaskInfo:
+    def __init__(self):
+        self.color_mask = None
+        self.white_mask = None
+        self.stick_mask = None
+        self.glove_mask = None
+
+        self.stick_total = None
+        self.glove_total = None
+        self.white_total = None
+        self.color_total = None
+        self.ratio = None
+
+    def update_masks(self, color_mask, white_mask, glove_mask, stick_mask):
+        self.color_mask = color_mask
+        self.white_mask = white_mask
+        self.stick_mask = glove_mask
+        self.glove_mask = stick_mask
+
+    def update_mask_totals(self):
+        self.stick_total = np.sum(np.count_nonzero(self.stick_mask, axis=-1))
+        self.glove_total = np.sum(np.count_nonzero(self.glove_mask, axis=-1))
+        self.white_total = np.sum(np.count_nonzero(self.white_mask, axis=-1))
+        self.color_total = np.sum(np.count_nonzero(self.color_mask, axis=-1)) / 3
+
+        # compensate for stick blocking
+        obsuring_area_ratio = (self.stick_total / constants.ball.area)
+        if obsuring_area_ratio >= .05:
+            solid_ratio = constants.ball.suit.solid.white_threshold / constants.ball.suit.solid.color_threshold
+            solid_white_total =  constants.ball.suit.solid.white_threshold - (self.stick_total * solid_ratio)
+            solid_color_total =  constants.ball.suit.solid.color_threshold - (self.stick_total * (1 - solid_ratio))
+        else:
+            solid_white_total =  constants.ball.suit.solid.white_threshold - self.stick_total
+            solid_color_total =  constants.ball.suit.solid.color_threshold
+
+        # generate avg ratio comparing total white pixels and colored pixels against their max totals of solids
+        self.ratio = ((self.white_total / solid_white_total) + (self.color_total / solid_color_total)) / 2

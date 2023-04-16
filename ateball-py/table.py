@@ -99,7 +99,7 @@ class Table(object):
             b = balls[0]
             color_info = self._ball_colors[c]
 
-            if b.ratio > .15:
+            if b.mask_info.ratio > .15:
                 b.set_identity(available_identities[c].stripe, color_info)
             else:
                 b.set_identity(available_identities[c].solid, color_info)
@@ -176,31 +176,31 @@ class Table(object):
 
         color_mask = cv2.bitwise_and(image, image, mask=mask)
 
-        b.update_masks(color_mask, white_mask, glove_mask, stick_mask)
+        b.mask_info.update_masks(color_mask, white_mask, glove_mask, stick_mask)
 
     def __identify_ball(self, b, available_identities, to_identify, identified):
-        b.update_mask_totals()
+        b.mask_info.update_mask_totals()
 
         # eliminate false positives near pool stick
-        if b.stick_total > (b.glove_total + b.white_total + b.color_total):
+        if b.mask_info.stick_total > (b.mask_info.glove_total + b.mask_info.white_total + b.mask_info.color_total):
             return
 
         # identify cue ball if glove is present
-        if (b.glove_total / constants.ball.area) > .4:
-            b.set_identity(available_identities["white"], self._ball_colors["white"])
+        if (b.mask_info.glove_total / constants.ball.area) > .4:
+            b.mask_info.set_identity(available_identities["white"], self._ball_colors["white"])
             identified.append(b)
             return
 
         # identify target - color_total should be* less than 5% of total area possible 
-        if (b.color_total / constants.ball.area) < .05:
+        if (b.mask_info.color_total / constants.ball.area) < .05:
             # filter out false positives (appear around cue ball glove) - false positives will not have sufficient white pixels
-            if (b.white_total / constants.ball.area) > .2:
+            if (b.mask_info.white_total / constants.ball.area) > .2:
                 b.set_identity(available_identities["target"], {})
                 identified.append(b)
             return
 
         # get mean of colored pixels - excluding black pixels
-        color = b.color_mask[~np.all(b.color_mask == 0, axis=-1)].mean(axis=0)
+        color = b.mask_info.color_mask[~np.all(b.mask_info.color_mask == 0, axis=-1)].mean(axis=0)
         color_hsv = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0]
 
         # get list of colors - ordered by smallest deltae
@@ -235,7 +235,7 @@ class Table(object):
                                 # approx suit by comparing ratios of white to colored pixels
                                 b1 = to_identify[c][0]
                                 
-                                if (b.ratio) > (b1.ratio):
+                                if (b.mask_info.ratio) > (b1.mask_info.ratio):
                                     b.set_identity(available_identities[c].stripe, color_info)
                                     b1.set_identity(available_identities[c].solid, color_info)
                                 else:
