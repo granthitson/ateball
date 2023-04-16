@@ -112,28 +112,31 @@ class Table(object):
 
     # compounding error when hough circle is off
     def __correct_center(self, b, image, region):
-        height, width, channels = image.shape
+        try:
+            height, width, channels = image.shape
 
-        # create circular mask around approximated center
-        circle_mask = np.zeros((height,width), np.uint8)
-        cv2.circle(circle_mask, (b.center[0]-region[0], b.center[1]-region[1]), 10, [255, 255, 255], -1)
-        correction_mask = cv2.bitwise_and(image, image, mask=circle_mask)
+            # create circular mask around approximated center
+            circle_mask = np.zeros((height,width), np.uint8)
+            cv2.circle(circle_mask, (b.center[0]-region[0], b.center[1]-region[1]), 10, [255, 255, 255], -1)
+            correction_mask = cv2.bitwise_and(image, image, mask=circle_mask)
 
-        # crop image from edge to first nonzero row/col
-        correction_cropped = np.nonzero(correction_mask) 
-        top = correction_cropped[0].min()
-        bottom = correction_cropped[0].max()
-        left = correction_cropped[1].min()
-        right = correction_cropped[1].max()
-        
-        # calculate corrected center based on minimums/maximums
-        w_correction = ((width-1) - (right - left)) // 2
-        y_correction = ((height-1) - (bottom - top)) // 2
-        y_correction = y_correction if top > 0 else -y_correction
-        w_correction = w_correction if left > 0 else -w_correction
-        corrected = b.center[0] + w_correction, b.center[1] + y_correction
+            # crop image from edge to first nonzero row/col
+            correction_cropped = np.nonzero(correction_mask) 
+            top = correction_cropped[0].min()
+            bottom = correction_cropped[0].max()
+            left = correction_cropped[1].min()
+            right = correction_cropped[1].max()
+            
+            # calculate corrected center based on minimums/maximums
+            w_correction = ((width-1) - (right - left)) // 2
+            y_correction = ((height-1) - (bottom - top)) // 2
+            y_correction = y_correction if top > 0 else -y_correction
+            w_correction = w_correction if left > 0 else -w_correction
+            corrected = b.center[0] + w_correction, b.center[1] + y_correction
 
-        b.update(corrected)
+            b.update(corrected)
+        except Exception as e:
+            pass
 
     def __mask_out_unimportant(self, b, image, region):
         # image_blur = cv2.GaussianBlur(image, (3, 3), 0)
