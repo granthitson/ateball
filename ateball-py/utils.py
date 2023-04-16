@@ -306,7 +306,7 @@ class CV2Helper:
         color2_lab = cv2.cvtColor(np.uint8([[color2]]), cv2.COLOR_BGR2LAB)[0][0]
 
         # return deltaE of lab colors
-        return skimage.color.deltaE_cie76(color1, color2)
+        return skimage.color.deltaE_cie76(color1_lab, color2_lab)
 
     def resize(image, factor):
         width = int(image.shape[1] * factor)
