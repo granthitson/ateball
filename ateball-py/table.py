@@ -146,48 +146,62 @@ class Table(object):
 
         # create roi smaller than ball to avoid color bias of balls in close proximity
         blank_image = np.zeros((height,width), np.uint8)
-        cv2.circle(blank_image, (b.center[0]-region[0], b.center[1]-region[1]), 9, [255, 255, 255], -1)
+        cv2.circle(blank_image, (b.center[0]-region[0], b.center[1]-region[1]), (constants.ball.radius-1), [255, 255, 255], -1)
 
         # mask out white to avoid color bias and get more accurate mean
         white_mask = cv2.inRange(hsv, *self.white_mask)
 
-        # dilate to ensure good white masking
+        # create inversion mask to exlude white pixels - dilate to ensure good white masking
         mask_white_invert = cv2.dilate(white_mask, np.ones((3, 3), np.uint8))
         mask_white_invert = cv2.bitwise_not(mask_white_invert)
         mask_white_invert = cv2.bitwise_and(mask_white_invert, blank_image)
 
-        # mask out default dan pool stick
+        # TODO improve stick masking - should be color/design invariant
+        # mask out default dan pool stick and create inversion mask to exclude stick pixels
         stick_mask = cv2.inRange(hsv, *self.stick_mask)
         stick_mask_invert = cv2.dilate(stick_mask, np.ones((2, 2), np.uint8))
-        stick_mask_invert = cv2.bitwise_not(stick_mask_invert)
+        stick_mask_invert = cv2.bitwise_not(stick_mask)
+
+        # limit stick mask inside area of ball (exlude any mask inside roi, but outside ball)
+        stick_mask = cv2.bitwise_and(blank_image, stick_mask)
 
         # in the case the player can move the cue ball, mask out glove
         glove_mask = cv2.inRange(hsv, *self.glove_mask)
-        glove = cv2.dilate(glove_mask, np.ones((2, 2), np.uint8))
-        glove_mask = cv2.bitwise_not(glove_mask)
+        glove_mask_invert = cv2.dilate(glove_mask, np.ones((2, 2), np.uint8))
+        glove_mask_invert = cv2.bitwise_not(glove_mask_invert)
 
         # combine masks and mask out undesired areas
-        mask = cv2.bitwise_and(mask_white_invert, glove_mask)
+        mask = cv2.bitwise_and(mask_white_invert, glove_mask_invert)
         mask = cv2.bitwise_and(mask, stick_mask_invert)
 
-        mean_mask = cv2.bitwise_and(image, image, mask=mask)
+        color_mask = cv2.bitwise_and(image, image, mask=mask)
 
-        b.ball_mask = mean_mask
-        b.white_mask = white_mask
-        b.stick_mask = stick_mask
-        b.glove_mask = glove_mask
+        b.update_masks(color_mask, white_mask, glove_mask, stick_mask)
 
     def __identify_ball(self, b, available_identities, to_identify, identified):
-        b.get_features()
+        b.update_mask_totals()
 
-        # get mean excluding black pixels (masked out)
-        color = b.ball_mask[~np.all(b.ball_mask == 0, axis=-1)].mean(axis=0)
-        color_hsv = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0]
+        # eliminate false positives near pool stick
+        if b.stick_total > (b.glove_total + b.white_total + b.color_total):
+            return
 
-        # target identifier will return nan (most of the time)
-        if np.isnan(color).any():
+        # identify cue ball if glove is present
+        if (b.glove_total / constants.ball.area) > .4:
+            b.set_identity(available_identities["white"], self._ball_colors["white"])
             identified.append(b)
             return
+
+        # identify target - color_total should be* less than 5% of total area possible 
+        if (b.color_total / constants.ball.area) < .05:
+            # filter out false positives (appear around cue ball glove) - false positives will not have sufficient white pixels
+            if (b.white_total / constants.ball.area) > .2:
+                b.set_identity(available_identities["target"], {})
+                identified.append(b)
+            return
+
+        # get mean of colored pixels - excluding black pixels
+        color = b.color_mask[~np.all(b.color_mask == 0, axis=-1)].mean(axis=0)
+        color_hsv = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0]
 
         # get list of colors - ordered by smallest deltae
         color_proximities = CV2Helper.color_deltas(color, self.ball_color_look_up)
@@ -199,10 +213,9 @@ class Table(object):
                 # verify color identifiction - hue should be within its mask range
                 if color_hsv[0] >= color_info.mask_lower[0] and color_hsv[0] <= color_info.mask_upper[0]:
                     
-                    # set identity after identifying all balls of same color (except cue/eightball)
-                    if c in ["white", "black"]:
-                        if b.color_total > 17:
-                            b.set_identity(available_identities[c], color_info)
+                    # set identity after identifying all balls of same color (except cue/eightball/target)
+                    if c in ["white", "black", "target"]:
+                        b.set_identity(available_identities[c], color_info)
                         identified.append(b)
                         break
                     else:
