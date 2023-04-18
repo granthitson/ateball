@@ -193,7 +193,7 @@ class Game(threading.Thread, ABC):
         self.logger.info("Waiting for game to start...")
 
         # get contour of marker
-        needle = utils.CV2Helper.imread(utils.ImageHelper.imagePath(self.img_game_start))
+        needle = utils.CV2Helper.imread(self.img_game_start)
         needle_contours = self.get_game_marker_contours(needle)
 
         while not self.game_start.is_set() and not self.game_over_event.is_set():
@@ -253,8 +253,8 @@ class Game(threading.Thread, ABC):
         self.logger.info("Waiting for turn to start...")
 
         # load turn timer masks
-        turn_timer_mask = utils.CV2Helper.imread(utils.ImageHelper.imagePath(constants.images.img_turn_timers_mask), 0)
-        turn_timer_mask_single = utils.CV2Helper.imread(utils.ImageHelper.imagePath(constants.images.img_turn_timers_mask_single), 0)
+        turn_timer_mask = utils.CV2Helper.imread(constants.images.img_turn_timers_mask, 0)
+        turn_timer_mask_single = utils.CV2Helper.imread(constants.images.img_turn_timers_mask_single, 0)
 
         old_player_status = None
         while not self.game_over_event.is_set():

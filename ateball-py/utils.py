@@ -199,75 +199,16 @@ class WindowCapturer(threading.Thread):
     def stop(self):
         self.stop_event.set()
 
-class ImageHelper:
-    logger = logging.getLogger("ateball.utils.ImageHelper")
-
-    @staticmethod
-    def imagePath(filename):
-        return os.path.join(os.getcwd(), "ateball-py", "images", filename)
-
-    @staticmethod
-    def get(pos, point_type="center", ):
-        if point_type == "corner":
-            return (pos[0], pos[1])
-        else:
-            return (pos[0] + (pos[2]/2), pos[1] + (pos[3]/2))
-
-    @staticmethod
-    def locateImage(needle, haystack, region=None, threshold=.90):
-        try:
-            if region is not None:
-                haystack = haystack[region[1]:region[1]+region[3], region[0]:region[0]+region[2]]
-
-            needle = cv2.imread(ImageHelper.imagePath(needle))
-            
-            w, h = needle.shape[:-1]
-            w1, h1 = haystack.shape[:-1]
-
-            res = cv2.matchTemplate(haystack, needle, cv2.TM_CCOEFF_NORMED)
-
-            loc = np.where( res >= threshold)
-            results = list(map(lambda p: (p[0], p[1], w, h), zip(*loc[::-1])))
-
-            if len(results) > 0:
-                result = results[0]
-            else:
-                result = None
-        except Exception as e:
-            logger.error(f"error locating image - {needle} in {haystack}")
-            result = None
-
-        return result
-
-    @staticmethod
-    def imageSearch(needle, haystack, region=None, point_type="center", threshold=.95):
-        pos = ImageHelper.locateImage(needle, haystack, region, threshold)
-        if pos is not None:
-            pos = ImageHelper.get(pos, "center")
-            
-        ImageHelper.logger.debug(f"image search complete: {needle} - {pos}")
-
-        return pos
-
-    @staticmethod
-    def imageSearchLock(needle, haystack, region=None, threshold=.95, lock_time=1):
-        # image is present if it exists before and after x seconds
-        pos = ImageHelper.locateImage(needle, haystack, region, threshold)
-        if pos is not None:
-            threading.Event().wait(lock_time)
-            pos = ImageHelper.locateImage(needle, haystack, region, threshold)
-            if pos is not None:
-                ImageHelper.logger.debug(f"image lock acquired: {needle}")
-                return ImageHelper.get(pos, "center")
-
-        return None
-
 class CV2Helper:
     logger = logging.getLogger("ateball.utils.CV2Helper")
 
     @staticmethod
+    def image_path(filename):
+        return os.path.join(os.getcwd(), "ateball-py", "images", filename)
+
+    @staticmethod
     def imread(path, *args):
-        image = cv2.imread(path, *args)
+        image = cv2.imread(CV2Helper.image_path(path), *args)
         if image is None:
             raise Exception(f"image does not exist at path: {path}")
 
@@ -307,6 +248,7 @@ class CV2Helper:
         # return deltaE of lab colors
         return skimage.color.deltaE_cie76(color1_lab, color2_lab)
 
+    @staticmethod
     def resize(image, factor):
         width = int(image.shape[1] * factor)
         height = int(image.shape[0] * factor)
