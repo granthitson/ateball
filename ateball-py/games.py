@@ -31,7 +31,7 @@ class Game(threading.Thread, ABC):
         self.ipc = ipc
 
         self.name = self.__class__.__name__
-        self.location = constants.locations.__dict__[location] if location != "" else location
+        self.location = constants.locations.__dict__[location] if location != "" else None
 
         self.gamemode_info = constants.gamemodes.__dict__[self.__class__.__name__]
         self.gamemode_rules = constants.rules.__dict__[self.gamemode_info.rules] if "rules" in self.gamemode_info.__dict__ else constants.rules.__dict__[self.location.rules]
