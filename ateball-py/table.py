@@ -69,7 +69,7 @@ class Table(object):
         self.images["mask"] = table_mask
         self.images["none"] = np.zeros((height, width, channels), np.uint8)
 
-    def get_ball_locations(self, available_identities):
+    def identify_targets(self, available_identities):
         self.updated.clear()
 
         image = self.images["combined_mask"].copy()
@@ -187,7 +187,7 @@ class Table(object):
 
         # identify cue ball if glove is present
         if (b.mask_info.glove_total / constants.ball.area) > .4:
-            b.mask_info.set_identity(available_identities["white"], self._ball_colors["white"])
+            b.set_identity(available_identities["white"], self._ball_colors["white"])
             identified.append(b)
             return
 

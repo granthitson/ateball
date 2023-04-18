@@ -126,7 +126,7 @@ class Game(threading.Thread, ABC):
                     if image.any():
                         # table image processing + get location of pool balls
                         self.table.prepare_table(image)
-                        self.table.get_ball_locations(self.available_targets)
+                        self.table.identify_targets(self.available_targets)
 
                         # keep history of image and table data
                         if len(self.table_history) >= 20:

@@ -10,7 +10,6 @@ import queue as q
 import json
 
 import math
-import pyautogui
 import cv2
 import numpy as np
 import skimage
@@ -318,7 +317,7 @@ class CV2Helper:
     @staticmethod
     def slice_image(image, region):
         # cut image to size (within confines of image)
-        height, width, channels = image.shape
+        height, width = image.shape[0], image.shape[1]
         x, y, width, height = max(0, region[0]), max(0, region[1]), min(region[2], width), min(region[3], height)
         return image[y:y + height, x:x + width]
     
@@ -335,17 +334,29 @@ class CV2Helper:
 
         return mask
 
-class Point:
+class Point(object):
     def __init__(self, center):
         self.center = (center[0], center[1])
 
         self.logger = logging.getLogger("ateball.utils.Point")
 
     def __str__(self):
-        return f"{self.center}"
+        return f"Point({self.center})"
 
     def __repr__(self):
-        return str(self)
+        return f"Point({self.center})"
+
+    def __hash__(self):
+        return hash(self.__repr__())
+
+    def __eq__(self, other):
+        if isinstance(other, Point):
+            return (self.center) == (other.center)
+        else:
+            return False
+
+    def __ne__(self, other):
+        return (not self.__eq__(other))
 
     def add(self, p):
         return (self.center[0] + p.center[0], self.center[1] + p.center[0])

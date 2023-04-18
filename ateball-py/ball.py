@@ -94,14 +94,14 @@ class BallMaskInfo:
     def update_masks(self, color_mask, white_mask, glove_mask, stick_mask):
         self.color_mask = color_mask
         self.white_mask = white_mask
-        self.stick_mask = glove_mask
-        self.glove_mask = stick_mask
+        self.glove_mask = glove_mask
+        self.stick_mask = stick_mask
 
     def update_mask_totals(self):
-        self.stick_total = np.sum(np.count_nonzero(self.stick_mask, axis=-1))
-        self.glove_total = np.sum(np.count_nonzero(self.glove_mask, axis=-1))
-        self.white_total = np.sum(np.count_nonzero(self.white_mask, axis=-1))
-        self.color_total = np.sum(np.count_nonzero(self.color_mask, axis=-1)) / 3
+        self.stick_total = np.count_nonzero(self.stick_mask)
+        self.glove_total = np.count_nonzero(self.glove_mask)
+        self.white_total = np.count_nonzero(self.white_mask)
+        self.color_total = np.count_nonzero(self.color_mask) / 3
 
         # compensate for stick blocking
         obsuring_area_ratio = (self.stick_total / constants.ball.area)
