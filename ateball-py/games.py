@@ -115,8 +115,7 @@ class Game(threading.Thread, ABC):
                 self.ipc.send_message({"type" : "GAME-START"})
                 self.logger.info(f"\nGame #{self.game_num}\n")
 
-                threading.Thread(target=self.record, args=("game",)).start()
-                threading.Thread(target=self.roi_balls, daemon=True).start()
+                threading.Thread(target=self.record).start()
                 
                 threading.Thread(target=self.wait_for_turn_start, daemon=True).start()
 
@@ -384,13 +383,15 @@ class Game(threading.Thread, ABC):
             self.logger.info("Turn #{} Complete".format(self.round_data["turn_num"]))
 
     def is_game_over(self, image):
-        pos = utils.ImageHelper.imageSearch(self.img_game_end, image, region=constants.regions.table)
+        pos = utils.CV2Helper.imageSearch(self.img_game_end, image, region=constants.regions.table)
         return True if pos else False
 
-    def record(self, filename, fmt=cv2.VideoWriter_fourcc(*'XVID')):
+    def record(self):
         # write images to avi file
+        v_format = cv2.VideoWriter_fourcc(*'XVID')
+
         region = (constants.regions.table[2], constants.regions.table[3] * 2)
-        video_writer = cv2.VideoWriter(str(Path(self.game_path, f"{filename}.avi")), fmt, self.window_capturer.fps, region)
+        video_writer = cv2.VideoWriter(str(Path(self.game_path, "game.avi")), v_format, self.window_capturer.fps, region)
 
         while not self.game_over_event.is_set():
             try:
