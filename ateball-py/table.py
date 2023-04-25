@@ -65,7 +65,7 @@ class Table(object):
     def __prepare_table(self, image):
         # table --
         table = CV2Helper.slice_image(image, constants.regions.table)
-        height, width, channels = image.shape
+        height, width, channels = table.shape
 
         hsv = cv2.cvtColor(table, cv2.COLOR_BGR2HSV)
 
