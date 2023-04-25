@@ -50,15 +50,9 @@ class Round(threading.Thread):
 
         self.get_targets_event = threading.Event()
 
-
-        self.all_balls = data["all_balls"]
-
-        self.unpocketed_balls = data["unpocketed_balls"]
-        self.pocketed_balls = data["pocketed_balls"]
-
         self.suit = data["suit"]
-        self.targets = data["targets"]
-        self.nontargets = data["nontargets"]
+        self.solids = data["solid"]
+        self.stripes = data["stripe"]
 
         self.chosen_ball = None
 

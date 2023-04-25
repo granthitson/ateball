@@ -61,21 +61,8 @@ class Game(threading.Thread, ABC):
             "suit" : None,
             "turn_num" : 0, 
             "table_data" : None,
-            "round_image" : None,
-            "all_balls" : {},
-            "unpocketed_balls" : [],
-            "pocketed_balls" : {},
-            "targets" : {},
-            "nontargets" : {},
+            "round_image" : None
         }
-
-        self.player_turn = threading.Event()
-        self.opponent_turn = threading.Event()
-
-        self.turn_start = threading.Event()
-        self.turn_end = threading.Event()
-        self.turn_start_event = utils.OrEvent(self.turn_start, self.turn_end)
-        self.timed_out = threading.Event()
 
         self.current_round = None
 
@@ -94,6 +81,117 @@ class Game(threading.Thread, ABC):
     def clear_logging(self):
         logging.getLogger("ateball").removeHandler(self.fhandler)
         self.fhandler = None
+
+    def record(self):
+        # write images to avi file
+        v_format = cv2.VideoWriter_fourcc(*'XVID')
+
+        region = (constants.regions.table[2], constants.regions.table[3] * 2)
+        video_writer = cv2.VideoWriter(str(Path(self.game_path, "game.avi")), v_format, self.window_capturer.fps, region)
+
+        while not self.game_over_event.is_set():
+            try:
+                images = self.recording.get()
+                table, draw_table = images[0], images[1]
+                if not table.any() and not draw_table.any():
+                    break
+
+                if len(draw_table.shape) != 3:
+                    draw_table = np.stack((draw_table,)*3, axis=-1)
+                
+                stack = np.concatenate((table, draw_table), axis=0)
+                video_writer.write(stack)
+            except Exception as e:
+                self.logger.error(traceback.format_exc())
+        
+        video_writer.release()
+
+    def run(self):
+        raise NotImplementedError("must define run to use this base class")
+
+    def wait_for_game_start(self):
+        self.logger.info("Waiting for game to start...")
+
+        # get contour of marker
+        needle = utils.CV2Helper.imread(self.img_game_start)
+        needle_contours = self.get_game_marker_contours(needle)
+
+        while not self.game_start.is_set() and not self.game_over_event.is_set():
+            try:
+                image = self.window_capturer.get()
+                if image.any() and needle_contours.any():
+                    # get contour of (potential) marker of current game
+                    haystack = utils.CV2Helper.slice_image(image, constants.regions.turn_start)
+                    haystack_contours = self.get_game_marker_contours(haystack)
+                    
+                    # match shape of contours - contours similar closer to 0
+                    match = cv2.matchShapes(haystack_contours, needle_contours, cv2.CONTOURS_MATCH_I1 , 0.0)
+                    if match <= .02:
+                        self.get_game_num()
+                        self.game_start.set()
+            except Exception as e:
+                self.logger.error(traceback.format_exc())
+
+    def get_game_marker_contours(self, image):
+        try:
+            # resize & blur to get clearer contours
+            image = utils.CV2Helper.resize(image, 4)
+            image_blur = cv2.GaussianBlur(image, (9,9), 0)
+
+            image_hsv = cv2.cvtColor(image_blur, cv2.COLOR_BGR2HSV)
+
+            # filter out gray background to get shape of marker
+            image_mask = cv2.inRange(image_hsv, np.array([0, 0, 40]), np.array([180, 255, 255]))
+            image_mask = cv2.morphologyEx(image_mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8), iterations=3)
+
+            # return largest contour
+            contours, hierarchy = cv2.findContours(image_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+            contours = sorted(contours, key=cv2.contourArea, reverse=True)[0]
+        except IndexError as e:
+            return np.array([])
+        else:
+            return contours
+
+    def get_game_num(self):
+        json_path = Path("ateball-py", "game.json")
+        json_path.touch(exist_ok=True)
+
+        with open(json_path, "r") as f:
+            try:
+                data = json.load(f)
+                data["num"] += 1 
+                self.game_num = data["num"]
+                with open(json_path, "w") as f:
+                    f.write(json.dumps(data))
+            except json.decoder.JSONDecodeError as e:
+                data = {"num" : 1}
+                self.game_num = data["num"]
+                with open(json_path, "w") as f:
+                    f.write(json.dumps(data))
+
+    def cancel(self):
+        self.logger.debug("cancelling current game")
+        self.game_over_event.notify(self.game_cancelled)
+
+    def is_game_over(self, image):
+        pos = utils.CV2Helper.imageSearch(self.img_game_end, image, region=constants.regions.table)
+        return True if pos else False
+
+class OnePlayerGame(Game):
+    def __init__(self, ipc, location, realtime_config={}, *args, **kwargs):
+        pass
+
+class TwoPlayerGame(Game):
+    def __init__(self, ipc, location, realtime_config={}, *args, **kwargs):
+        super().__init__(ipc, location, realtime_config, *args, **kwargs)
+
+        self.player_turn = threading.Event()
+        self.opponent_turn = threading.Event()
+
+        self.turn_start = threading.Event()
+        self.turn_end = threading.Event()
+        self.turn_start_event = utils.OrEvent(self.turn_start, self.turn_end)
+        self.timed_out = threading.Event()
 
     def run(self):
         try:
@@ -173,71 +271,6 @@ class Game(threading.Thread, ABC):
                     self.ipc.send_message({"type" : "GAME-CANCELLED"})
                 elif self.game_end.is_set():
                     self.ipc.send_message({"type" : "GAME-END"})
-
-    def cancel(self):
-        self.logger.debug("cancelling current game")
-        self.turn_start_event.notify(self.turn_end)
-        self.game_over_event.notify(self.game_cancelled)
-
-    def wait_for_game_start(self):
-        self.logger.info("Waiting for game to start...")
-
-        # get contour of marker
-        needle = utils.CV2Helper.imread(self.img_game_start)
-        needle_contours = self.get_game_marker_contours(needle)
-
-        while not self.game_start.is_set() and not self.game_over_event.is_set():
-            try:
-                image = self.window_capturer.get()
-                if image.any() and needle_contours.any():
-                    # get contour of (potential) marker of current game
-                    haystack = utils.CV2Helper.slice_image(image, constants.regions.turn_start)
-                    haystack_contours = self.get_game_marker_contours(haystack)
-                    
-                    # match shape of contours - contours similar closer to 0
-                    match = cv2.matchShapes(haystack_contours, needle_contours, cv2.CONTOURS_MATCH_I1 , 0.0)
-                    if match <= .02:
-                        self.get_game_num()
-                        self.game_start.set()
-            except Exception as e:
-                self.logger.error(traceback.format_exc())
-
-    def get_game_marker_contours(self, image):
-        try:
-            # resize & blur to get clearer contours
-            image = utils.CV2Helper.resize(image, 4)
-            image_blur = cv2.GaussianBlur(image, (9,9), 0)
-
-            image_hsv = cv2.cvtColor(image_blur, cv2.COLOR_BGR2HSV)
-
-            # filter out gray background to get shape of marker
-            image_mask = cv2.inRange(image_hsv, np.array([0, 0, 40]), np.array([180, 255, 255]))
-            image_mask = cv2.morphologyEx(image_mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8), iterations=3)
-
-            # return largest contour
-            contours, hierarchy = cv2.findContours(image_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-            contours = sorted(contours, key=cv2.contourArea, reverse=True)[0]
-        except IndexError as e:
-            return np.array([])
-        else:
-            return contours
-
-    def get_game_num(self):
-        json_path = Path("ateball-py", "game.json")
-        json_path.touch(exist_ok=True)
-
-        with open(json_path, "r") as f:
-            try:
-                data = json.load(f)
-                data["num"] += 1 
-                self.game_num = data["num"]
-                with open(json_path, "w") as f:
-                    f.write(json.dumps(data))
-            except json.decoder.JSONDecodeError as e:
-                data = {"num" : 1}
-                self.game_num = data["num"]
-                with open(json_path, "w") as f:
-                    f.write(json.dumps(data))
 
     def wait_for_turn_start(self):
         self.logger.info("Waiting for turn to start...")
@@ -367,66 +400,43 @@ class Game(threading.Thread, ABC):
             self.current_round = None
             self.logger.info("Turn #{} Complete".format(self.round_data["turn_num"]))
 
-    def is_game_over(self, image):
-        pos = utils.CV2Helper.imageSearch(self.img_game_end, image, region=constants.regions.table)
-        return True if pos else False
+    def cancel(self):
+        self.logger.debug("cancelling current game")
+        self.turn_start_event.notify(self.turn_end)
+        self.game_over_event.notify(self.game_cancelled)
 
-    def record(self):
-        # write images to avi file
-        v_format = cv2.VideoWriter_fourcc(*'XVID')
-
-        region = (constants.regions.table[2], constants.regions.table[3] * 2)
-        video_writer = cv2.VideoWriter(str(Path(self.game_path, "game.avi")), v_format, self.window_capturer.fps, region)
-
-        while not self.game_over_event.is_set():
-            try:
-                images = self.recording.get()
-                table, draw_table = images[0], images[1]
-                if not table.any() and not draw_table.any():
-                    break
-
-                if len(draw_table.shape) != 3:
-                    draw_table = np.stack((draw_table,)*3, axis=-1)
-                
-                stack = np.concatenate((table, draw_table), axis=0)
-                video_writer.write(stack)
-            except Exception as e:
-                self.logger.error(traceback.format_exc())
-        
-        video_writer.release()
-
-class ONE_ON_ONE(Game):
+class ONE_ON_ONE(TwoPlayerGame):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-class TOURNAMENT(Game):
+class TOURNAMENT(TwoPlayerGame):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-class NO_GUIDELINE(Game):
+class NO_GUIDELINE(TwoPlayerGame):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-class NINE_BALL(Game):
+class NINE_BALL(TwoPlayerGame):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-class LUCKY_SHOT(Game):
+class LUCKY_SHOT(OnePlayerGame):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-class CHALLENGE(Game):
+class CHALLENGE(TwoPlayerGame):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-class PASS_N_PLAY(Game):
+class PASS_N_PLAY(TwoPlayerGame):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-class QUICK_FIRE(Game):
+class QUICK_FIRE(OnePlayerGame):
     def __init__(self, location, pipe, *args, **kwargs):
         super().__init__(location, pipe, *args, **kwargs)
 
-class GUEST(Game):
+class GUEST(TwoPlayerGame):
     def __init__(self, location, *args, **kwargs):
         super().__init__(location, *args, **kwargs)
