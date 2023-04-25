@@ -145,11 +145,6 @@ class Game(threading.Thread, ABC):
 
                             self.timed_out.clear()
 
-                        # collect data for ml model
-                        if self.capture_event.is_set():
-                            self.capture_queue.put(self.table.capture())
-                            self.capture_event.clear()
-
                         # draw table
                         image, draw_image = self.table.draw(self.realtime_config)
 
