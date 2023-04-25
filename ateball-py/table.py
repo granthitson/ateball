@@ -20,14 +20,21 @@ class Table(object):
         self.table_center = Point((self.table[2]/2, self.table[3]/2))
 
         self.table_background_mask = np.array(self.gamemode_info.table_mask.mask_lower), np.array(self.gamemode_info.table_mask.mask_upper)
-        self.table_background_black_mask = np.array(constants.table.black_mask.lower), np.array(constants.table.black_mask.upper)
+        self.table_background_black_mask = np.array(constants.table.masks.table.black_mask.lower), np.array(constants.table.masks.table.black_mask.upper)
+        
+        self.table_pocketed_background_color_mask = np.array(constants.table.masks.pocketed.color_mask.lower), np.array(constants.table.masks.pocketed.color_mask.upper)
+        self.table_pocketed_background_white_mask = np.array(constants.table.masks.pocketed.white_mask.lower), np.array(constants.table.masks.pocketed.white_mask.upper)
 
-        self.stick_mask = np.array(constants.table.stick_mask.lower), np.array(constants.table.stick_mask.upper)
-        self.glove_mask = np.array(constants.table.glove_mask.lower), np.array(constants.table.glove_mask.upper)
-        self.white_mask = np.array(constants.table.white_mask.lower), np.array(constants.table.white_mask.upper)
+        self.stick_mask = np.array(constants.table.masks.table.stick_mask.lower), np.array(constants.table.masks.table.stick_mask.upper)
+        self.glove_mask = np.array(constants.table.masks.table.glove_mask.lower), np.array(constants.table.masks.table.glove_mask.upper)
+        self.white_mask = np.array(constants.table.masks.table.white_mask.lower), np.array(constants.table.masks.table.white_mask.upper)
 
         self._ball_colors = constants.table.balls.__dict__[self.gamemode_info.balls].colors.__dict__
         self.ball_color_look_up = {c : d.match_bgr for c, d in self._ball_colors.items()}
+
+        # dict lookup of currently available
+        self.available_table_targets = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
+        self.hittable_table_targets = {c : d for c, d in self.available_table_targets.items() if c not in ["white", "target"]}
 
         self.balls = []
         self.updated = threading.Event()
@@ -47,10 +54,19 @@ class Table(object):
     def copy(self):
         return copy.copy(self)
 
-    def prepare_table(self, img):
-        table = CV2Helper.slice_image(img, constants.regions.table)
+    def identify_targets(self, image):
+        self.updated.clear()
 
-        height, width, channels = table.shape
+        prepared_table, prepared_pocketed = self.__prepare_table(image)
+        self.balls = self.__identify_targets(prepared_table, prepared_pocketed, self.available_table_targets)
+   
+        self.updated.set()
+
+    def __prepare_table(self, image):
+        # table --
+        table = CV2Helper.slice_image(image, constants.regions.table)
+        height, width, channels = image.shape
+
         hsv = cv2.cvtColor(table, cv2.COLOR_BGR2HSV)
 
         # mask out table color for visibility
@@ -62,56 +78,70 @@ class Table(object):
 
         # combine masks
         table_mask = cv2.bitwise_and(table_invert_mask, hole_mask)
-        table_masked_out = cv2.bitwise_and(table, table, mask=table_mask)
+        table_masked = cv2.bitwise_and(table, table, mask=table_mask)
+
+        # pocketed --
+        targets_pocketed = CV2Helper.slice_image(image, constants.regions.targets_pocketed)
+        targets_pocketed_hsv = cv2.cvtColor(targets_pocketed, cv2.COLOR_BGR2HSV)
+
+        targets_pocketed_white_mask = cv2.inRange(targets_pocketed_hsv, *self.table_pocketed_background_white_mask)
+        targets_pocketed_color_mask = cv2.inRange(targets_pocketed_hsv, *self.table_pocketed_background_color_mask)
+        targets_pocketed_mask = cv2.bitwise_or(targets_pocketed_color_mask, targets_pocketed_white_mask)
+
+        targets_pocketed_masked = cv2.bitwise_and(targets_pocketed, targets_pocketed, mask=targets_pocketed_mask)
 
         self.images["table"] = table
-        self.images["combined_mask"] = table_masked_out
+        self.images["combined_mask"] = table_masked
         self.images["mask"] = table_mask
         self.images["none"] = np.zeros((height, width, channels), np.uint8)
 
-    def identify_targets(self, available_identities):
-        self.updated.clear()
+        return table_masked, targets_pocketed_masked
 
-        image = self.images["combined_mask"].copy()
-        table_masked_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    def __identify_targets(self, table, pocketed, available_targets):
+        ball_table_positions = self.__find_targets(table)
+        ball_pocketed_positions = self.__find_targets(pocketed, pocketed=True)
 
-        # approximate location with hough circles - TODO improve approximation
-        points = cv2.HoughCircles(table_masked_gray, cv2.HOUGH_GRADIENT, 1, 17, param1=20, param2=9, minRadius=9, maxRadius=11)
-        points = np.uint16(np.around(points))[0, :]
-
-        # create list of Balls from points
-        ball_positions = [Ball((p[0], p[1])) for p in points]
+        ball_positions = ball_table_positions + ball_pocketed_positions
 
         to_identify = {}
         identified = []
 
         # identify balls - based on characteristics
-        for b in ball_positions:
-            roi, region = CV2Helper.roi(image, b.center, 10)
+        for img, b in ball_positions:
+            roi, region = CV2Helper.roi(img, b.center, 10)
 
-            self.__correct_center(b, roi, region)
+            self.__adjust_center(b, roi, region)
 
             self.__mask_out_unimportant(b, roi, region)
-            self.__identify_ball(b, available_identities, to_identify, identified)
-        
+            self.__identify_ball(b, available_targets, to_identify, identified)
+
         # identify any leftover balls - likely one of the pairs is obstructed by view
         for c, balls in to_identify.items():
             b = balls[0]
             color_info = self._ball_colors[c]
 
-            if b.mask_info.ratio > .15:
-                b.set_identity(available_identities[c].stripe, color_info)
+            if math.fabs(1 - b.mask_info.ratio) < math.fabs(.5 - b.mask_info.ratio):
+                b.set_identity(available_targets[c].stripe, color_info)
             else:
-                b.set_identity(available_identities[c].solid, color_info)
+                b.set_identity(available_targets[c].solid, color_info)
 
             identified.append(b)
 
-        self.balls = identified
-   
-        self.updated.set()
+        return identified
+
+    def __find_targets(self, image, **kwargs):
+        image = image.copy()
+        table_masked_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # approximate location with hough circles - TODO improve approximation
+        points = cv2.HoughCircles(table_masked_gray, cv2.HOUGH_GRADIENT, 1, 17, param1=20, param2=9, minRadius=9, maxRadius=11)
+        points = np.uint16(np.around(points))[0, :] if points is not None and points.any() else []
+
+        # return list tuples (source_img, Ball) from points
+        return [(image, Ball((p[0], p[1]), **kwargs)) for p in points]
 
     # compounding error when hough circle is off
-    def __correct_center(self, b, image, region):
+    def __adjust_center(self, b, image, region):
         try:
             height, width, channels = image.shape
 
@@ -178,7 +208,7 @@ class Table(object):
 
         b.mask_info.update_masks(color_mask, white_mask, glove_mask, stick_mask)
 
-    def __identify_ball(self, b, available_identities, to_identify, identified):
+    def __identify_ball(self, b, available_targets, to_identify, identified):
         b.mask_info.update_mask_totals()
 
         # eliminate false positives near pool stick
@@ -187,7 +217,7 @@ class Table(object):
 
         # identify cue ball if glove is present
         if (b.mask_info.glove_total / constants.ball.area) > .4:
-            b.set_identity(available_identities["white"], self._ball_colors["white"])
+            b.set_identity(available_targets["white"], self._ball_colors["white"])
             identified.append(b)
             return
 
@@ -195,7 +225,7 @@ class Table(object):
         if (b.mask_info.color_total / constants.ball.area) < .05:
             # filter out false positives (appear around cue ball glove) - false positives will not have sufficient white pixels
             if (b.mask_info.white_total / constants.ball.area) > .2:
-                b.set_identity(available_identities["target"], {})
+                b.set_identity(available_targets["target"], {})
                 identified.append(b)
             return
 
@@ -207,7 +237,7 @@ class Table(object):
         color_proximities = CV2Helper.color_deltas(color, self.ball_color_look_up)
         for dist, c in color_proximities:
             # color should be in list of currently available targets
-            if c in available_identities:
+            if c in available_targets:
                 color_info = self._ball_colors[c]
 
                 # verify color identifiction - hue should be within its mask range
@@ -215,11 +245,11 @@ class Table(object):
                     
                     # set identity after identifying all balls of same color (except cue/eightball/target)
                     if c in ["white", "black", "target"]:
-                        b.set_identity(available_identities[c], color_info)
+                        b.set_identity(available_targets[c], color_info)
                         identified.append(b)
                         break
                     else:
-                        total_identities = len(available_identities[c].__dict__)
+                        total_identities = len(available_targets[c].__dict__)
 
                         # skip identification if there should be another ball of the same color
                         if c not in to_identify and total_identities > 1:
@@ -227,20 +257,21 @@ class Table(object):
                         else:
                             # identify with only available identity
                             if total_identities == 1:
-                                identity = list(available_identities[c].__dict__.items())[0]
+                                identity = available_targets[c].__dict__[list(available_targets[c].__dict__)[0]]
                                 b.set_identity(identity, color_info)
                                 identified.append(b)
-                                del to_identify[c]
+                                if c in to_identify:
+                                    del to_identify[c]
                             elif total_identities == 2:
                                 # approx suit by comparing ratios of white to colored pixels
                                 b1 = to_identify[c][0]
-                                
+
                                 if (b.mask_info.ratio) > (b1.mask_info.ratio):
-                                    b.set_identity(available_identities[c].stripe, color_info)
-                                    b1.set_identity(available_identities[c].solid, color_info)
+                                    b.set_identity(available_targets[c].stripe, color_info)
+                                    b1.set_identity(available_targets[c].solid, color_info)
                                 else:
-                                    b.set_identity(available_identities[c].solid, color_info)
-                                    b1.set_identity(available_identities[c].stripe, color_info)
+                                    b.set_identity(available_targets[c].solid, color_info)
+                                    b1.set_identity(available_targets[c].stripe, color_info)
 
                                 identified.append(b)
                                 identified.append(b1)
@@ -262,7 +293,8 @@ class Table(object):
                 h.draw_points(image)
 
         for b in self.balls:
-            b.draw(image)
+            if not b.pocketed:
+                b.draw(image)
 
         return self.images["table"], image
 

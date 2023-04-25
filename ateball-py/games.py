@@ -24,7 +24,7 @@ from constants import constants
 
 class Game(threading.Thread, ABC):
     location: str
-    
+
     def __init__(self, ipc, location, realtime_config={}, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -53,8 +53,6 @@ class Game(threading.Thread, ABC):
 
         self.realtime_config = realtime_config
         self.realtime_update = threading.Event()
-
-        self.available_targets = {c : d for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
         
         self.table = Table(self.gamemode_info)
         self.table_history = []
@@ -113,7 +111,7 @@ class Game(threading.Thread, ABC):
                 self.configure_logging()
 
                 self.ipc.send_message({"type" : "GAME-START"})
-                self.logger.info(f"\nGame #{self.game_num}\n")
+                self.logger.info(f"Game #{self.game_num}")
 
                 threading.Thread(target=self.record).start()
                 
@@ -123,12 +121,10 @@ class Game(threading.Thread, ABC):
                 while not self.game_over_event.is_set():
                     image = self.window_capturer.get()
                     if image.any():
-                        # table image processing + get location of pool balls
-                        self.table.prepare_table(image)
-                        self.table.identify_targets(self.available_targets)
+                        self.table.identify_targets(image)
 
                         # keep history of image and table data
-                        if len(self.table_history) >= 20:
+                        if len(self.table_history) >= 30:
                             self.table_history.pop(0)
                         self.table_history.append((image, self.table.copy()))
 

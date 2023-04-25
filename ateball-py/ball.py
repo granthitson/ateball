@@ -7,7 +7,7 @@ from utils import Point
 from constants import constants
 
 class Ball(Point):
-    def __init__(self, center, suit=None, name=None, color=None, target=False):
+    def __init__(self, center, suit=None, name=None, color=None, target=False, pocketed=False):
         super().__init__(center)
 
         self.suit = suit
@@ -15,6 +15,7 @@ class Ball(Point):
         self.color = color
         self.number = int(name[0]) if name is not None else None
         self.target = target
+        self.pocketed = pocketed
 
         self.bgr = (0, 255, 0)
 
@@ -42,7 +43,7 @@ class Ball(Point):
         return (not self.__eq__(other))
 
     def __copy__(self):
-        return Ball(self.center, self.suit, self.name, self.color, self.target)
+        return Ball(self.center, self.suit, self.name, self.color, self.target, self.pocketed)
 
     def update(self, center):
         self.center = (center[0], center[1])
