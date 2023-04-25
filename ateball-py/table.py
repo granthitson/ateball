@@ -33,6 +33,7 @@ class Table(object):
         self.ball_color_look_up = {c : d.match_bgr for c, d in self._ball_colors.items()}
 
         # dict lookup of currently available
+        self.all_available_table_targets = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
         self.available_table_targets = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
         self.hittable_table_targets = {c : d for c, d in self.available_table_targets.items() if c not in ["white", "target"]}
 
@@ -58,7 +59,7 @@ class Table(object):
         self.updated.clear()
 
         prepared_table, prepared_pocketed = self.__prepare_table(image)
-        self.balls = self.__identify_targets(prepared_table, prepared_pocketed, self.available_table_targets)
+        self.balls = self.__identify_targets(prepared_table, prepared_pocketed)
    
         self.updated.set()
 
@@ -97,11 +98,11 @@ class Table(object):
 
         return table_masked, targets_pocketed_masked
 
-    def __identify_targets(self, table, pocketed, available_targets):
+    def __identify_targets(self, table, pocketed):
         ball_table_positions = self.__find_targets(table)
         ball_pocketed_positions = self.__find_targets(pocketed, pocketed=True)
 
-        ball_positions = ball_table_positions + ball_pocketed_positions
+        ball_positions = ball_pocketed_positions + ball_table_positions
 
         to_identify = {}
         identified = []
@@ -113,7 +114,7 @@ class Table(object):
             self.__adjust_center(b, roi, region)
 
             self.__mask_out_unimportant(b, roi, region)
-            self.__identify_ball(b, available_targets, to_identify, identified)
+            self.__identify_ball(b, to_identify, identified)
 
         # identify any leftover balls - likely one of the pairs is obstructed by view
         for c, balls in to_identify.items():
@@ -121,11 +122,14 @@ class Table(object):
             color_info = self._ball_colors[c]
 
             if math.fabs(1 - b.mask_info.ratio) < math.fabs(.5 - b.mask_info.ratio):
-                b.set_identity(available_targets[c].stripe, color_info)
+                b.set_identity(self.available_table_targets[c].stripe, color_info)
             else:
-                b.set_identity(available_targets[c].solid, color_info)
+                b.set_identity(self.available_table_targets[c].solid, color_info)
 
             identified.append(b)
+
+            if b.pocketed:
+                del self.available_table_targets[c]
 
         return identified
 
@@ -208,8 +212,10 @@ class Table(object):
 
         b.mask_info.update_masks(color_mask, white_mask, glove_mask, stick_mask)
 
-    def __identify_ball(self, b, available_targets, to_identify, identified):
+    def __identify_ball(self, b, to_identify, identified):
         b.mask_info.update_mask_totals()
+
+        available_targets = self.all_available_table_targets if b.pocketed else self.available_table_targets
 
         # eliminate false positives near pool stick
         if b.mask_info.stick_total > (b.mask_info.glove_total + b.mask_info.white_total + b.mask_info.color_total):
@@ -262,6 +268,8 @@ class Table(object):
                                 identified.append(b)
                                 if c in to_identify:
                                     del to_identify[c]
+                                if b.pocketed:
+                                    del available_targets[c]
                             elif total_identities == 2:
                                 # approx suit by comparing ratios of white to colored pixels
                                 b1 = to_identify[c][0]
@@ -276,6 +284,8 @@ class Table(object):
                                 identified.append(b)
                                 identified.append(b1)
                                 del to_identify[c]
+                                if b.pocketed:
+                                    del available_targets[c]
                     break
 
     def draw(self, config):
