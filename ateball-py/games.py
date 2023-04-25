@@ -268,37 +268,42 @@ class Game(threading.Thread, ABC):
                                 # on successive pockets, player turn starts when player timer flashes white and contour is 'closed'
                                 # *as long as player status in the previous frame is not 'started'
                                 if (player_status == "started" and player_timer_start) and old_player_status != "started":
-                                    self.end_existing_round()
+                                    if not self.turn_start.is_set():
+                                        self.end_existing_round()
 
-                                    self.player_turn.set()
-                                    self.turn_start_event.notify(self.turn_start)
+                                        self.player_turn.set()
+                                        self.turn_start_event.notify(self.turn_start)
                             else:
                                 # player turn ends when opponent timer flashes white and contour is 'closed'
                                 if opponent_status == "started" and opponent_timer_start:
-                                    self.end_existing_round()
+                                    if not self.turn_start.is_set():
+                                        self.end_existing_round()
 
-                                    self.opponent_turn.set()
-                                    self.turn_start_event.notify(self.turn_start)
+                                        self.opponent_turn.set()
+                                        self.turn_start_event.notify(self.turn_start)
                     elif self.opponent_turn.is_set():
                         # player turn starts when player timer flashes white and contour is 'closed'
                         if player_status == "started" and player_timer_start:
-                            self.end_existing_round()
+                            if not self.turn_start.is_set():
+                                self.end_existing_round()
 
-                            self.player_turn.set()
-                            self.turn_start_event.notify(self.turn_start)
+                                self.player_turn.set()
+                                self.turn_start_event.notify(self.turn_start)
                     else:
                         # player and opponent turn will both not be set at start of game
 
                         if player_status != "pending":
-                            self.end_existing_round()
+                            if not self.turn_start.is_set():
+                                self.end_existing_round()
 
-                            self.opponent_turn.clear()
-                            self.player_turn.set()
-                            self.turn_start_event.notify(self.turn_start)
+                                self.opponent_turn.clear()
+                                self.player_turn.set()
+                                self.turn_start_event.notify(self.turn_start)
                         else:
-                            self.player_turn.clear()
-                            self.opponent_turn.set()
-                            self.turn_start_event.notify(self.turn_start)
+                            if not self.turn_start.is_set():
+                                self.player_turn.clear()
+                                self.opponent_turn.set()
+                                self.turn_start_event.notify(self.turn_start)
             except Exception as e:
                 self.logger.error(traceback.format_exc())
             finally:
@@ -319,15 +324,16 @@ class Game(threading.Thread, ABC):
         o_timer = utils.CV2Helper.slice_image(turn_timers_masked, constants.regions.opponent_turn_timer)
 
         # match mean color to closest color
-        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, constants.turn_status.__dict__)
-        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, constants.turn_status.__dict__)
+        closest_color_player = utils.CV2Helper.get_closest_color(p_timer, mask_single, constants.turn.status.__dict__)
+        closest_color_opponent = utils.CV2Helper.get_closest_color(o_timer, mask_single, constants.turn.status.__dict__)
 
         # get hierarchy of turn timer contours (closed vs open)
         p_timer_hsv = cv2.cvtColor(p_timer, cv2.COLOR_BGR2HSV)
         o_timer_hsv = cv2.cvtColor(o_timer, cv2.COLOR_BGR2HSV)
 
-        p_hierarchy_mask = utils.CV2Helper.create_mask(p_timer_hsv, np.array([0, 0, 100]), np.array([180, 255, 255]), cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
-        o_hierarchy_mask = utils.CV2Helper.create_mask(o_timer_hsv, np.array([0, 0, 100]), np.array([180, 255, 255]), cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
+        turn_backround_mask = np.array(constants.turn.background_mask.lower), np.array(constants.turn.background_mask.upper)
+        p_hierarchy_mask = utils.CV2Helper.create_mask(p_timer_hsv, *turn_backround_mask, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
+        o_hierarchy_mask = utils.CV2Helper.create_mask(o_timer_hsv, *turn_backround_mask, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
 
         p_contours, p_hierarchy = cv2.findContours(p_hierarchy_mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
         o_contours, o_hierarchy = cv2.findContours(o_hierarchy_mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
@@ -349,18 +355,6 @@ class Game(threading.Thread, ABC):
         else:
             if not self.timed_out.is_set():
                 self.round_data["round_image"], self.round_data["table_data"] = self.table_history[0]
-
-    def mask_out_background(self, hsv, mask):
-        upper_gray = np.array([255, 255, 255])
-        lower_gray = np.array([0, 85, 20])
-
-        image_masked = cv2.inRange(hsv, lower_gray, upper_gray)
-        image_masked = cv2.morphologyEx(image_masked, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
-
-        mask1 = cv2.bitwise_and(mask, image_masked)
-        # mask1 = cv2.morphologyEx(mask1, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
-
-        return mask1
 
     def end_existing_round(self):
         self.opponent_turn.clear()
