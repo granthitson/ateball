@@ -5,6 +5,7 @@ import threading
 import queue as q
 
 import os
+import shutil
 import cv2
 import numpy as np
 
@@ -31,7 +32,7 @@ class Game(threading.Thread, ABC):
         self.ipc = ipc
 
         self.name = self.__class__.__name__
-        self.location = constants.locations.__dict__[location] if location != "" else None
+        self.location = constants.locations.__dict__[location] if location else None
 
         self.gamemode_info = constants.gamemodes.__dict__[self.__class__.__name__]
         self.gamemode_rules = constants.rules.__dict__[self.gamemode_info.rules] if "rules" in self.gamemode_info.__dict__ else constants.rules.__dict__[self.location.rules]
@@ -69,12 +70,23 @@ class Game(threading.Thread, ABC):
         self.logger = logging.getLogger("ateball.games")
         self.fhandler = None
 
+    def configure_game_dir(self):
+        if bool(os.getenv("GAME_DEBUG")):
+            self.game_path = str(Path("ateball-py", "games", "DEBUG"))
+            if os.path.exists(self.game_path):
+                shutil.rmtree(self.game_path)
+        else:
+            full_game_name = "-".join(str(d) for d in [self.game_num, self.name, self.location] if d is not None)
+            self.game_path = str(Path("ateball-py", "games", full_game_name))
+
+        os.makedirs(self.game_path, exist_ok=True)
+
     def configure_logging(self):
         formatter = utils.Formatter()
 
         self.fhandler = logging.FileHandler(f"{self.game_path}/log.log", mode="w")
         self.fhandler.setFormatter(formatter)
-        self.fhandler.setLevel(logging.DEBUG)
+        self.fhandler.setLevel(os.environ.get("LOG_LEVEL"))
 
         logging.getLogger("ateball").addHandler(self.fhandler)
 
@@ -201,11 +213,7 @@ class TwoPlayerGame(Game):
 
             self.wait_for_game_start()
             if self.game_start.is_set():
-                full_game_name = "-".join(str(d) for d in [self.game_num, self.name, self.location] if d is not None)
-                
-                self.game_path = str(Path("ateball-py", "games", full_game_name))
-                os.makedirs(self.game_path, exist_ok=True)
-
+                self.configure_game_dir()
                 self.configure_logging()
 
                 self.ipc.send_message({"type" : "GAME-START"})

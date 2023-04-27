@@ -9,10 +9,8 @@ import games
 import utils
 
 class AteBall():
-    def __init__(self, port):
+    def __init__(self):
         self.ipc = utils.IPC()
-
-        self.click_offset = [0, 0]
 
         self.processing_play_request = threading.Event()
         self.active_game = None
@@ -97,7 +95,7 @@ class AteBall():
             game_config = data['game_config'] if "game_config" in data else {}
             realtime_config = data['realtime_config'] if "realtime_config" in data else {}
         
-            location = game_config['location'] if "location" in game_config else ""
+            location = game_config['location'] if "location" in game_config else None
         
             Game = getattr(games, game_config['gamemode'].upper())
             self.active_game = Game(self.ipc, location, realtime_config, daemon=True)

@@ -13,33 +13,32 @@ from ateball import AteBall
 logger = logging.getLogger("ateball")
 
 def configure_logging():
+    log_level = os.environ.get("LOG_LEVEL")
+
     time = datetime.datetime.now().strftime("%m-%d-%H-%M-%S")
 
     formatter = utils.Formatter()
 
     fHandler = logging.FileHandler(f"logs/{time}.log", mode="w")
     fHandler.setFormatter(formatter)
-    fHandler.setLevel(logging.DEBUG)
+    fHandler.setLevel(log_level)
 
     sHandler = logging.StreamHandler(sys.stdout)
     sHandler.setFormatter(formatter)
-    sHandler.setLevel(logging.DEBUG)
+    sHandler.setLevel(log_level)
 
     logger.addHandler(fHandler)
     logger.addHandler(sHandler)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(log_level)
     logger.propagate = False
 
 def main():
     configure_logging()
 
     try:
-        ateball = AteBall(8888)
+        ateball = AteBall()
         ateball.start()
         ateball.quit_event.wait()
-    except KeyboardInterrupt: # causes error with webdriver - max retry error
-        logger.debug("User interrupted execution.")
-        webdriver.driver = None
     except Exception as e:
         logger.error(e)
         logger.error(traceback.format_exc())
