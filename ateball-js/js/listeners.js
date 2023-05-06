@@ -37,7 +37,7 @@ sub_menu_btns.forEach(btn => {
         var btn_target = btn.dataset.target;
 
         var target = document.querySelector("[data-parent='#" + id + "']");
-        if (target.classList.contains("d-none")) {
+        if (target && target.classList.contains("d-none")) {
             target.classList.remove("d-none");
             if (!btn.classList.contains("open")) {
                 $(btn_target).slideDown();
@@ -114,8 +114,8 @@ start.addEventListener("click", (e) => {
     window.api.ateball.start();
 });
 
-var realtime_menu = document.querySelector("#realtime-menu");
-realtime_menu.addEventListener("change", (e) => {
+var realtime_image_menu = document.querySelector("#realtime-image-menu");
+realtime_image_menu.addEventListener("change", (e) => {
     var data = get_realtime_config();
     window.api.ateball.game.realtime.configure(data);
 });
@@ -125,29 +125,64 @@ pending_cancel.addEventListener("click", (e) => {
     window.api.ateball.game.cancel();
 });
 
+var cancel_press_n_hold; const cancel_press_n_hold_duration = 1000;
 var game_cancel = document.querySelector("#game-cancel-btn");
-game_cancel.addEventListener("click", (e) => {
-    toggleButtonSpinner(game_cancel, true);
-    window.api.ateball.game.cancel();
+game_cancel.addEventListener("mousedown", (e) => {
+    if (!game_cancel.classList.contains("pending") && !game_cancel.classList.contains("running")) {
+        game_cancel.classList.add("pending");
+        game_cancel.style.animationDuration = `${(cancel_press_n_hold_duration  / 1000)}s`;
+        cancel_press_n_hold = setTimeout(() => {
+            game_cancel.classList.remove("pending");
+            toggleButtonSpinner(game_cancel, true);
+            window.api.ateball.game.cancel();
+        }, cancel_press_n_hold_duration)
+    }
 });
 
+game_cancel.addEventListener("mouseup", (e) => {
+    game_cancel.classList.remove('pending');
+    clearTimeout(cancel_press_n_hold);
+});
+
+var stop_press_n_hold; const stop_press_n_hold_duration = 1000;
 var stop = document.querySelector("#ateball-stop");
-stop.addEventListener("click", (e) => {
-    toggleButtonSpinner(stop, true);
-    window.api.ateball.stop();
+stop.addEventListener("mousedown", (e) => {
+    if (!stop.classList.contains("pending") && !stop.classList.contains("running")) {
+        stop.classList.add("pending");
+        stop.style.animationDuration = `${(stop_press_n_hold_duration  / 1000)}s`;
+        stop_press_n_hold = setTimeout(() => {
+            stop.classList.remove("pending");
+            toggleButtonSpinner(stop, true);
+            window.api.ateball.stop();
+        }, stop_press_n_hold_duration)
+    }
+});
+
+stop.addEventListener("mouseup", (e) => {
+    stop.classList.remove('pending');
+    clearTimeout(stop_press_n_hold);
 });
 
 const get_realtime_config = () => {
     // formdata doesnt return disabled fields
     return data = {
-        "image_type" : document.querySelector("select[name='image_type']").value,
-        "show_walls" : document.querySelector("input[name='show_walls']").checked,
-        "show_holes" : document.querySelector("input[name='show_holes']").checked
+        "balls" : {
+            "solid" : document.querySelector("input[name='draw_solid']").checked,
+            "stripe" : document.querySelector("input[name='draw_stripe']").checked
+        },
+        "table" : {
+            "walls" : document.querySelector("input[name='draw_walls']").checked,
+            "holes" : document.querySelector("input[name='draw_holes']").checked,
+            "image_type" : document.querySelector("select[name='image_type']").value
+        }
     };
 }
 
 const toggleButtonSpinner = (elem, state) => {
     state ? elem.classList.add("running") : elem.classList.remove("running");
+    if (!state) {
+        stop.classList.remove("pending");
+    }
 }
 
 const toggleAteballStart = (state) => {
@@ -171,18 +206,33 @@ const toggleGUIElements = () => {
 	var elem_list = ["button", "input", "select.menu-select"];
 
     window.api.get_state().then((s) => {
+        // enable/disable everything else
         if (s !== null) {
             toggleAteballControls(s.process.started);
 
             document.querySelector("webview").style.display = (s.webview.formatted) ? "flex" : "none";
 
             document.querySelector("#loading-overlay").style.display = (s.webview.loaded) ? "none" : "block";
-            document.querySelector("#pending-overlay").style.display = (s.ateball.pending) ? "block" : "none"; 
+            document.querySelector("#gamemode-pending-overlay").style.display = (s.ateball.pending) ? "block" : "none"; 
             document.querySelector("#game-controls").style.display = (s.ateball.game.started) ? "flex" : "none"; 
+
+            document.querySelector("#realtime-suit").style.display = (s.ateball.game.suit !== undefined) ? "flex" : "none"; 
+
+            var turn_timer = document.querySelector("#turn-timer");
+            var turn_num = document.querySelector("#turn-timer #turn-num");
+            if (s.ateball.game.round.started) {
+                turn_num.textContent = s.ateball.game.round.turn_num;
+                turn_timer.classList.add("start");
+                turn_timer.classList.remove("pending");
+            } else {
+                turn_timer.classList.add("pending");
+                turn_timer.classList.remove("start");
+            }
         }
 
-        elem_list.forEach(function(elemName) {
-            Array.from(document.querySelectorAll(elemName)).filter(el => !el.closest('#debug-controls')).forEach(function(elem) {
+        // enable/disable buttons/inputs/selects
+        Array.from(document.querySelectorAll(".controls")).forEach(function(controls) {
+            Array.from(controls.querySelectorAll(elem_list.join(", "))).forEach(function(elem) {
                 if (s !== null && s.webview.loaded) {
                     if (s.process.started && s.process.connected) {
                         if (s.webview.menu && s.webview.menu == "/en/game") {
@@ -190,7 +240,30 @@ const toggleGUIElements = () => {
 
                             if (s.ateball.pending || s.ateball.game.started) {
                                 // disable gamemode selection buttons / enable game controls if started
-                                interact = (elem.closest(".controls").id == "game-controls") ? s.ateball.game.started : false;
+                                if (elem.closest(".controls").id == "game-controls") {
+                                    if (elem.classList.contains("pool-ball-indicator")) {
+                                        if (elem.id in s.ateball.game.round.balls) {
+                                            interact = !s.ateball.game.round.balls[elem.id];
+                                        }
+                                    } else if (elem.classList.contains("suit")) {
+                                        if (s.ateball.game.suit !== undefined) {
+                                            if (s.ateball.game.suit != null) {
+                                                if (!elem.classList.contains(s.ateball.game.suit)) {
+                                                    elem.style.width = 0;
+                                                } else {
+                                                    elem.style.width = "";
+                                                    elem.classList.add("selected");
+                                                }
+                                            } else {
+                                                interact = true;
+                                            }
+                                        }
+                                    } else {
+                                        interact = true;
+                                    }
+                                } else {
+                                    interact = false;
+                                }
                             } else {
                                 if (elem.closest(".controls").id == "game-controls") {
                                     interact = false;

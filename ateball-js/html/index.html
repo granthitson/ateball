@@ -16,7 +16,7 @@
 			<div class="container-fluid">
 				<div id="ateball" class="row justify-content-center">
 					<div class="col-sm-auto">
-						<div class="row">
+						<div id="game" class="row">
 							<div id="ateball-webview" class="col p-0">
 								<div id="loading-overlay">
 									<img id="loading-header" src="https://static-web-pool-production.pool.miniclippt.com/game/wasm_guest_1.0.0_73372/images/Generic_Logo-hd.png">
@@ -33,100 +33,104 @@
 								<canvas width="687px" height="356px"></canvas>
 							</div>
 
-							<div class="col">
-								<div class="row">
-									<div id="pool-balls" class="col p-0">
-										<div class="d-flex flex-wrap">
-											<button id="cueball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/1ball.png"/>
-												<!-- <img src="../images/balls/cue.png"/> -->
-											</button>
+							<div id="realtime-menu" class="col">
+								<div id="realtime-status-menu" class="row">
+									<div class="col">
+										<div id="realtime-turn-timer" class="row">
+											<div id="turn-timer" class="col timer pending">
+												<div class="timer-c timer-content">Turn #<span id="turn-num">1</span></div>
+												<div class="timer-c timer-progress"></div>
+											</div>
+										</div>
 
-											<button id="1ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/1ball.png"/>
-											</button>
-											<button id="2ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/2ball.png"/>
-											</button>
-											<button id="3ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/3ball.png"/>
-											</button>
-											<button id="4ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/4ball.png"/>
-											</button>
-											<button id="5ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/5ball.png"/>
-											</button>
-											<button id="6ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/6ball.png"/>
-											</button>
-											<button id="7ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/7ball.png"/>
-											</button>
+										<div id="realtime-suit" class="row">
+											<div class="col p-0 d-flex">
+												<button id="solid-select" class="_btn slim p-0 suit solid">Solid</button>
+												<button id="stripe-select" class="_btn slim p-0 suit stripe">
+													<div class="content">Stripe</div>
+													<div class="stripe"></div>
+												</button>
+											</div>
+										</div>
 
-											<button id="8ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/8ball.png"/>
-											</button>
+										<div id="realtime-ball-status" class="row">
+											<div class="col p-0">
+												<div class="d-flex flex-wrap">
+													<button id="cueball" class="_btn pool-ball-indicator b0" disabled=""></button>
+	
+													<button id="1ball" class="_btn pool-ball-indicator b1" disabled=""></button>
+													<button id="2ball" class="_btn pool-ball-indicator b2" disabled=""></button>
+													<button id="3ball" class="_btn pool-ball-indicator b3" disabled=""></button>
+													<button id="4ball" class="_btn pool-ball-indicator b4" disabled=""></button>
+													<button id="5ball" class="_btn pool-ball-indicator b5" disabled=""></button>
+													<button id="6ball" class="_btn pool-ball-indicator b6" disabled=""></button>
+													<button id="7ball" class="_btn pool-ball-indicator b7" disabled=""></button>
+	
+													<button id="8ball" class="_btn pool-ball-indicator b8" disabled=""></button>
+	
+													<button id="9ball" class="_btn pool-ball-indicator b9" disabled=""></button>
+													<button id="10ball" class="_btn pool-ball-indicator b10" disabled=""></button>
+													<button id="11ball" class="_btn pool-ball-indicator b11" disabled=""></button>
+													<button id="12ball" class="_btn pool-ball-indicator b12" disabled=""></button>
+													<button id="13ball" class="_btn pool-ball-indicator b13" disabled=""></button>
+													<button id="14ball" class="_btn pool-ball-indicator b14" disabled=""></button>
+													<button id="15ball" class="_btn pool-ball-indicator b15" disabled=""></button>
+												</div>
+											</div>
+										</div>
 
-											<button id="9ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/9ball.png"/>
-											</button>
-											<button id="10ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/10ball.png"/>
-											</button>
-											<button id="11ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/11ball.png"/>
-											</button>
-											<button id="12ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/12ball.png"/>
-											</button>
-											<button id="13ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/13ball.png"/>
-											</button>
-											<button id="14ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/14ball.png"/>
-											</button>
-											<button id="15ball" class="_btn pool-ball" disabled="">
-												<img src="../images/balls/15ball.png"/>
-											</button>
+										<div id="realtime-targeting" class="row">
+											<button id="targeting-btn" class="_btn slim" disabled="">Target</button>
+										</div>
+
+										<div id="realtime-image" class="row">
+											<button id="realtime-image-btn" class="_btn menu-btn dropdown" data-target="#realtime-image-menu" disabled="">Show</button>
+											<form class="col menu" style="display: none;" id="realtime-image-menu">
+												<div class="row">
+													<div class="col-sm-auto">
+														<label for="draw_solid">
+															<input name="draw_solid" type="checkbox" checked="checked"> Solid
+														</label>
+													</div>
+													<div class="col-sm-auto">
+														<label for="draw_stripe">
+															<input name="draw_stripe" type="checkbox" checked="checked"> Stripe
+														</label>
+													</div>
+
+													<div class="col-sm-auto">
+														<label for="draw_walls">
+															<input name="draw_walls" type="checkbox"> Walls
+														</label>
+													</div>
+													<div class="col-sm-auto">
+														<label for="draw_holes">
+															<input name="draw_holes" type="checkbox"> Holes
+														</label>
+													</div>
+												</div>
+
+												<div class="row">
+													<select class="menu-select" name="image_type" disabled="">
+														<option value="none">None</option>
+														<option value="mask">Mask</option>
+														<option value="combined_mask">Combined Mask</option>
+														<option value="table" selected="">Table</option>
+													</select>
+												</div>
+											</form>
 										</div>
 									</div>
 								</div>
 
-								<div id="realtime_dropdown" class="row">
-									<button id="realtime-show-btn" class="_btn menu-btn dropdown" data-target="#realtime-menu" disabled="">Show</button>
-									<form class="col menu" style="display: none;" id="realtime-menu">
-										<div class="row">
-											<select class="menu-select" name="image_type" disabled="">
-												<option value="table" selected="">Table</option>
-												<option value="combined_mask">Combined Mask</option>
-												<option value="mask">Mask</option>
-											</select>
-										</div>
-
-										<div class="row">
-											<div class="col">
-												<label for="show_walls">
-													<input name="show_walls" type="checkbox"> Walls
-												</label>
-											</div>
-											<div class="col">
-												<label for="show_holes">
-													<input name="show_holes" type="checkbox"> Holes
-												</label>
-											</div>
-										</div>
-									</form>
-								</div>
-
-								<div class="row">
-									<div class="col p-0">
-										<button id="" class="_btn slim" disabled="">Button</button>
+								<div id="game-operations-menu" class="row">
+									<div class="col d-flex flex-column p-0">
 										<button id="capture-data" class="_btn slim" disabled="">Capture Data</button>
-										<button id="game-cancel-btn" class="_btn slim ld-over-inverse" disabled="">
+										<button id="game-cancel-btn" class="_btn slim timer press-n-hold ld-over-inverse" disabled="">
 											<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
 											<div class="ld ld-ring ld-spin"></div>
-											Cancel
+											<div class="timer-c timer-content">Cancel</div>
+											<div class="timer-c timer-progress"></div>
 										</button>
 									</div>
 								</div>
@@ -135,252 +139,245 @@
 					</div>
 
 					<div class="col-sm-auto d-flex flex-column" >
-						<div class="row">
-							<div class="col" id="menu-controls">
-								<div class="tab-content">
-									<div class="row controls">
-										<div class="col">
-											<div id="guest_dropdown" class="row">
-												<button id="guest-btn" class="_btn play-btn" data-gamemode="guest" disabled="">Guest</button>
+						<div id="menu-controls" class="row controls">
+							<div id="gamemode-selection" class="col">
+								<div id="guest_dropdown" class="row">
+									<button id="guest-btn" class="_btn play-btn" data-gamemode="guest" disabled="">Guest</button>
+								</div>
+
+								<div id="one_on_one_dropdown" class="row">
+									<button id="one-on-one-btn" class="_btn menu-btn dropdown" data-target="#one-on-one-menu" disabled="">1 on 1</button>
+									<div class="col menu" style="display: none;" id="one-on-one-menu">
+										<div class="row">
+											<div class="col p-0">
+												<button id="call-pocket-standard-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one" disabled="">Standard</button>
 											</div>
-
-											<div id="one_on_one_dropdown" class="row">
-												<button id="one-on-one-btn" class="_btn menu-btn dropdown" data-target="#one-on-one-menu" disabled="">1 on 1</button>
-												<div class="col menu" style="display: none;" id="one-on-one-menu">
-													<div class="row">
-														<div class="col p-0">
-															<button id="call-pocket-standard-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one" disabled="">Standard</button>
-														</div>
-														<div class="col p-0">
-															<button id="call-pocket-eight-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one" disabled="">Call Eight</button>
-														</div>
-														<div class="col p-0">
-															<button id="call-pocket-all-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one" disabled="">Call All</button>
-														</div>
-													</div>
-													<div class="row">
-														<div class="col menu" style="display: none;" id="call-pocket-menu">
-															<div class="row">
-																<div class="col-sm-auto p-0 d-none" data-parent="#call-pocket-standard-btn">
-																	<select class="menu-select" name="location">
-																		<option value="london" selected="">London - 50</option>
-																		<option value="sydney">Sydney - 100</option>
-																	</select>
-																</div>
-																<div class="col-sm-auto p-0" data-parent="#call-pocket-eight-btn">
-																	<select class="menu-select" name="location">
-																		<option value="monaco">Monaco - All In</option>
-																		<option value="moscow" selected="">Moscow - 500</option>
-																		<option value="tokyo">Tokyo - 2,500</option>
-																	</select>
-																</div>
-																<div class="col-sm-auto p-0 d-none" data-parent="#call-pocket-all-btn">
-																	<select class="menu-select" name="location">
-																		<option value="las_vegas" selected="">Las Vegas - 10,000
-																		</option>
-																		<option value="jakarta">Jakarta - 50,000</option>
-																		<option value="toronto">Toronto - 100,000</option>
-																		<option value="cairo">Cairo - 250,000</option>
-																		<option value="dubai">Dubai - 500,000</option>
-																		<option value="shanghai">Shanghai - 1,000,000</option>
-																		<option value="paris">Paris - 2,500,00</option>
-																		<option value="rome">Rome - 4,000,000</option>
-																		<option value="bangkok">Bangkok - 5,000,000</option>
-																		<option value="seoul">Seoul - 10,000,000</option>
-																		<option value="mumbai">Mumbai - 15,000,000</option>
-																		<option value="berlin">Berlin - 25,000,000</option>
-																	</select>
-																</div>
-																<div class="col p-0">
-																	<button id="one-on-one-play-btn" class="_btn play-btn green" data-gamemode="one_on_one" data-location="" disabled="">Play</button>
-																</div>
-															</div>
-														</div>
-													</div>
-												</div>
+											<div class="col p-0">
+												<button id="call-pocket-eight-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one" disabled="">Call Eight</button>
 											</div>
-
-											<div id="special_dropdown" class="row">
-												<button id="special-btn" class="_btn menu-btn dropdown" data-target="#special-menu" disabled="">Special</button>
-												<div class="col menu" style="display: none;" id="special-menu">
-													<div class="row">
-														<div class="col p-0">
-															<button id="tounament-btn" class="_btn sub-menu-btn dropdown" data-target="#special-type-menu" data-gamemode="tournament" disabled="">Tournament</button>
-														</div>
-														<div class="col p-0">
-															<button id="no-guideline-btn" class="_btn sub-menu-btn dropdown" data-target="#special-type-menu" data-gamemode="no_guideline" disabled="">No Guideline</button>
-														</div>
-													</div>
-
-													<div class="row">
-														<div class="col menu" style="display: none;" id="special-type-menu">
-															<div class="row">
-																<div class="col-sm-auto p-0 d-none" data-parent="#tounament-btn">
-																	<select class="menu-select" name="location">
-																		<option value="barcelona">Barcelona - 200</option>
-																		<option value="buenos_aires" selected="">Buenos Aires - 500</option>
-																		<option value="rio">Rio - 3,000</option>
-																		<option value="amsterdam">Amsterdam - 5,000</option>
-																		<option value="singapore">Singapore - 10,000</option>
-																	</select>
-																</div>
-																<div class="col-12 d-none" data-parent="#no-guideline-btn">
-																	<div class="row">
-																		<div class="col p-0">
-																			<select class="menu-select" name="location">
-																				<option value="beijing" selected="">Beijing - Double</option>
-																				<option value="istanbul">Istanbul - Double</option>
-																			</select>
-																		</div>
-																	</div>
-																</div>
-																<div class="col p-0">
-																	<button id="special-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Play</button>
-																</div>
-															</div>
-														</div>
-													</div>
-												</div>
-											</div>
-
-											<div id="nine_ball_dropdown" class="row">
-												<button id="nine-ball-btn" class="_btn menu-btn dropdown"data-target="#nine-ball-menu" data-gamemode="nine_ball" disabled="">9 Ball</button>
-												<div class="col menu" style="display: none;" id="nine-ball-menu">
-													<div class="row">
-														<div class="col p-0">
-															<select class="menu-select" name="location">
-																<option value="miami" selected="">Miami - Double</option>
-																<option value="dallas">Dallas - Double</option>
-																<option value="istanbul">Istanbul - Double</option>
-															</select>
-														</div>
-														<button id="nine-ball-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Play</button>
-													</div>
-												</div>
-											</div>
-
-											<div id="minigames_dropdown" class="row">
-												<button id="minigames-btn" class="_btn menu-btn dropdown" data-target="#minigames-menu" disabled="">Minigames</button>
-												<div class="col menu" style="display: none;" id="minigames-menu">
-													<div class="row">
-														<div class="col p-0 h-50">
-															<button id="luckyshot-btn" class="_btn play-btn" data-gamemode="lucky_shot" disabled="">Lucky Shot</button>
-														</div>
-													</div>
-												</div>
-											</div>
-
-											<div id="friends_dropdown" class="row">
-												<button id="friends-btn" class="_btn menu-btn dropdown" data-target="#friends-menu" data-gamemode="friend" disabled="">Friends</button>
-												<div class="col menu" style="display: none;" id="friends-menu">
-													<div class="row">
-														<div class="col-sm-auto p-0">
-															<select class="menu-select" name="location">
-																<option value="london" selected="">London - 50</option>
-																<option value="miami">Miami Beach - 75</option>
-																<option value="sydney">Sydney - 100</option>
-																<option value="moscow">Moscow - 500</option>
-																<option value="dallas">Dallas - 750</option>
-																<option value="beijing">Beijing - 1,000</option>
-																<option value="tokyo">Tokyo - 2,500</option>
-																<option value="las_vegas">Las Vegas - 10,000</option>
-																<option value="jakarta">Jakarta - 50,000</option>
-															</select>
-														</div>
-														<button id="friend-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Challenge</button>
-													</div>
-												</div>
-											</div>
-
-											<div id="practice_dropdown" class="row">
-												<button id="practice-btn" class="_btn menu-btn dropdown" data-target="#practice-menu" disabled="">Practice</button>
-												<div class="col menu" style="display: none;" id="practice-menu">
-													<div class="row">
-														<div class="col p-0 h-50">
-															<button id="pass-n-play-btn" class="_btn play-btn" data-gamemode="pass_n_play" disabled="">Pass'n Play</button>
-														</div>
-														<div class="col p-0 h-50">
-															<button id="quick-fire-btn" class="_btn play-btn" data-gamemode="quick_fire" disabled="">Quick Fire</button>
-														</div>
-													</div>
-												</div>
-											</div>
-
-											<div id="custom_dropdown" class="row">
-												<button id="custom-btn" class="_btn menu-btn dropdown" data-target="#custom-menu" disabled="">Custom</button>
-												<div class="col menu" style="display: none;" id="custom-menu">
-													<div class="row">
-														<div class="col p-0">
-															<select class="menu-select" name="game-rule-type">
-																<option value="standard">Standard</option>
-																<option value="nine-ball">Nine Ball</option>
-																<option value="lucky-shot">Lucky Shot</option>
-															</select>
-														</div>
-
-														<div class="col-sm-auto p-0">
-															<select class="menu-select" name="game-pocket-type">
-																<option value="pocket-on-eight">Call Pocket on Eight Ball</option>
-																<option value="pocket-on-all">Call Pocket on All Shots</option>
-																<option value="no-guidelines">No Guidelines</option>
-															</select>
-														</div>
-
-														<button id="custom-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Play</button>
-													</div>
-												</div>
+											<div class="col p-0">
+												<button id="call-pocket-all-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one" disabled="">Call All</button>
 											</div>
 										</div>
-
-										<div id="pending-overlay">
-											<div id="pending-container">
-												<span class="loader"></span>
-												<a id="pending-cancel">✕</a>
+										<div class="row">
+											<div class="col menu" style="display: none;" id="call-pocket-menu">
+												<div class="row">
+													<div class="col-sm-auto p-0 d-none" data-parent="#call-pocket-standard-btn">
+														<select class="menu-select" name="location">
+															<option value="london" selected="">London - 50</option>
+															<option value="sydney">Sydney - 100</option>
+														</select>
+													</div>
+													<div class="col-sm-auto p-0" data-parent="#call-pocket-eight-btn">
+														<select class="menu-select" name="location">
+															<option value="monaco">Monaco - All In</option>
+															<option value="moscow" selected="">Moscow - 500</option>
+															<option value="tokyo">Tokyo - 2,500</option>
+														</select>
+													</div>
+													<div class="col-sm-auto p-0 d-none" data-parent="#call-pocket-all-btn">
+														<select class="menu-select" name="location">
+															<option value="las_vegas" selected="">Las Vegas - 10,000
+															</option>
+															<option value="jakarta">Jakarta - 50,000</option>
+															<option value="toronto">Toronto - 100,000</option>
+															<option value="cairo">Cairo - 250,000</option>
+															<option value="dubai">Dubai - 500,000</option>
+															<option value="shanghai">Shanghai - 1,000,000</option>
+															<option value="paris">Paris - 2,500,00</option>
+															<option value="rome">Rome - 4,000,000</option>
+															<option value="bangkok">Bangkok - 5,000,000</option>
+															<option value="seoul">Seoul - 10,000,000</option>
+															<option value="mumbai">Mumbai - 15,000,000</option>
+															<option value="berlin">Berlin - 25,000,000</option>
+														</select>
+													</div>
+													<div class="col p-0">
+														<button id="one-on-one-play-btn" class="_btn play-btn green" data-gamemode="one_on_one" data-location="" disabled="">Play</button>
+													</div>
+												</div>
 											</div>
 										</div>
 									</div>
 								</div>
 
-								<div class="row" id="ateball-prompt"></div>
+								<div id="special_dropdown" class="row">
+									<button id="special-btn" class="_btn menu-btn dropdown" data-target="#special-menu" disabled="">Special</button>
+									<div class="col menu" style="display: none;" id="special-menu">
+										<div class="row">
+											<div class="col p-0">
+												<button id="tounament-btn" class="_btn sub-menu-btn dropdown" data-target="#special-type-menu" data-gamemode="tournament" disabled="">Tournament</button>
+											</div>
+											<div class="col p-0">
+												<button id="no-guideline-btn" class="_btn sub-menu-btn dropdown" data-target="#special-type-menu" data-gamemode="no_guideline" disabled="">No Guideline</button>
+											</div>
+										</div>
+
+										<div class="row">
+											<div class="col menu" style="display: none;" id="special-type-menu">
+												<div class="row">
+													<div class="col-sm-auto p-0 d-none" data-parent="#tounament-btn">
+														<select class="menu-select" name="location">
+															<option value="barcelona">Barcelona - 200</option>
+															<option value="buenos_aires" selected="">Buenos Aires - 500</option>
+															<option value="rio">Rio - 3,000</option>
+															<option value="amsterdam">Amsterdam - 5,000</option>
+															<option value="singapore">Singapore - 10,000</option>
+														</select>
+													</div>
+													<div class="col-12 d-none" data-parent="#no-guideline-btn">
+														<div class="row">
+															<div class="col p-0">
+																<select class="menu-select" name="location">
+																	<option value="beijing" selected="">Beijing - Double</option>
+																	<option value="istanbul">Istanbul - Double</option>
+																</select>
+															</div>
+														</div>
+													</div>
+													<div class="col p-0">
+														<button id="special-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Play</button>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div id="nine_ball_dropdown" class="row">
+									<button id="nine-ball-btn" class="_btn menu-btn dropdown"data-target="#nine-ball-menu" data-gamemode="nine_ball" disabled="">9 Ball</button>
+									<div class="col menu" style="display: none;" id="nine-ball-menu">
+										<div class="row">
+											<div class="col p-0">
+												<select class="menu-select" name="location">
+													<option value="miami" selected="">Miami - Double</option>
+													<option value="dallas">Dallas - Double</option>
+													<option value="istanbul">Istanbul - Double</option>
+												</select>
+											</div>
+											<button id="nine-ball-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Play</button>
+										</div>
+									</div>
+								</div>
+
+								<div id="minigames_dropdown" class="row">
+									<button id="minigames-btn" class="_btn menu-btn dropdown" data-target="#minigames-menu" disabled="">Minigames</button>
+									<div class="col menu" style="display: none;" id="minigames-menu">
+										<div class="row">
+											<div class="col p-0">
+												<button id="luckyshot-btn" class="_btn play-btn" data-gamemode="lucky_shot" disabled="">Lucky Shot</button>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div id="friends_dropdown" class="row">
+									<button id="friends-btn" class="_btn menu-btn dropdown" data-target="#friends-menu" data-gamemode="friend" disabled="">Friends</button>
+									<div class="col menu" style="display: none;" id="friends-menu">
+										<div class="row">
+											<div class="col p-0">
+												<select class="menu-select" name="location">
+													<option value="london" selected="">London - 50</option>
+													<option value="miami">Miami Beach - 75</option>
+													<option value="sydney">Sydney - 100</option>
+													<option value="moscow">Moscow - 500</option>
+													<option value="dallas">Dallas - 750</option>
+													<option value="beijing">Beijing - 1,000</option>
+													<option value="tokyo">Tokyo - 2,500</option>
+													<option value="las_vegas">Las Vegas - 10,000</option>
+													<option value="jakarta">Jakarta - 50,000</option>
+												</select>
+											</div>
+											<button id="friend-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Challenge</button>
+										</div>
+									</div>
+								</div>
+
+								<div id="practice_dropdown" class="row">
+									<button id="practice-btn" class="_btn menu-btn dropdown" data-target="#practice-menu" disabled="">Practice</button>
+									<div class="col menu" style="display: none;" id="practice-menu">
+										<div class="row">
+											<div class="col p-0 h-50">
+												<button id="pass-n-play-btn" class="_btn play-btn" data-gamemode="pass_n_play" disabled="">Pass'n Play</button>
+											</div>
+											<div class="col p-0 h-50">
+												<button id="quick-fire-btn" class="_btn play-btn" data-gamemode="quick_fire" disabled="">Quick Fire</button>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div id="custom_dropdown" class="row">
+									<button id="custom-btn" class="_btn menu-btn dropdown" data-target="#custom-menu" disabled="">Custom</button>
+									<div class="col menu" style="display: none;" id="custom-menu">
+										<div class="row">
+											<div class="col p-0">
+												<select class="menu-select" name="game-rule-type">
+													<option value="standard">Standard</option>
+													<option value="nine-ball">Nine Ball</option>
+													<option value="lucky-shot">Lucky Shot</option>
+												</select>
+											</div>
+
+											<div class="col-sm-auto p-0">
+												<select class="menu-select" name="game-pocket-type">
+													<option value="pocket-on-eight">Call Pocket on Eight Ball</option>
+													<option value="pocket-on-all">Call Pocket on All Shots</option>
+													<option value="no-guidelines">No Guidelines</option>
+												</select>
+											</div>
+
+											<button id="custom-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Play</button>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div id="gamemode-pending-overlay">
+								<div id="pending-container">
+									<span class="loader"></span>
+									<a id="pending-cancel">✕</a>
+								</div>
 							</div>
 						</div>
 
-						<div class="row flex-grow-1">
-							<div class="col d-flex flex-column" id="debug-controls">
-								<div class="row">
+						<div id="debug-controls" class="row flex-grow-1">
+							<div class="col d-flex flex-column">
+								<div id="ateball-debug-nav" class="row">
 									<ul class="nav nav-tabs p-0" role="tablist">
 										<li class="col nav-item">
-											<a id="ateball-debug" class="panel-btn active" data-bs-toggle="tab" data-bs-target="#debug_1" type="button" role="tab">Ateball</a>
+											<a id="ateball-debug-nav" class="panel-btn active" data-bs-toggle="tab" data-bs-target="#ateball-debug-panel" type="button" role="tab">Ateball</a>
 										</li>
 										<li class="col nav-item">
-											<a id="console-debug" class="panel-btn" data-bs-toggle="tab" data-bs-target="#debug_2" type="button" role="tab">Console</a>
+											<a id="console-debug-nav" class="panel-btn" data-bs-toggle="tab" data-bs-target="#webview-debug-panel" type="button" role="tab">Console</a>
 										</li>
 									</ul>
 								</div>
 
-								<div class="row flex-grow-1">	
-									<div class="tab-content position-relative p-0 " role="tabpanel">
-										<div id="debug_1" class="tab-pane fade show active">
+								<div id="ateball-debug-panels" class="row flex-grow-1">	
+									<div class="tab-content p-0 " role="tabpanel">
+										<div id="ateball-debug-panel" class="tab-pane fade show active">
 											<div id="ateball-btns">
 												<div class="row">
 													<div class="col d-flex">
-														<button id="ateball-start" class="_btn slim ld-over-inverse p-0" disabled="">
+														<button id="ateball-start" class="_btn slim press-n-hold ld-over-inverse p-0" disabled="">
 															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
 															<div class="ld ld-ring ld-spin"></div>
-															Start
+															<div>Start</div>
 														</button>
-														<button id="ateball-stop" class="_btn slim ld-over-inverse p-0" disabled="">
+														<button id="ateball-stop" class="_btn slim timer press-n-hold ld-over-inverse p-0" disabled="">
 															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
 															<div class="ld ld-ring ld-spin"></div>
-															Stop
+															<div class="timer-c timer-content">Stop</div>
+															<div class="timer-c timer-progress"></div>
 														</button>
 													</div>
 												</div>
 											</div>
-											<pre id="debug_console_1" class="console"></pre>
+											<pre id="ateball-debug-console" class="console"></pre>
 										</div>
-										<div id="debug_2" class="tab-pane fade show">
-											<pre id="debug_console_2" class="console"></pre>
+										<div id="webview-debug-panel" class="tab-pane fade show">
+											<pre id="webview-debug-console" class="console"></pre>
 										</div>
 									</div>
 								</div>
