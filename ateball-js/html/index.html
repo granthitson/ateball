@@ -33,7 +33,7 @@
 								<canvas width="687px" height="356px"></canvas>
 							</div>
 
-							<div id="realtime-menu" class="col">
+							<div id="realtime-menu" class="col d-flex flex-column">
 								<div id="realtime-status-menu" class="row">
 									<div class="col">
 										<div id="realtime-turn-timer" class="row">
@@ -78,60 +78,69 @@
 												</div>
 											</div>
 										</div>
-
-										<div id="realtime-targeting" class="row">
-											<button id="targeting-btn" class="_btn slim" disabled="">Target</button>
-										</div>
-
-										<div id="realtime-image" class="row">
-											<button id="realtime-image-btn" class="_btn menu-btn dropdown" data-target="#realtime-image-menu" disabled="">Show</button>
-											<form class="col menu" style="display: none;" id="realtime-image-menu">
-												<div class="row">
-													<div class="col-sm-auto">
-														<label for="draw_solid">
-															<input name="draw_solid" type="checkbox" checked="checked"> Solid
-														</label>
-													</div>
-													<div class="col-sm-auto">
-														<label for="draw_stripe">
-															<input name="draw_stripe" type="checkbox" checked="checked"> Stripe
-														</label>
-													</div>
-
-													<div class="col-sm-auto">
-														<label for="draw_walls">
-															<input name="draw_walls" type="checkbox"> Walls
-														</label>
-													</div>
-													<div class="col-sm-auto">
-														<label for="draw_holes">
-															<input name="draw_holes" type="checkbox"> Holes
-														</label>
-													</div>
-												</div>
-
-												<div class="row">
-													<select class="menu-select" name="image_type" disabled="">
-														<option value="none">None</option>
-														<option value="mask">Mask</option>
-														<option value="combined_mask">Combined Mask</option>
-														<option value="table" selected="">Table</option>
-													</select>
-												</div>
-											</form>
-										</div>
 									</div>
 								</div>
 
-								<div id="game-operations-menu" class="row">
-									<div class="col d-flex flex-column p-0">
-										<button id="capture-data" class="_btn slim" disabled="">Capture Data</button>
-										<button id="game-cancel-btn" class="_btn slim timer press-n-hold ld-over-inverse" disabled="">
-											<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
-											<div class="ld ld-ring ld-spin"></div>
-											<div class="timer-c timer-content">Cancel</div>
-											<div class="timer-c timer-progress"></div>
-										</button>
+								<div id="game-operations-menu" class="row flex-grow-1">
+									<div class="col d-flex flex-column">
+										<div class="row flex-grow-1">
+											<div class="col d-flex flex-column">
+												<div class="row">
+													<button id="targeting-btn" class="_btn slim" data-target="#targeting-menu" disabled="">Target</button>
+													<button id="image-options-btn" class="_btn menu-btn" data-target="#image-options-menu" disabled="">Show</button>
+												</div>
+												<div class="row flex-grow-1">
+													<form class="col menu" id="targeting-menu">
+													</form>
+
+													<form class="col menu" id="image-options-menu">
+														<div class="row">
+															<div class="col">
+																<label for="draw_solid">
+																	<input name="draw_solid" type="checkbox" checked="checked"> Solid
+																</label>
+															</div>
+															<div class="col">
+																<label for="draw_stripe">
+																	<input name="draw_stripe" type="checkbox" checked="checked"> Stripe
+																</label>
+															</div>
+														</div>
+
+														<div class="row">
+															<div class="col">
+																<label for="draw_walls">
+																	<input name="draw_walls" type="checkbox"> Walls
+																</label>
+															</div>
+															<div class="col">
+																<label for="draw_holes">
+																	<input name="draw_holes" type="checkbox"> Holes
+																</label>
+															</div>
+														</div>
+		
+														<div class="row">
+															<select class="menu-select" name="image_type" disabled="">
+																<option value="none">None</option>
+																<option value="mask">Mask</option>
+																<option value="combined_mask">Combined Mask</option>
+																<option value="table" selected="">Table</option>
+															</select>
+														</div>
+													</form>
+												</div>
+												
+											</div>
+										</div>
+										<div class="row">
+											<button id="game-cancel-btn" class="_btn timer press-n-hold ld-over-inverse" disabled="">
+												<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
+												<div class="ld ld-ring ld-spin"></div>
+												<div class="timer-c timer-content">Cancel</div>
+												<div class="timer-c timer-progress"></div>
+											</button>
+										</div>
 									</div>
 								</div>
 							</div>
@@ -147,7 +156,7 @@
 
 								<div id="one_on_one_dropdown" class="row">
 									<button id="one-on-one-btn" class="_btn menu-btn dropdown" data-target="#one-on-one-menu" disabled="">1 on 1</button>
-									<div class="col menu" style="display: none;" id="one-on-one-menu">
+									<div class="col menu" id="one-on-one-menu">
 										<div class="row">
 											<div class="col p-0">
 												<button id="call-pocket-standard-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one" disabled="">Standard</button>
@@ -160,7 +169,7 @@
 											</div>
 										</div>
 										<div class="row">
-											<div class="col menu" style="display: none;" id="call-pocket-menu">
+											<div class="col menu" id="call-pocket-menu">
 												<div class="row">
 													<div class="col-sm-auto p-0 d-none" data-parent="#call-pocket-standard-btn">
 														<select class="menu-select" name="location">
@@ -203,7 +212,7 @@
 
 								<div id="special_dropdown" class="row">
 									<button id="special-btn" class="_btn menu-btn dropdown" data-target="#special-menu" disabled="">Special</button>
-									<div class="col menu" style="display: none;" id="special-menu">
+									<div class="col menu" id="special-menu">
 										<div class="row">
 											<div class="col p-0">
 												<button id="tounament-btn" class="_btn sub-menu-btn dropdown" data-target="#special-type-menu" data-gamemode="tournament" disabled="">Tournament</button>
@@ -214,7 +223,7 @@
 										</div>
 
 										<div class="row">
-											<div class="col menu" style="display: none;" id="special-type-menu">
+											<div class="col menu" id="special-type-menu">
 												<div class="row">
 													<div class="col-sm-auto p-0 d-none" data-parent="#tounament-btn">
 														<select class="menu-select" name="location">
@@ -246,7 +255,7 @@
 
 								<div id="nine_ball_dropdown" class="row">
 									<button id="nine-ball-btn" class="_btn menu-btn dropdown"data-target="#nine-ball-menu" data-gamemode="nine_ball" disabled="">9 Ball</button>
-									<div class="col menu" style="display: none;" id="nine-ball-menu">
+									<div class="col menu" id="nine-ball-menu">
 										<div class="row">
 											<div class="col p-0">
 												<select class="menu-select" name="location">
@@ -262,7 +271,7 @@
 
 								<div id="minigames_dropdown" class="row">
 									<button id="minigames-btn" class="_btn menu-btn dropdown" data-target="#minigames-menu" disabled="">Minigames</button>
-									<div class="col menu" style="display: none;" id="minigames-menu">
+									<div class="col menu" id="minigames-menu">
 										<div class="row">
 											<div class="col p-0">
 												<button id="luckyshot-btn" class="_btn play-btn" data-gamemode="lucky_shot" disabled="">Lucky Shot</button>
@@ -273,7 +282,7 @@
 
 								<div id="friends_dropdown" class="row">
 									<button id="friends-btn" class="_btn menu-btn dropdown" data-target="#friends-menu" data-gamemode="friend" disabled="">Friends</button>
-									<div class="col menu" style="display: none;" id="friends-menu">
+									<div class="col menu" id="friends-menu">
 										<div class="row">
 											<div class="col p-0">
 												<select class="menu-select" name="location">
@@ -295,7 +304,7 @@
 
 								<div id="practice_dropdown" class="row">
 									<button id="practice-btn" class="_btn menu-btn dropdown" data-target="#practice-menu" disabled="">Practice</button>
-									<div class="col menu" style="display: none;" id="practice-menu">
+									<div class="col menu" id="practice-menu">
 										<div class="row">
 											<div class="col p-0 h-50">
 												<button id="pass-n-play-btn" class="_btn play-btn" data-gamemode="pass_n_play" disabled="">Pass'n Play</button>
@@ -309,7 +318,7 @@
 
 								<div id="custom_dropdown" class="row">
 									<button id="custom-btn" class="_btn menu-btn dropdown" data-target="#custom-menu" disabled="">Custom</button>
-									<div class="col menu" style="display: none;" id="custom-menu">
+									<div class="col menu" id="custom-menu">
 										<div class="row">
 											<div class="col p-0">
 												<select class="menu-select" name="game-rule-type">

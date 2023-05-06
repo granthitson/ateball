@@ -456,6 +456,10 @@ webview {
     background-color: #fff0f0;
 }
 
+.menu {
+    display: none;
+}
+
 .menu-btn.open, .sub-menu-btn.open {
     border-width: initial;
     border-style: initial;
