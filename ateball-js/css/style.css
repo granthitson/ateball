@@ -152,7 +152,7 @@ webview {
 }
 
 #realtime canvas {
-    background-image: url("../images/table.png");
+    background-image: url("../images/table-placeholder.png");
     filter: grayscale(1);
 }
 
