@@ -26,6 +26,10 @@ webview {
     display: unset !important;
 }
 
+::-webkit-scrollbar {
+    display: none;
+}
+
 #ateball-webview {
     width: 900px;
     height: 600px;
@@ -66,6 +70,10 @@ webview {
     width: 900px;
     height: 356px;
     /* display: none; */
+}
+
+#game-operations-menu {
+    min-height: 0;
 }
 
 #logo_header {
@@ -152,6 +160,7 @@ webview {
 }
 
 #realtime canvas {
+    display: block;
     background-image: url("../images/table-placeholder.png");
     filter: grayscale(1);
 }
