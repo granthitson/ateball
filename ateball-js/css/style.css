@@ -380,6 +380,8 @@ webview {
     height: 32px;
     padding: 0 4%;
     color: white;
+    font-size: 16px;
+    line-height: 32px;
     text-align: center;
     text-shadow: 1px 0px 4px #000000;
     background-image: -webkit-gradient(linear,left top,left bottom,from(#fcfcfc),to(#ccc));
@@ -396,7 +398,8 @@ webview {
 }
 
 .slim {
-    height: 24px;
+    height: 24px !important;
+    line-height: 24px;
 }
 
 .console {
@@ -673,6 +676,8 @@ webview {
     text-shadow: 1px 0px 4px #000000;
     text-decoration: none;
     text-align: center;
+    line-height: 28px;
+    font-size: 18px;
     height: 32px;
     font-weight: 600;
     background: #4edc4e;
