@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
         on_start: (callback) => ipcRenderer.on('ateball-started', callback),
         play: (data) => ipcRenderer.send('game-play', data),
         game : {
+            update_targets: (data) => ipcRenderer.send('update-targets', data),
             realtime : {
                 configure: (data) => ipcRenderer.send('realtime-configure', data),
                 on_stream: (callback) => ipcRenderer.on('realtime-stream', callback)

@@ -43,13 +43,16 @@ class AteBall():
                     if self.active_game:
                         self.active_game.realtime_config.update(msg["data"])
                         self.active_game.realtime_update.set()
+                elif m_type == "update-targets":
+                    if self.active_game:
+                        self.active_game.update_user_targets(msg["data"])
                 elif m_type == "cancel":
                     self.cancel()
                 elif m_type == "quit":
                     self.quit()
                 else:
                     pass
-            except q.Empty() as e:
+            except q.Empty:
                 pass
             except KeyError as e:
                 response["status"] = "failed"
@@ -61,7 +64,6 @@ class AteBall():
                     if (isinstance(response, dict)):
                         response["id"] = msg["id"]
                     response["status"] = "failed"
-                    response["msg"] = str(self.exception)
 
                     self.ipc.outgoing.put(response)
 

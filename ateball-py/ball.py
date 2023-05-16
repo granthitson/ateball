@@ -10,10 +10,10 @@ class Ball(Point):
     def __init__(self, center, suit=None, name=None, color=None, target=False, pocketed=False):
         super().__init__(center)
 
-        self.suit = suit
         self.name = name
         self.color = color
-        self.number = int(name[0]) if name is not None else None
+
+        self.suit = suit
         self.target = target
         self.pocketed = pocketed
 
@@ -49,12 +49,18 @@ class Ball(Point):
         self.center = (center[0], center[1])
         self.offset_center = (center[0] + constants.regions.table[0], center[1] + constants.regions.table[1])
 
-    def set_identity(self, data, color_info):
+    def set_identity(self, data, color_info, is_target):
         self.suit = data.suit if "suit" in data.__dict__ else None
         self.name = data.name
-        self.number = data.number if "number" in data.__dict__ else None
         self.color = data.color if "color" in data.__dict__ else None
         self.bgr = color_info.bgr if "color" in data.__dict__ else (0, 255, 0)
+        self.target = is_target
+
+    def get_state(self):
+        return {
+            "target" : self.target,
+            "pocketed" : self.pocketed
+        }
 
     def draw(self, image):
         if self.suit == "solid":
@@ -64,20 +70,6 @@ class Ball(Point):
             cv2.circle(image, self.center, 8, (self.bgr[0], self.bgr[1], self.bgr[2]), 2)
         else:
             cv2.circle(image, self.center, 8, (self.bgr[0], self.bgr[1], self.bgr[2]), 2)
-
-class Cue(Ball):
-    def __init__(self, center):
-        super().__init__(center, None, "cueball", "white", False)
-
-        self.bgr = (255, 255, 255)
-        self.number = None
-
-class Eight(Ball):
-    def __init__(self, center):
-        super().__init__(center, None, "eightball", "black", False)
-
-        self.bgr = (0, 0, 0)
-        self.number = 8
 
 class BallMaskInfo:
     def __init__(self):
@@ -91,6 +83,8 @@ class BallMaskInfo:
         self.white_total = None
         self.color_total = None
         self.ratio = None
+
+        self.logger = logging.getLogger("ateball.ball_mask_info")
 
     def update_masks(self, color_mask, white_mask, glove_mask, stick_mask):
         self.color_mask = color_mask

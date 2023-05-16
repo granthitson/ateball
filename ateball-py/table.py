@@ -12,8 +12,9 @@ from utils import Point, CV2Helper
 from constants import constants
 
 class Table(object):
-    def __init__(self, gamemode_info):
+    def __init__(self, gamemode_info, game_data):
         self.gamemode_info = gamemode_info
+        self.game_data = game_data
 
         self.table = constants.regions.table
         self.table_end = Point((self.table[2], self.table[3]/2))
@@ -32,12 +33,16 @@ class Table(object):
         self._ball_colors = constants.table.balls.__dict__[self.gamemode_info.balls].colors.__dict__
         self.ball_color_look_up = {c : d.match_bgr for c, d in self._ball_colors.items()}
 
-        # dict lookup of currently available
-        self.all_available_table_targets = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
-        self.available_table_targets = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
-        self.hittable_table_targets = {c : d for c, d in self.available_table_targets.items() if c not in ["white", "target"]}
+        self.targets = constants.table.balls.__dict__[self.gamemode_info.balls].targets.__dict__
+        self.user_targets = {}
 
-        self.balls = []
+        # dict lookup of currently available
+        self.all_ball_identities = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
+        self.available_ball_identities = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
+        self.targetable_ball_identities = {c : d for c, d in self.available_ball_identities.items() if c not in ["white", "target"]}
+
+        self.balls = [Ball((None, None), name=name, target=target) for name, target in self.targets.items()]
+        self.hittable_balls = [b for b in self.balls if b.target]
         self.updated = threading.Event()
 
         self.walls = [Wall(name, data) for i, (name, data) in enumerate(constants.table.walls.__dict__.items())]
@@ -60,7 +65,8 @@ class Table(object):
 
         prepared_table, prepared_pocketed = self.__prepare_table(image)
         self.balls = self.__identify_targets(prepared_table, prepared_pocketed)
-   
+        self.hittable_balls = [b for b in self.balls if self.targets[b.name]]
+
         self.updated.set()
 
     def __prepare_table(self, image):
@@ -122,14 +128,15 @@ class Table(object):
             color_info = self._ball_colors[c]
 
             if math.fabs(1 - b.mask_info.ratio) < math.fabs(.5 - b.mask_info.ratio):
-                b.set_identity(self.available_table_targets[c].stripe, color_info)
+                identity = self.available_ball_identities[c].stripe
             else:
-                b.set_identity(self.available_table_targets[c].solid, color_info)
+                identity = self.available_ball_identities[c].solid
+
+            is_target = (self.targets[identity.name] and not b.pocketed) and (identity.suit == self.game_data["suit"] if self.game_data["suit"] is not None else True)
+
+            b.set_identity(identity, color_info, is_target)
 
             identified.append(b)
-
-            if b.pocketed:
-                del self.available_table_targets[c]
 
         return identified
 
@@ -215,7 +222,7 @@ class Table(object):
     def __identify_ball(self, b, to_identify, identified):
         b.mask_info.update_mask_totals()
 
-        available_targets = self.all_available_table_targets if b.pocketed else self.available_table_targets
+        available_targets = self.all_ball_identities if b.pocketed else self.available_ball_identities
 
         # eliminate false positives near pool stick
         if b.mask_info.stick_total > (b.mask_info.glove_total + b.mask_info.white_total + b.mask_info.color_total):
@@ -223,7 +230,7 @@ class Table(object):
 
         # identify cue ball if glove is present
         if (b.mask_info.glove_total / constants.ball.area) > .4:
-            b.set_identity(available_targets["white"], self._ball_colors["white"])
+            b.set_identity(available_targets["cueball"], self._ball_colors["cueball"], False)
             identified.append(b)
             return
 
@@ -231,7 +238,7 @@ class Table(object):
         if (b.mask_info.color_total / constants.ball.area) < .05:
             # filter out false positives (appear around cue ball glove) - false positives will not have sufficient white pixels
             if (b.mask_info.white_total / constants.ball.area) > .2:
-                b.set_identity(available_targets["target"], {})
+                b.set_identity(available_targets["target"], self._ball_colors["target"], False)
                 identified.append(b)
             return
 
@@ -246,67 +253,86 @@ class Table(object):
             if c in available_targets:
                 color_info = self._ball_colors[c]
 
-                # verify color identifiction - hue should be within its mask range
-                if color_hsv[0] >= color_info.mask_lower[0] and color_hsv[0] <= color_info.mask_upper[0]:
+                # # verify color identifiction - hue should be within its mask range
+                # if color_hsv[0] >= color_info.mask_lower[0] and color_hsv[0] <= color_info.mask_upper[0]:
                     
-                    # set identity after identifying all balls of same color (except cue/eightball/target)
-                    if c in ["white", "black", "target"]:
-                        b.set_identity(available_targets[c], color_info)
-                        identified.append(b)
-                        break
+                # set identity after identifying all balls of same color (except cue/eightball/target)
+                if c in ["cueball", "eightball", "target"]:
+                    identity = available_targets[c]
+                    is_target = (self.targets[identity.name] and not b.pocketed)
+                        
+                    b.set_identity(identity, color_info, is_target)
+                    identified.append(b)
+                    break
+                else:
+                    total_identities = len(available_targets[c].__dict__)
+
+                    # skip identification if there should be another ball of the same color
+                    if c not in to_identify and total_identities > 1:
+                        to_identify[c] = [b]
                     else:
-                        total_identities = len(available_targets[c].__dict__)
+                        # identify with only available identity
+                        if total_identities == 1:
+                            identity = available_targets[c].__dict__[list(available_targets[c].__dict__)[0]]
+                            is_target = (self.targets[identity.name] and not b.pocketed) and (identity.suit == self.game_data["suit"] if self.game_data["suit"] is not None else True)
 
-                        # skip identification if there should be another ball of the same color
-                        if c not in to_identify and total_identities > 1:
-                            to_identify[c] = [b]
-                        else:
-                            # identify with only available identity
-                            if total_identities == 1:
-                                identity = available_targets[c].__dict__[list(available_targets[c].__dict__)[0]]
-                                b.set_identity(identity, color_info)
-                                identified.append(b)
-                                if c in to_identify:
-                                    del to_identify[c]
-                                if b.pocketed:
-                                    del available_targets[c]
-                            elif total_identities == 2:
-                                # approx suit by comparing ratios of white to colored pixels
-                                b1 = to_identify[c][0]
-
-                                if (b.mask_info.ratio) > (b1.mask_info.ratio):
-                                    b.set_identity(available_targets[c].stripe, color_info)
-                                    b1.set_identity(available_targets[c].solid, color_info)
-                                else:
-                                    b.set_identity(available_targets[c].solid, color_info)
-                                    b1.set_identity(available_targets[c].stripe, color_info)
-
-                                identified.append(b)
-                                identified.append(b1)
+                            b.set_identity(identity, color_info, is_target)
+                            identified.append(b)
+                            if c in to_identify:
                                 del to_identify[c]
-                                if b.pocketed:
-                                    del available_targets[c]
+                        elif total_identities == 2:
+                            # approx suit by comparing ratios of white to colored pixels
+                            b1 = to_identify[c][0]
+
+                            if (b.mask_info.ratio) > (b1.mask_info.ratio):
+                                b_identity, b1_identity = available_targets[c].stripe, available_targets[c].solid
+                            else:
+                                b_identity, b1_identity = available_targets[c].solid, available_targets[c].stripe
+
+                            # get target state
+                            b_is_target = (self.targets[b_identity.name] and not b.pocketed) and (b_identity.suit == self.game_data["suit"] if self.game_data["suit"] is not None else True)
+                            b1_is_target = (self.targets[b1_identity.name] and not b1.pocketed) and (b1_identity.suit == self.game_data["suit"] if self.game_data["suit"] is not None else True)
+
+                            b.set_identity(b_identity, color_info, b_is_target)
+                            b1.set_identity(b1_identity, color_info, b1_is_target)
+
+                            identified.append(b)
+                            identified.append(b1)
+                            del to_identify[c]
+                            # if b.pocketed and b1.pocketed:
+                            #     del available_targets[c]
                     break
 
-    def draw(self, config):
-        # draw on correct image type
-        i_type = config["image_type"] if "image_type" in config else "table"
-        image = self.images[i_type].copy()
+    def draw(self, config={}):
+        draw_background = bool(config["table"]["background"]) if "table" in config else True
+        image = self.images["table"].copy() if draw_background else self.images["none"].copy()
+        
+        draw_walls = bool(config["table"]["walls"]) if "table" in config else True
+        draw_holes = bool(config["table"]["holes"]) if "table" in config else True
 
-        if "show_walls" in config and config["show_walls"]:
+        draw_solid = True if "balls" in config and config["balls"]["solid"] else False
+        draw_stripe = True if "balls" in config and config["balls"]["stripe"] else False
+        
+        if draw_walls:
             for w in self.walls:
                 w.draw(image)
 
-        if "show_holes" in config and config["show_holes"]:
+        if draw_holes:
             for h in self.holes:
                 h.draw(image)
                 h.draw_points(image)
 
         for b in self.balls:
-            if not b.pocketed:
+            if b.suit is None:
                 b.draw(image)
+            else:
+                if draw_solid and (b.suit == "solid" and not b.pocketed):
+                    b.draw(image)
 
-        return self.images["table"], image
+                if draw_stripe and (b.suit == "stripe" and not b.pocketed):
+                    b.draw(image)
+
+        return image
 
     def capture(self):
         return (self.images["combined_mask"], self.balls)

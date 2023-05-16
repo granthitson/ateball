@@ -28,7 +28,7 @@
 							</div>
 						</div>
 
-						<div id="game-controls" class="row controls">
+						<fieldset id="game-controls" class="row controls" disabled="">
 							<div id="realtime" class="col-sm-auto p-0">
 								<canvas width="687px" height="356px"></canvas>
 							</div>
@@ -43,38 +43,47 @@
 											</div>
 										</div>
 
-										<div id="realtime-suit" class="row">
-											<div class="col p-0 d-flex">
-												<button id="solid-select" class="_btn slim p-0 suit solid">Solid</button>
-												<button id="stripe-select" class="_btn slim p-0 suit stripe">
-													<div class="content">Stripe</div>
-													<div class="stripe"></div>
-												</button>
+										<div id="targeting-menu">
+											<div id="realtime-suit" class="row">
+												<div class="col p-0 d-flex overflow-hidden">
+													<button id="solid-select" class="_btn slim p-0 suit solid" value="solid">Solid</button>
+													<button id="stripe-select" class="_btn slim p-0 suit stripe" value="stripe">
+														<div class="content">Stripe</div>
+														<div class="stripe"></div>
+													</button>
+												</div>
 											</div>
-										</div>
 
-										<div id="realtime-ball-status" class="row">
-											<div class="col p-0">
-												<div class="d-flex flex-wrap">
-													<button id="cueball" class="_btn pool-ball-indicator b0" disabled=""></button>
-	
-													<button id="1ball" class="_btn pool-ball-indicator b1" disabled=""></button>
-													<button id="2ball" class="_btn pool-ball-indicator b2" disabled=""></button>
-													<button id="3ball" class="_btn pool-ball-indicator b3" disabled=""></button>
-													<button id="4ball" class="_btn pool-ball-indicator b4" disabled=""></button>
-													<button id="5ball" class="_btn pool-ball-indicator b5" disabled=""></button>
-													<button id="6ball" class="_btn pool-ball-indicator b6" disabled=""></button>
-													<button id="7ball" class="_btn pool-ball-indicator b7" disabled=""></button>
-	
-													<button id="8ball" class="_btn pool-ball-indicator b8" disabled=""></button>
-	
-													<button id="9ball" class="_btn pool-ball-indicator b9" disabled=""></button>
-													<button id="10ball" class="_btn pool-ball-indicator b10" disabled=""></button>
-													<button id="11ball" class="_btn pool-ball-indicator b11" disabled=""></button>
-													<button id="12ball" class="_btn pool-ball-indicator b12" disabled=""></button>
-													<button id="13ball" class="_btn pool-ball-indicator b13" disabled=""></button>
-													<button id="14ball" class="_btn pool-ball-indicator b14" disabled=""></button>
-													<button id="15ball" class="_btn pool-ball-indicator b15" disabled=""></button>
+											<div id="realtime-ball-status" class="row">
+												<div class="col p-0">
+													<div class="d-flex flex-wrap">
+														<div id="cueball" class="_btn ball b0"></div>
+		
+														<button id="1ball" class="_btn ball pool-ball-indicator b1 solid targetable target"></button>
+														<button id="2ball" class="_btn ball pool-ball-indicator b2 solid targetable target"></button>
+														<button id="3ball" class="_btn ball pool-ball-indicator b3 solid targetable target"></button>
+														<button id="4ball" class="_btn ball pool-ball-indicator b4 solid targetable target"></button>
+														<button id="5ball" class="_btn ball pool-ball-indicator b5 solid targetable target"></button>
+														<button id="6ball" class="_btn ball pool-ball-indicator b6 solid targetable target"></button>
+														<button id="7ball" class="_btn ball pool-ball-indicator b7 solid targetable target"></button>
+		
+														<button id="eightball" class="_btn ball pool-ball-indicator b8 solid stripe targetable target"></button>
+		
+														<button id="9ball" class="_btn ball pool-ball-indicator b9 stripe targetable target"></button>
+														<button id="10ball" class="_btn ball pool-ball-indicator b10 stripe targetable target"></button>
+														<button id="11ball" class="_btn ball pool-ball-indicator b11 stripe targetable target"></button>
+														<button id="12ball" class="_btn ball pool-ball-indicator b12 stripe targetable target"></button>
+														<button id="13ball" class="_btn ball pool-ball-indicator b13 stripe targetable target"></button>
+														<button id="14ball" class="_btn ball pool-ball-indicator b14 stripe targetable target"></button>
+														<button id="15ball" class="_btn ball pool-ball-indicator b15 stripe targetable target"></button>
+													</div>
+												</div>
+											</div>
+
+											<div id="update-targeting-menu" class="row menu">
+												<div class="col p-0 d-flex">
+													<button id="confirm-targeting-btn" class="_btn slim">Confirm</button>
+													<button id="cancel-targeting-btn" class="_btn slim">Cancel</button>
 												</div>
 											</div>
 										</div>
@@ -82,15 +91,9 @@
 								</div>
 
 								<div id="game-operations-menu" class="row flex-column flex-grow-1">
-									<div class="col flex-grow-1" style="flex: 1 1 auto; overflow: auto; height: 0;">
+									<div id="game-operations" class="col flex-grow-1">
 										<div class="row">
-											<button id="targeting-btn" class="_btn" data-target="#targeting-menu" disabled="">Target</button>
-											<form id="targeting-menu" class="col menu">
-											</form>
-										</div>
-
-										<div class="row">
-											<button id="image-options-btn" class="_btn menu-btn dropdown" data-target="#image-options-menu" disabled="">Show</button>
+											<button id="image-options-btn" class="_btn menu-btn dropdown" data-target="#image-options-menu">Show</button>
 											<form id="image-options-menu" class="col menu">
 												<div class="row">
 													<div class="col">
@@ -131,7 +134,7 @@
 
 									<div class="col-sm-auto">
 										<div class="row">
-											<button id="game-cancel-btn" class="_btn timer press-n-hold ld-over-inverse" disabled="">
+											<button id="game-cancel-btn" class="_btn timer press-n-hold ld-over-inverse">
 												<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
 												<div class="ld ld-ring ld-spin"></div>
 												<div class="timer-c timer-content">Cancel</div>
@@ -141,28 +144,32 @@
 									</div>
 								</div>
 							</div>
-						</div>
+						</fieldset>
 					</div>
 
-					<div class="col-sm-auto d-flex flex-column" >
-						<div id="menu-controls" class="row controls">
+					<div class="col-sm-auto d-flex flex-column">
+						<fieldset id="gamemode-controls" class="row controls" disabled="">
 							<div id="gamemode-selection" class="col">
-								<div id="guest_dropdown" class="row">
-									<button id="guest-btn" class="_btn play-btn" data-gamemode="guest" disabled="">Guest</button>
-								</div>
+								<fieldset id="guest_gamemode" class="row gamemode" disabled="">
+									<button id="guest-btn" class="_btn play-btn" data-gamemode="guest">Guest</button>
+								</fieldset>
 
-								<div id="one_on_one_dropdown" class="row">
-									<button id="one-on-one-btn" class="_btn menu-btn dropdown" data-target="#one-on-one-menu" disabled="">1 on 1</button>
+								<fieldset id="one_on_one_gamemode" class="row gamemode" disabled="">
+									<button id="one-on-one-btn" class="_btn menu-btn dropdown" data-target="#one-on-one-menu">1 on 1</button>
 									<div class="col menu" id="one-on-one-menu">
 										<div class="row">
+											<!-- dont know if i should keep submenus, no purpose really for 1 on 1-->
+
+
+											
 											<div class="col p-0">
-												<button id="call-pocket-standard-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one" disabled="">Standard</button>
+												<button id="call-pocket-standard-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one">Standard</button>
 											</div>
 											<div class="col p-0">
-												<button id="call-pocket-eight-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one" disabled="">Call Eight</button>
+												<button id="call-pocket-eight-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one">Call Eight</button>
 											</div>
 											<div class="col p-0">
-												<button id="call-pocket-all-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one" disabled="">Call All</button>
+												<button id="call-pocket-all-btn" class="_btn sub-menu-btn dropdown" data-target="#call-pocket-menu" data-gamemode="one_on_one">Call All</button>
 											</div>
 										</div>
 										<div class="row">
@@ -199,23 +206,23 @@
 														</select>
 													</div>
 													<div class="col p-0">
-														<button id="one-on-one-play-btn" class="_btn play-btn green" data-gamemode="one_on_one" data-location="" disabled="">Play</button>
+														<button id="one-on-one-play-btn" class="_btn play-btn green" data-gamemode="one_on_one" data-location="">Play</button>
 													</div>
 												</div>
 											</div>
 										</div>
 									</div>
-								</div>
+								</fieldset>
 
-								<div id="special_dropdown" class="row">
-									<button id="special-btn" class="_btn menu-btn dropdown" data-target="#special-menu" disabled="">Special</button>
+								<fieldset id="special_gamemode" class="row gamemode" disabled="">
+									<button id="special-btn" class="_btn menu-btn dropdown" data-target="#special-menu">Special</button>
 									<div class="col menu" id="special-menu">
 										<div class="row">
 											<div class="col p-0">
-												<button id="tounament-btn" class="_btn sub-menu-btn dropdown" data-target="#special-type-menu" data-gamemode="tournament" disabled="">Tournament</button>
+												<button id="tounament-btn" class="_btn sub-menu-btn dropdown" data-target="#special-type-menu" data-gamemode="tournament">Tournament</button>
 											</div>
 											<div class="col p-0">
-												<button id="no-guideline-btn" class="_btn sub-menu-btn dropdown" data-target="#special-type-menu" data-gamemode="no_guideline" disabled="">No Guideline</button>
+												<button id="no-guideline-btn" class="_btn sub-menu-btn dropdown" data-target="#special-type-menu" data-gamemode="no_guideline">No Guideline</button>
 											</div>
 										</div>
 
@@ -231,27 +238,23 @@
 															<option value="singapore">Singapore - 10,000</option>
 														</select>
 													</div>
-													<div class="col-12 d-none" data-parent="#no-guideline-btn">
-														<div class="row">
-															<div class="col p-0">
-																<select class="menu-select" name="location">
-																	<option value="beijing" selected="">Beijing - Double</option>
-																	<option value="istanbul">Istanbul - Double</option>
-																</select>
-															</div>
-														</div>
+													<div class="col-sm-auto p-0 d-none" data-parent="#no-guideline-btn">
+														<select class="menu-select" name="location">
+															<option value="beijing" selected="">Beijing - Double</option>
+															<option value="istanbul">Istanbul - Double</option>
+														</select>
 													</div>
 													<div class="col p-0">
-														<button id="special-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Play</button>
+														<button id="special-play-btn" class="_btn play-btn green" data-gamemode="" data-location="">Play</button>
 													</div>
 												</div>
 											</div>
 										</div>
 									</div>
-								</div>
+								</fieldset>
 
-								<div id="nine_ball_dropdown" class="row">
-									<button id="nine-ball-btn" class="_btn menu-btn dropdown"data-target="#nine-ball-menu" data-gamemode="nine_ball" disabled="">9 Ball</button>
+								<fieldset id="nine_ball_gamemode" class="row gamemode" disabled="">
+									<button id="nine-ball-btn" class="_btn menu-btn dropdown"data-target="#nine-ball-menu" data-gamemode="nine_ball">9 Ball</button>
 									<div class="col menu" id="nine-ball-menu">
 										<div class="row">
 											<div class="col p-0">
@@ -261,24 +264,26 @@
 													<option value="istanbul">Istanbul - Double</option>
 												</select>
 											</div>
-											<button id="nine-ball-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Play</button>
-										</div>
-									</div>
-								</div>
-
-								<div id="minigames_dropdown" class="row">
-									<button id="minigames-btn" class="_btn menu-btn dropdown" data-target="#minigames-menu" disabled="">Minigames</button>
-									<div class="col menu" id="minigames-menu">
-										<div class="row">
 											<div class="col p-0">
-												<button id="luckyshot-btn" class="_btn play-btn" data-gamemode="lucky_shot" disabled="">Lucky Shot</button>
+												<button id="nine-ball-play-btn" class="_btn play-btn green" data-gamemode="" data-location="">Play</button>
 											</div>
 										</div>
 									</div>
-								</div>
+								</fieldset>
 
-								<div id="friends_dropdown" class="row">
-									<button id="friends-btn" class="_btn menu-btn dropdown" data-target="#friends-menu" data-gamemode="friend" disabled="">Friends</button>
+								<fieldset id="minigames_gamemode" class="row gamemode" disabled="">
+									<button id="minigames-btn" class="_btn menu-btn dropdown" data-target="#minigames-menu">Minigames</button>
+									<div class="col menu" id="minigames-menu">
+										<div class="row">
+											<div class="col p-0">
+												<button id="luckyshot-btn" class="_btn play-btn" data-gamemode="lucky_shot">Lucky Shot</button>
+											</div>
+										</div>
+									</div>
+								</fieldset>
+
+								<fieldset id="friends_gamemode" class="row gamemode" disabled="">
+									<button id="friends-btn" class="_btn menu-btn dropdown" data-target="#friends-menu" data-gamemode="friend">Friends</button>
 									<div class="col menu" id="friends-menu">
 										<div class="row">
 											<div class="col p-0">
@@ -294,27 +299,29 @@
 													<option value="jakarta">Jakarta - 50,000</option>
 												</select>
 											</div>
-											<button id="friend-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Challenge</button>
+											<div class="col p-0">
+												<button id="friend-play-btn" class="_btn play-btn green" data-gamemode="" data-location="">Challenge</button>
+											</div>
 										</div>
 									</div>
-								</div>
+								</fieldset>
 
-								<div id="practice_dropdown" class="row">
-									<button id="practice-btn" class="_btn menu-btn dropdown" data-target="#practice-menu" disabled="">Practice</button>
+								<fieldset id="practice_gamemode" class="row gamemode" disabled="">
+									<button id="practice-btn" class="_btn menu-btn dropdown" data-target="#practice-menu">Practice</button>
 									<div class="col menu" id="practice-menu">
 										<div class="row">
 											<div class="col p-0 h-50">
-												<button id="pass-n-play-btn" class="_btn play-btn" data-gamemode="pass_n_play" disabled="">Pass'n Play</button>
+												<button id="pass-n-play-btn" class="_btn play-btn" data-gamemode="pass_n_play">Pass'n Play</button>
 											</div>
 											<div class="col p-0 h-50">
-												<button id="quick-fire-btn" class="_btn play-btn" data-gamemode="quick_fire" disabled="">Quick Fire</button>
+												<button id="quick-fire-btn" class="_btn play-btn" data-gamemode="quick_fire">Quick Fire</button>
 											</div>
 										</div>
 									</div>
-								</div>
+								</fieldset>
 
-								<div id="custom_dropdown" class="row">
-									<button id="custom-btn" class="_btn menu-btn dropdown" data-target="#custom-menu" disabled="">Custom</button>
+								<fieldset id="custom_gamemode" class="row gamemode" disabled="">
+									<button id="custom-btn" class="_btn menu-btn dropdown" data-target="#custom-menu">Custom</button>
 									<div class="col menu" id="custom-menu">
 										<div class="row">
 											<div class="col p-0">
@@ -333,10 +340,10 @@
 												</select>
 											</div>
 
-											<button id="custom-play-btn" class="_btn play-btn green" data-gamemode="" data-location="" disabled="">Play</button>
+											<button id="custom-play-btn" class="_btn play-btn green" data-gamemode="" data-location="">Play</button>
 										</div>
 									</div>
-								</div>
+								</fieldset>
 							</div>
 
 							<div id="gamemode-pending-overlay">
@@ -345,7 +352,7 @@
 									<a id="pending-cancel">✕</a>
 								</div>
 							</div>
-						</div>
+						</fieldset>
 
 						<div id="debug-controls" class="row flex-grow-1">
 							<div class="col d-flex flex-column">
@@ -365,13 +372,13 @@
 										<div id="ateball-debug-panel" class="tab-pane fade show active">
 											<div id="ateball-btns">
 												<div class="row">
-													<div class="col d-flex">
-														<button id="ateball-start" class="_btn slim press-n-hold ld-over-inverse p-0" disabled="">
+													<div class="col d-flex overflow-hidden">
+														<button id="ateball-start" class="_btn slim press-n-hold ld-over-inverse p-0">
 															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
 															<div class="ld ld-ring ld-spin"></div>
 															<div>Start</div>
 														</button>
-														<button id="ateball-stop" class="_btn slim timer press-n-hold ld-over-inverse p-0" disabled="">
+														<button id="ateball-stop" class="_btn slim timer press-n-hold ld-over-inverse p-0">
 															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
 															<div class="ld ld-ring ld-spin"></div>
 															<div class="timer-c timer-content">Stop</div>

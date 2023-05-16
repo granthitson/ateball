@@ -23,7 +23,7 @@ webview.addEventListener("did-navigate", () => {
 window.api.ateball.on_start( (e) => {
     console.log("Ateball started");
     toggleButtonSpinner(start, false);
-    document.querySelector("#debug_console_1").innerHTML = "";
+    debug.innerHTML = "";
 });
 
 window.api.ateball.game.realtime.on_stream( (e, msg) => {
@@ -66,7 +66,7 @@ window.api.ateball.log_message((e, msg) => {
 
 // ------------------
 
-var log = document.querySelector('#debug_console_2');
+var log = document.querySelector('#webview-debug-panel');
 ['log','debug','info','warn','error'].forEach(function (verb) {
     console[verb] = (function (method, verb, log) {
         return function () {
@@ -84,7 +84,7 @@ webview.addEventListener('console-message', (e) => {
     console[log_level[e.level]](e.message);
 });
 
-const debug = document.querySelector("#debug_console_1");
+const debug = document.querySelector("#ateball-debug-console");
 const log_message = (msg) => {
     var log = document.createElement('span');
     log.classList.add("log-object");

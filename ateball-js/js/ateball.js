@@ -15,8 +15,12 @@ class Ateball {
 				pending: false,
 				game: {
 					started: false,
+					suit: null,
+					targets: null,
+					balls: {},
 					round: {
-						started: false
+						started: false,
+						num: null
 					}
 				}
 			}
@@ -48,12 +52,16 @@ class Ateball {
 		this.send_message(msg);
 	}
 
+	update_targets(data) {
+		this.state.ateball.game.targets = data.targets; 
+		this.send_message({ "type" : "update-targets", "data" : data});
+	}
+
 	realtime_configure(data) {
 		this.send_message({ "type" : "realtime-configure", "data" : data});
 	}
 
 	cancel_game() {
-		this.window.setAlwaysOnTop(false);
 		this.send_message({ "type" : "cancel" });
 	}
 
@@ -151,6 +159,9 @@ class Ateball {
 							break;
 						case "GAME-START":
 							console.log("game started");
+							this.state.ateball.game.suit = (p_msg.data.suit) ? null : undefined;
+							this.state.ateball.game.balls = p_msg.data.balls;
+							
 							this.state.ateball.pending = false;
 							this.state.ateball.game.started = true;
 		
@@ -159,11 +170,19 @@ class Ateball {
 						case "ROUND-START":
 							console.log("round started");
 							this.state.ateball.game.round.started = true;
+							this.state.ateball.game.round.num = p_msg.data.turn_num;
+							break;
+						case "UPDATE-BALL-STATE":
+							this.state.ateball.game.balls = p_msg.data.balls;
+							break;
+						case "SUIT-SELECT":
+							this.state.ateball.game.suit = p_msg.data.suit;
 							break;
 						case "REALTIME-STREAM":
 							this.window.webContents.send("realtime-stream", { data: p_msg.data});
 							break;
 						case "ROUND-END":
+						case "ROUND-COMPLETE":
 							console.log("round ended");
 							this.state.ateball.game.round.started = false;
 							break;
@@ -226,7 +245,11 @@ class Ateball {
 	reset_game_state() {
 		this.state.ateball.pending = false;
 		this.state.ateball.game.started = false;
+		this.state.ateball.game.suit = null;
+		this.state.ateball.game.targets = null;
+		this.state.ateball.game.balls = []
 		this.state.ateball.game.round.started = false;
+		this.state.ateball.game.round.num = null;
 	}
 
 	reset_ateball_state() {
@@ -239,8 +262,12 @@ class Ateball {
 				pending: false,
 				game: {
 					started: false,
+					suit: null,
+					targets: null,
+					balls: {},
 					round: {
-						started: false
+						started: false,
+						num: null
 					}
 				}
 			}

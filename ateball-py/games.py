@@ -46,8 +46,14 @@ class Game(threading.Thread, ABC):
         self.game_exception = threading.Event()
         self.game_over_event = utils.OrEvent(self.game_end, self.game_cancelled, self.game_exception)
 
-        self.game_num = 0
-        self.game_path = ""
+        self.game_data = {
+            "num" : 0,
+            "path" : "",
+            "suit" : None,
+            "turn_num" : 0, 
+            "table_data" : None,
+            "round_image" : None
+        }
 
         self.window_capturer = utils.WindowCapturer(constants.regions.game, constants.regions.window_offset, 30, daemon=True)
         self.recording = q.Queue()
@@ -55,15 +61,8 @@ class Game(threading.Thread, ABC):
         self.realtime_config = realtime_config
         self.realtime_update = threading.Event()
         
-        self.table = Table(self.gamemode_info)
+        self.table = Table(self.gamemode_info, self.game_data)
         self.table_history = []
-
-        self.round_data = {
-            "suit" : None,
-            "turn_num" : 0, 
-            "table_data" : None,
-            "round_image" : None
-        }
 
         self.current_round = None
 
@@ -72,19 +71,19 @@ class Game(threading.Thread, ABC):
 
     def configure_game_dir(self):
         if bool(os.getenv("GAME_DEBUG")):
-            self.game_path = str(Path("ateball-py", "games", "DEBUG"))
-            if os.path.exists(self.game_path):
-                shutil.rmtree(self.game_path)
+            self.game_data["path"] = str(Path("ateball-py", "games", "DEBUG"))
+            if os.path.exists(self.game_data["path"]):
+                shutil.rmtree(self.game_data["path"])
         else:
-            full_game_name = "-".join(str(d) for d in [self.game_num, self.name, self.location] if d is not None)
-            self.game_path = str(Path("ateball-py", "games", full_game_name))
+            full_game_name = "-".join(str(d) for d in [self.game_data["num"], self.name, self.location] if d is not None)
+            self.game_data["path"] = str(Path("ateball-py", "games", full_game_name))
 
-        os.makedirs(self.game_path, exist_ok=True)
+        os.makedirs(self.game_data["path"], exist_ok=True)
 
     def configure_logging(self):
         formatter = utils.Formatter()
 
-        self.fhandler = logging.FileHandler(f"{self.game_path}/log.log", mode="w")
+        self.fhandler = logging.FileHandler(f"{self.game_data['path']}/log.log", mode="w")
         self.fhandler.setFormatter(formatter)
         self.fhandler.setLevel(os.environ.get("LOG_LEVEL"))
 
@@ -99,19 +98,20 @@ class Game(threading.Thread, ABC):
         v_format = cv2.VideoWriter_fourcc(*'XVID')
 
         region = (constants.regions.table[2], constants.regions.table[3] * 2)
-        video_writer = cv2.VideoWriter(str(Path(self.game_path, "game.avi")), v_format, self.window_capturer.fps, region)
+        video_writer = cv2.VideoWriter(str(Path(self.game_data["path"], "game.avi")), v_format, self.window_capturer.fps, region)
 
         while not self.game_over_event.is_set():
             try:
-                images = self.recording.get()
-                table, draw_table = images[0], images[1]
-                if not table.any() and not draw_table.any():
+                table = self.recording.get()
+
+                original = table.images["table"]
+                empty = np.stack((table.images["none"],)*3, axis=-1)
+                if not original.any():
                     break
 
-                if len(draw_table.shape) != 3:
-                    draw_table = np.stack((draw_table,)*3, axis=-1)
+                drawn = table.draw()
                 
-                stack = np.concatenate((table, draw_table), axis=0)
+                stack = np.concatenate((original, drawn), axis=0)
                 video_writer.write(stack)
             except Exception as e:
                 self.logger.error(traceback.format_exc())
@@ -172,14 +172,17 @@ class Game(threading.Thread, ABC):
             try:
                 data = json.load(f)
                 data["num"] += 1 
-                self.game_num = data["num"]
+                self.game_data["num"] = data["num"]
                 with open(json_path, "w") as f:
                     f.write(json.dumps(data))
             except json.decoder.JSONDecodeError as e:
                 data = {"num" : 1}
-                self.game_num = data["num"]
+                self.game_data["num"] = data["num"]
                 with open(json_path, "w") as f:
                     f.write(json.dumps(data))
+
+    def update_user_targets(self, data):
+        self.table.user_targets = data["targets"]
 
     def cancel(self):
         self.logger.debug("cancelling current game")
@@ -216,8 +219,16 @@ class TwoPlayerGame(Game):
                 self.configure_game_dir()
                 self.configure_logging()
 
-                self.ipc.send_message({"type" : "GAME-START"})
-                self.logger.info(f"Game #{self.game_num}")
+                self.ipc.send_message(
+                    {
+                        "type" : "GAME-START", 
+                        "data" : { 
+                            "suit" : self.gamemode_rules.suit.choice,
+                            "balls" : { b.name: b.get_state() for b in self.table.hittable_balls }
+                        }
+                    }
+                )
+                self.logger.info(f"Game #{self.game_data['num']}")
 
                 threading.Thread(target=self.record).start()
                 
@@ -237,30 +248,40 @@ class TwoPlayerGame(Game):
                         if self.turn_start.is_set():
                             # update round start image on turn start (play or opponent)
                             self.turn_start.clear()
-                            self.set_round_image()
+                            self.set_current_round_data()
+
+                            # update ball state on round by round basis
+                            self.ipc.send_message(
+                                {
+                                    "type" : "UPDATE-BALL-STATE", 
+                                    "data" : { 
+                                        "balls" : { b.name: b.get_state() for b in self.table.hittable_balls }
+                                    }
+                                }
+                            )
                             
                             if self.player_turn.is_set():
-                                self.round_data["turn_num"] += 1
+                                self.game_data["turn_num"] += 1
 
-                                self.current_round = Round(self.ipc, self.game_path, self.round_data)
+                                self.current_round = Round(self.ipc, self.game_data)
                                 self.current_round.start()
 
                             self.timed_out.clear()
 
                         # draw table
-                        image, draw_image = self.table.draw(self.realtime_config)
+                        drawn_image = self.table.draw(self.realtime_config)
 
                         # send updated table image if it differs from last
                         if self.table.updated.is_set() or self.realtime_update.is_set():
                             self.realtime_update.clear()
 
-                            retval, image_buffer = cv2.imencode('.png', draw_image)
+                            retval, image_buffer = cv2.imencode('.png', drawn_image)
                             image_buffer = base64.b64encode(image_buffer.tobytes()).decode('ascii')
                             image_b64 = f"data:image/png;base64,{image_buffer}"
 
                             self.ipc.send_message({"type" : "REALTIME-STREAM", "data" : image_b64})
 
-                        self.recording.put((image, draw_image))
+                        self.recording.put(self.table.copy())
 
                 self.recording.put((np.array([]), np.array([])))
         except Exception as e:
@@ -287,7 +308,7 @@ class TwoPlayerGame(Game):
         turn_timer_mask = utils.CV2Helper.imread(constants.images.img_turn_timers_mask, 0)
         turn_timer_mask_single = utils.CV2Helper.imread(constants.images.img_turn_timers_mask_single, 0)
 
-        old_player_status = None
+        old_player_status, old_opponent_status = None, None
         while not self.game_over_event.is_set():
             try:
                 image = self.window_capturer.get()
@@ -323,13 +344,24 @@ class TwoPlayerGame(Game):
                                         self.opponent_turn.set()
                                         self.turn_start_event.notify(self.turn_start)
                     elif self.opponent_turn.is_set():
-                        # player turn starts when player timer flashes white and contour is 'closed'
-                        if player_status == "started" and player_timer_start:
-                            if not self.turn_start.is_set():
-                                self.end_existing_round()
+                        if player_status != "pending":
+                            if player_status == "successive":
+                                # on successive pockets, opponent turn starts when opponent timer flashes white and contour is 'closed'
+                                # *as long as opponent status in the previous frame is not 'started'
+                                if (opponent_status == "started" and opponent_timer_start) and old_opponent_status != "started":
+                                    if not self.turn_start.is_set():
+                                        self.end_existing_round()
 
-                                self.player_turn.set()
-                                self.turn_start_event.notify(self.turn_start)
+                                        self.opponent_turn.set()
+                                        self.turn_start_event.notify(self.turn_start)
+                            else:
+                                # opponent turn ends when opponent timer flashes white and contour is 'closed'
+                                if player_status == "started" and player_timer_start:
+                                    if not self.turn_start.is_set():
+                                        self.end_existing_round()
+
+                                        self.player_turn.set()
+                                        self.turn_start_event.notify(self.turn_start)
                     else:
                         # player and opponent turn will both not be set at start of game
 
@@ -350,6 +382,7 @@ class TwoPlayerGame(Game):
             finally:
                 # keep track of last frame's player status
                 old_player_status = player_status
+                old_opponent_status = opponent_status
 
     def get_turn_status(self, image, mask, mask_single):
         # status indicated by the color of turn timer and whether timer is 'open' or 'closed' (at the start of a turn)
@@ -390,12 +423,12 @@ class TwoPlayerGame(Game):
             },
         }
 
-    def set_round_image(self):
-        if self.round_data["table_data"] is None:
-            self.round_data["round_image"], self.round_data["table_data"] = self.table_history[0]
+    def set_current_round_data(self):
+        if self.game_data["table_data"] is None:
+            self.game_data["round_image"], self.game_data["table_data"] = self.table_history[0]
         else:
             if not self.timed_out.is_set():
-                self.round_data["round_image"], self.round_data["table_data"] = self.table_history[0]
+                self.game_data["round_image"], self.game_data["table_data"] = self.table_history[0]
 
     def end_existing_round(self):
         self.opponent_turn.clear()
@@ -406,7 +439,7 @@ class TwoPlayerGame(Game):
         if self.current_round is not None and not self.current_round.round_over_event.is_set():
             self.current_round.round_over_event.notify(self.current_round.round_cancel)
             self.current_round = None
-            self.logger.info("Turn #{} Complete".format(self.round_data["turn_num"]))
+            self.logger.info("Turn #{} Complete".format(self.game_data["turn_num"]))
 
     def cancel(self):
         self.logger.debug("cancelling current game")

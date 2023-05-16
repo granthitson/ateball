@@ -15,8 +15,6 @@ import numpy as np
 from pathlib import Path
 
 from ball import Ball
-from ball import Cue
-from ball import Eight
 import path
 import utils
 from constants import constants
@@ -25,7 +23,7 @@ logger = logging.getLogger("ateball.round")
 
 class Round(threading.Thread):
 
-    def __init__(self, ipc, path, data, *args, **kwargs):   
+    def __init__(self, ipc, data, *args, **kwargs):   
         super().__init__(*args, **kwargs)
 
         self.ipc = ipc
@@ -36,7 +34,7 @@ class Round(threading.Thread):
         self.table = data["table_data"]
         
         self.turn_num = data['turn_num']
-        self.round_path = str(Path(path, f"round-{self.turn_num}"))
+        self.round_path = str(Path(data["path"], f"round-{self.turn_num}"))
         self.images = { 
             "game" : data["round_image"],
             "table" : None,
@@ -50,13 +48,7 @@ class Round(threading.Thread):
 
         self.get_targets_event = threading.Event()
 
-        self.suit = data["suit"]
-        self.solids = data["solid"]
-        self.stripes = data["stripe"]
-
         self.chosen_ball = None
-
-        # self.cueball = Cue()
 
         self.viable_paths = []
         self.unviable_paths = []
@@ -77,26 +69,32 @@ class Round(threading.Thread):
 
             os.makedirs(self.round_path, exist_ok=True)
 
-            self.ipc.send_message({"type" : "ROUND-START"})
             self.logger.info(f"Turn #{self.turn_num}")
+            self.ipc.send_message({
+                "type" : "ROUND-START", 
+                "data" : {
+                    "turn_num" : self.turn_num
+                }
+            })
 
             self.images["table"] = self.images["game"].copy()[self.regions.table[1]:self.regions.table[1]+self.regions.table[3], self.regions.table[0]:self.regions.table[0]+self.regions.table[2]]
-            self.images["pocketed"] = self.images["game"].copy()[self.regions.pocketed[1]:self.regions.pocketed[1]+self.regions.pocketed[3], self.regions.pocketed[0]:self.regions.pocketed[0]+self.regions.pocketed[2]]
             self.images["targets_bot"] = self.images["game"].copy()[self.regions.targets_bot[1]:self.regions.targets_bot[1]+self.regions.targets_bot[3], self.regions.targets_bot[0]:self.regions.targets_bot[0]+self.regions.targets_bot[2]]
             self.images["targets_opponent"] = self.images["game"].copy()[self.regions.targets_opponent[1]:self.regions.targets_opponent[1]+self.regions.targets_opponent[3], self.regions.targets_opponent[0]:self.regions.targets_opponent[0]+self.regions.targets_opponent[2]]
+            self.images["targets_pocketed"] = self.images["game"].copy()[self.regions.targets_pocketed[1]:self.regions.targets_pocketed[1]+self.regions.targets_pocketed[3], self.regions.targets_pocketed[0]:self.regions.targets_pocketed[0]+self.regions.targets_pocketed[2]]
 
             cv2.imwrite(str(Path(self.round_path, "round_start.png")), self.images["game"])
             cv2.imwrite(str(Path(self.round_path, "table.png")), self.images["table"])
-            cv2.imwrite(str(Path(self.round_path, "pocketed.png")), self.images["pocketed"])
+            cv2.imwrite(str(Path(self.round_path, "targets_pocketed.png")), self.images["targets_pocketed"])
             cv2.imwrite(str(Path(self.round_path, "targets_bot.png")), self.images["targets_bot"])
             cv2.imwrite(str(Path(self.round_path, "targets_opponent.png")), self.images["targets_opponent"])
 
-            self.round_complete.set()
+            self.round_over_event.notify(self.round_complete)
         except Exception as e:
             self.logger.error(traceback.format_exc())
-            self.round_exception.set()
+            self.round_over_event.notify(self.round_exception)
         finally:
-            self.logger.debug("ROUND COMPLETE")
+            self.logger.info("ROUND COMPLETE")
+            self.ipc.send_message({"type" : "ROUND-COMPLETE"})
 
 
 ### Obtain shot on ball ###

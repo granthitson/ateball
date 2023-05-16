@@ -114,8 +114,104 @@ start.addEventListener("click", (e) => {
     window.api.ateball.start();
 });
 
-var realtime_image_menu = document.querySelector("#realtime-image-menu");
-realtime_image_menu.addEventListener("change", (e) => {
+var targeting_menu = document.querySelector("#targeting-menu");
+var targetables = document.querySelectorAll(".targetable");
+
+var suit_selection = document.querySelector("#realtime-suit");
+suit_selection.addEventListener("click", (e) => {
+    var target = (e.target.classList.contains("suit")) ? e.target : e.target.closest(".suit");
+    if (target) {
+        window.api.get_state().then((s) => {
+            if (s.ateball.game.suit == null) {
+                if (!targeting_menu.classList.contains("selecting")) {
+                    targeting_menu.classList.add("selecting");
+                } else {
+                    targetables.forEach((elem) => {
+                        if (!elem.disabled) {
+                            elem.classList.toggle("target", elem.classList.contains(target.value));
+                        }
+                    });
+                }
+            }
+        });
+    }
+});
+
+var ball_targeting_menu = document.querySelector("#realtime-ball-status");
+ball_targeting_menu.addEventListener("click", (e) => {
+    if (e.target.classList.contains("targetable")) {
+        if (!targeting_menu.classList.contains("selecting")) {
+            targeting_menu.classList.add("selecting");
+        } else {
+            let toggle = !e.target.classList.contains("target");
+            toggleTargetable(e.target, toggle);
+        }
+    }
+});
+
+ball_targeting_menu.addEventListener("mousedown", (e) => {
+    if (targeting_menu.classList.contains("selecting") && e.target.classList.contains("targetable")) {
+        let toggle = !e.target.classList.contains("target");
+
+        ball_targeting_menu.onmousemove = (e) => {
+            let targetable = document.elementFromPoint(e.clientX, e.clientY);
+            toggleTargetable(targetable, toggle);
+        }
+    }
+});
+
+ball_targeting_menu.addEventListener("mouseup", (e) => {
+    ball_targeting_menu.onmousemove = null;
+});
+
+const toggleTargetable = (targetable, toggle) => {
+    var available_targets = document.querySelectorAll(".targetable.target").length;
+    if (available_targets > 1) {
+        targetable.classList.toggle("target", toggle);
+    } else if (toggle) {
+        targetable.classList.toggle("target", toggle);
+    }
+}
+
+var confirm_targeting_btn = document.querySelector("#confirm-targeting-btn");
+confirm_targeting_btn.addEventListener("click", (e) => {
+    var ball_targets = Array.from(targetables).filter((t) => t.classList.contains("ball")).reduce((a, v) => ({ ...a, [v.id]: v.classList.contains("target") && !v.disabled}), {}) ;
+
+    targeting_menu.classList.remove("selecting");
+
+    window.api.ateball.game.update_targets({
+        "targets" : ball_targets
+    });
+});
+
+var cancel_targeting_btn = document.querySelector("#cancel-targeting-btn");
+cancel_targeting_btn.addEventListener("click", (e) => {
+    window.api.get_state().then((s) => {
+        targetables.forEach(targetable => {
+            let target = false;
+
+            if (s.ateball.game.suit == null && s.ateball.game.targets == null) {
+                targetable.classList.add("target");
+            } else {
+                if (s.ateball.game.suit == null) {
+                    target = s.ateball.game.targets[targetable.id] && !targetable.disabled;
+                } else if (s.ateball.game.targets == null) {
+                    target = targetable.classList.contains(s.ateball.game.suit) && !targetable.disabled;
+                } else {
+                    target = targetable.classList.contains(s.ateball.game.suit) && s.ateball.game.targets[targetable.id] && !targetable.disabled;
+                }
+
+                targetable.classList.toggle("target", target);
+            }
+        });
+    });
+    
+
+    targeting_menu.classList.remove("selecting");
+});
+
+var image_options_menu = document.querySelector("#image-options-menu");
+image_options_menu.addEventListener("change", (e) => {
     var data = get_realtime_config();
     window.api.ateball.game.realtime.configure(data);
 });
@@ -147,15 +243,22 @@ game_cancel.addEventListener("mouseup", (e) => {
 var stop_press_n_hold; const stop_press_n_hold_duration = 1000;
 var stop = document.querySelector("#ateball-stop");
 stop.addEventListener("mousedown", (e) => {
-    if (!stop.classList.contains("pending") && !stop.classList.contains("running")) {
-        stop.classList.add("pending");
-        stop.style.animationDuration = `${(stop_press_n_hold_duration  / 1000)}s`;
-        stop_press_n_hold = setTimeout(() => {
-            stop.classList.remove("pending");
+    window.api.get_state().then((s) => {
+        if (!(s.ateball.game.pending || s.ateball.game.started)) {
             toggleButtonSpinner(stop, true);
             window.api.ateball.stop();
-        }, stop_press_n_hold_duration)
-    }
+        } else {
+            if (!stop.classList.contains("pending") && !stop.classList.contains("running")) {
+                stop.classList.add("pending");
+                stop.style.animationDuration = `${(stop_press_n_hold_duration  / 1000)}s`;
+                stop_press_n_hold = setTimeout(() => {
+                    stop.classList.remove("pending");
+                    toggleButtonSpinner(stop, true);
+                    window.api.ateball.stop();
+                }, stop_press_n_hold_duration)
+            }
+        }
+    });
 });
 
 stop.addEventListener("mouseup", (e) => {
@@ -173,7 +276,7 @@ const get_realtime_config = () => {
         "table" : {
             "walls" : document.querySelector("input[name='draw_walls']").checked,
             "holes" : document.querySelector("input[name='draw_holes']").checked,
-            "image_type" : document.querySelector("select[name='image_type']").value
+            "background" : document.querySelector("input[name='draw_background']").checked
         }
     };
 }
@@ -185,111 +288,136 @@ const toggleButtonSpinner = (elem, state) => {
     }
 }
 
-const toggleAteballStart = (state) => {
-    var start = document.querySelector("#ateball-start");
-    start.disabled = !state;
-    start.style.width = !state ? "0" : "";
-}
-
-const toggleAteballStop = (state) => {
-    var stop = document.querySelector("#ateball-stop");
-    stop.disabled = !state;
-    stop.style.width = !state ? "0" : "";
-}
-
-const toggleAteballControls = (state) => {
-    toggleAteballStart(!state);
-    toggleAteballStop(state);
-}
+const loading_overlay = document.querySelector("#loading-overlay");
 
 const toggleGUIElements = () => {
-	var elem_list = ["button", "input", "select.menu-select"];
-
     window.api.get_state().then((s) => {
         // enable/disable everything else
         if (s !== null) {
             toggleAteballControls(s.process.started);
+            toggleGamemodeControls(s);
+            toggleGameControls(s);
 
-            document.querySelector("webview").style.display = (s.webview.formatted) ? "flex" : "none";
-
-            document.querySelector("#loading-overlay").style.display = (s.webview.loaded) ? "none" : "block";
-            document.querySelector("#gamemode-pending-overlay").style.display = (s.ateball.pending) ? "block" : "none"; 
-            document.querySelector("#game-controls").style.display = (s.ateball.game.started) ? "flex" : "none"; 
-
-            document.querySelector("#realtime-suit").style.display = (s.ateball.game.suit !== undefined) ? "flex" : "none"; 
-
-            var turn_timer = document.querySelector("#turn-timer");
-            var turn_num = document.querySelector("#turn-timer #turn-num");
-            if (s.ateball.game.round.started) {
-                turn_num.textContent = s.ateball.game.round.turn_num;
-                turn_timer.classList.add("start");
-                turn_timer.classList.remove("pending");
-            } else {
-                turn_timer.classList.add("pending");
-                turn_timer.classList.remove("start");
-            }
+            webview.style.display = (s.webview.formatted) ? "flex" : "none";
+            loading_overlay.style.display = (s.webview.loaded) ? "none" : "block";
         }
+    });
+}
 
-        // enable/disable buttons/inputs/selects
-        Array.from(document.querySelectorAll(".controls")).forEach(function(controls) {
-            Array.from(controls.querySelectorAll(elem_list.join(", "))).forEach(function(elem) {
-                if (s !== null && s.webview.loaded) {
-                    if (s.process.started && s.process.connected) {
-                        if (s.webview.menu && s.webview.menu == "/en/game") {
-                            let interact = false;
+const toggleAteballControls = (state) => {
+    start.disabled = state;
+    start.style.width = state ? "0" : "";
 
-                            if (s.ateball.pending || s.ateball.game.started) {
-                                // disable gamemode selection buttons / enable game controls if started
-                                if (elem.closest(".controls").id == "game-controls") {
-                                    if (elem.classList.contains("pool-ball-indicator")) {
-                                        if (elem.id in s.ateball.game.round.balls) {
-                                            interact = !s.ateball.game.round.balls[elem.id];
-                                        }
-                                    } else if (elem.classList.contains("suit")) {
-                                        if (s.ateball.game.suit !== undefined) {
-                                            if (s.ateball.game.suit != null) {
-                                                if (!elem.classList.contains(s.ateball.game.suit)) {
-                                                    elem.style.width = 0;
-                                                } else {
-                                                    elem.style.width = "";
-                                                    elem.classList.add("selected");
-                                                }
-                                            } else {
-                                                interact = true;
-                                            }
-                                        }
-                                    } else {
-                                        interact = true;
-                                    }
-                                } else {
-                                    interact = false;
-                                }
-                            } else {
-                                if (elem.closest(".controls").id == "game-controls") {
-                                    interact = false;
-                                } else {
-                                    if (s.webview.logged_in) {
-                                        interact = (elem.id == "guest-btn") ? false : true;
-                                        elem.style.display = (elem.id == "guest-btn") ? "none" : "block";
-                                    } else {
-                                        interact = (elem.id == "guest-btn") ? true : false;
-                                        elem.style.display = "block";
-                                    }
-                                }
-                            }
+    stop.disabled = !state;
+    stop.style.width = !state ? "0" : "";
+}
 
-                            elem.disabled = !interact;
+const gamemode_controls = document.querySelector("#gamemode-controls");
+
+const gamemode_pending_overlay = document.querySelector("#gamemode-pending-overlay");
+const gamemodes = Array.from(gamemode_controls.querySelectorAll(".gamemode"));
+
+const toggleGamemodeControls = (s) => {
+    var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game";
+
+    gamemode_controls.disabled = !interact;
+    gamemode_pending_overlay.style.display = (s.ateball.pending) ? "block" : "none";
+
+    gamemodes.forEach(function(elem) {
+        if (interact && !s.ateball.game.started) {
+            if (s.webview.logged_in) {
+                elem.disabled = (elem.id == "guest_gamemode");
+                elem.style.display = (elem.id == "guest_gamemode") ? "none" : "block";
+            } else {
+                elem.disabled = (elem.id != "guest_gamemode");
+                elem.style.display = "block";
+            }
+        } else {
+            elem.disabled = true;
+        }
+    });
+}
+
+const game_controls = document.querySelector("#game-controls");
+
+const turn_timer = document.querySelector("#turn-timer");
+const turn_num = document.querySelector("#turn-timer #turn-num");
+
+const suits = Array.from(document.querySelectorAll(".suit"));
+const ball_indicators = Array.from(document.querySelectorAll(".pool-ball-indicator"));
+
+const toggleGameControls = (s) => {
+    var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
+
+    game_controls.disabled = !interact;
+
+    if (s.ateball.game.round.started) {
+        turn_num.textContent = s.ateball.game.round.turn_num;
+        turn_timer.classList.add("start");
+        turn_timer.classList.remove("pending");
+    } else {
+        turn_timer.classList.add("pending");
+        turn_timer.classList.remove("start");
+    }
+
+    suit_selection.style.display = (s.ateball.game.suit !== undefined) ? "" : "none";
+    if (!interact) {
+        targeting_menu.classList.remove("selecting");
+    }
+
+    if (s.ateball.game.suit !== undefined) {
+        suits.forEach((elem) => {
+            if (interact && s.ateball.game.suit != null) {
+                if (!elem.classList.contains(s.ateball.game.suit)) {
+                    elem.classList.remove("selected");
+                    elem.style.width = 0;
+                } else {
+                    elem.classList.add("selected");
+                    elem.style.width = "";
+                }
+            } else {
+                elem.classList.remove("selected");
+                elem.style.width = "";
+            }
+        });
+    }
+
+    ball_indicators.forEach((elem) => {
+        if (interact) {
+            if (!(elem.id in s.ateball.game.balls) || s.ateball.game.suit === undefined) {
+                elem.disabled = true;
+                elem.classList.remove("target");
+                elem.classList.remove("targetable");
+            } else {
+                if (s.ateball.game.suit !== undefined) {
+                    // suit is null or solid/stripe
+                    
+                    if (!targeting_menu.classList.contains("selecting")) {
+                        let is_target = true; let is_targetable = true;
+
+                        if (s.ateball.game.suit != null) {
+                            is_targetable = elem.classList.contains(s.ateball.game.suit) && !s.ateball.game.balls[elem.id].pocketed;
+                            is_target = is_targetable && ((s.ateball.game.targets != null) ? s.ateball.game.targets[elem.id] : s.ateball.game.balls[elem.id].target);
                         } else {
-                            elem.disabled = true;
+                            is_targetable = !s.ateball.game.balls[elem.id].pocketed;
+                            is_target = is_targetable && ((s.ateball.game.targets != null) ? s.ateball.game.targets[elem.id] : s.ateball.game.balls[elem.id].target);
                         }
-                    } else {
-                        elem.disabled = true;
+
+                        elem.disabled = s.ateball.game.balls[elem.id].pocketed;
+                        elem.classList.toggle("target", is_target);
+                        elem.classList.toggle("targetable", is_targetable);
                     }
                 } else {
                     elem.disabled = true;
+                    elem.classList.remove("target");
+                    elem.classList.remove("targetable");
                 }
-            });
-        });
+            }
+        } else {
+            elem.disabled = false;
+            elem.classList.add("target");
+            elem.classList.add("targetable");
+        }
     });
 }
 

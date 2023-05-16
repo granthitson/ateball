@@ -1,6 +1,7 @@
 html {
     height: 100vh;
     width: 100vw;
+    user-select: none;
 }
 
 html, body {
@@ -26,8 +27,9 @@ webview {
     display: unset !important;
 }
 
-::-webkit-scrollbar {
-    display: none;
+[disabled] {
+    filter: grayscale(1);
+    pointer-events: none;
 }
 
 #ateball-webview {
@@ -76,6 +78,16 @@ webview {
     min-height: 0;
 }
 
+#game-operations {
+    flex: 1 1 auto;
+    overflow: auto;
+    height: 0;
+}
+
+#game-operations::-webkit-scrollbar {
+    display: none;
+}
+
 #logo_header {
     width: inherit;
     height: inherit;
@@ -118,7 +130,7 @@ webview {
     
 }
 
-#menu-controls {
+#gamemode-controls {
     width: 300px;
     max-width: 300px;
     position: relative;
@@ -162,7 +174,6 @@ webview {
 #realtime canvas {
     display: block;
     background-image: url("../images/table-placeholder.png");
-    filter: grayscale(1);
 }
 
 #realtime-menu {
@@ -261,6 +272,16 @@ webview {
 #guest-btn:not([disabled]):hover {
     border-color: #f7a62c;
     background-image: -webkit-linear-gradient(top, #ffb13b, #ff9924, #ff6816);
+}
+
+#image-options-btn {
+    border-color: #d5b210;
+    background-image: -webkit-linear-gradient(top, #d5b210, #dfd36d, #d5b210);
+}
+
+#image-options-btn:not([disabled]):hover {
+    border-color: #e9c311;
+    background-image: -webkit-linear-gradient(top, #e9c311, #e9dd76, #e9c311);
 }
 
 #login-btn {
@@ -373,6 +394,26 @@ webview {
     background-image: -webkit-linear-gradient(top, #ffb13b, #ff9924, #ff6816);
 }
 
+#confirm-targeting-btn {
+    border-color: #419533;
+    background-image: -webkit-linear-gradient(top, #4fbf4c, #0a7201);
+}
+
+#confirm-targeting-btn:not([disabled]):hover {
+    border-color: #0d8f01;
+    background-image: -webkit-linear-gradient(top, #59d354, #0d8f01);
+}
+
+#cancel-targeting-btn {
+    border-color: #c91717;
+    background-image: -webkit-linear-gradient(top, #c91717, #ff2a2a, #c91717);
+}
+
+#cancel-targeting-btn:not([disabled]):hover {
+    border-color: #e02020;
+    background-image: -webkit-linear-gradient(top, #e02020, #ff4747, #e02020);
+}
+
 /* Menu button colors */
 
 ._btn {
@@ -381,7 +422,7 @@ webview {
     padding: 0 4%;
     color: white;
     font-size: 16px;
-    line-height: 32px;
+    line-height: 24px;
     text-align: center;
     text-shadow: 1px 0px 4px #000000;
     background-image: -webkit-gradient(linear,left top,left bottom,from(#fcfcfc),to(#ccc));
@@ -399,6 +440,14 @@ webview {
 
 .slim {
     height: 24px !important;
+    line-height: 24px;
+}
+
+._btn.timer {
+    line-height: 32px;
+}
+
+._btn.timer.slim {
     line-height: 24px;
 }
 
@@ -427,6 +476,10 @@ webview {
     content: "▴";
     margin-right: auto;
     float: right;
+}
+
+.gamemode[disabled] * {
+    pointer-events: none;
 }
 
 /* pending spinner */
@@ -525,7 +578,7 @@ webview {
     background-image: -webkit-linear-gradient(top, #59d354, #0d8f01);
 }
 
-.pool-ball-indicator {
+.ball {
     width: calc(100% / 8);
     height: calc(213px / 8);
     padding: 0;
@@ -533,70 +586,102 @@ webview {
     background-position: center;
 }
 
-.pool-ball-indicator.b0 {
+.ball.b0 {
     background-image: url("../images/balls/0ball.png");
 }
 
-.pool-ball-indicator.b1 {
+.ball.b1 {
     background-image: url("../images/balls/1ball.png");
 }
 
-.pool-ball-indicator.b2 {
+.ball.b2 {
     background-image: url("../images/balls/2ball.png");
 }
 
-.pool-ball-indicator.b3 {
+.ball.b3 {
     background-image: url("../images/balls/3ball.png");
 }
 
-.pool-ball-indicator.b4 {
+.ball.b4 {
     background-image: url("../images/balls/4ball.png");
 }
 
-.pool-ball-indicator.b5 {
+.ball.b5 {
     background-image: url("../images/balls/5ball.png");
 }
 
-.pool-ball-indicator.b6 {
+.ball.b6 {
     background-image: url("../images/balls/6ball.png");
 }
 
-.pool-ball-indicator.b7 {
+.ball.b7 {
     background-image: url("../images/balls/7ball.png");
 }
 
-.pool-ball-indicator.b8 {
+.ball.b8 {
     background-image: url("../images/balls/8ball.png");
 }
 
-.pool-ball-indicator.b9 {
+.ball.b9 {
     background-image: url("../images/balls/9ball.png");
 }
 
-.pool-ball-indicator.b10 {
+.ball.b10 {
     background-image: url("../images/balls/10ball.png");
 }
 
-.pool-ball-indicator.b11 {
+.ball.b11 {
     background-image: url("../images/balls/11ball.png");
 }
 
-.pool-ball-indicator.b12 {
+.ball.b12 {
     background-image: url("../images/balls/12ball.png");
 }
 
-.pool-ball-indicator.b13 {
+.ball.b13 {
     background-image: url("../images/balls/13ball.png");
 }
 
-.pool-ball-indicator.b14 {
+.ball.b14 {
     background-image: url("../images/balls/14ball.png");
 }
 
-.pool-ball-indicator.b15 {
+.ball.b15 {
     background-image: url("../images/balls/15ball.png");
 }
 
+#targeting-menu #update-targeting-menu {
+    display: none;
+}
+
+#targeting-menu.selecting #update-targeting-menu {
+    display: block;
+}
+
+#targeting-menu.selecting .pool-ball-indicator.targetable.target:not([disabled]) {
+    border: 1px lime solid;
+}
+
+#targeting-menu.selecting .pool-ball-indicator.targetable:not(.target, [disabled]):hover {
+    border: 1px lime solid;
+}
+
+.pool-ball-indicator.targetable.target[disabled] {
+    filter: grayscale(1);
+}
+
+.pool-ball-indicator.targetable:not(.target), .pool-ball-indicator:not(.targetable, .target) {
+    filter: opacity(.6);
+}
+
+.pool-ball-indicator.targetable[disabled]:not(.target), .pool-ball-indicator[disabled]:not(.targetable, .target) {
+    filter: grayscale(1) opacity(.4);
+}
+
+.pool-ball-indicator:not(.targetable, .target, [disabled]) {
+    cursor: pointer;
+    pointer-events: none;
+}
 
 .panel-btn{
     display: block;
@@ -637,6 +722,10 @@ webview {
     background: #3676c5;
 }
 
+.suit.solid.selected {
+    background: #4089e1;
+}
+
 .suit.solid:not(.selected, [disabled]):hover {
     background: #3b81d7;
 }
@@ -650,6 +739,10 @@ webview {
     right: 0;
     left: 0;
     bottom: 0;
+}
+
+.suit.selected .stripe {
+    background: #4089e1;
 }
 
 .suit.stripe:not(.selected, [disabled]):hover .stripe {
@@ -677,7 +770,7 @@ webview {
     text-decoration: none;
     text-align: center;
     line-height: 28px;
-    font-size: 18px;
+    font-size: 16px;
     height: 32px;
     font-weight: 600;
     background: #4edc4e;
@@ -695,6 +788,10 @@ webview {
 #turn-timer.start .timer-progress {
     animation: timer 30s linear;
     animation-fill-mode: backwards;
+}
+
+.timer {
+    font-weight: 600;
 }
 
 .timer .timer-c {

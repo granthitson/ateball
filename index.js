@@ -122,6 +122,10 @@ app.on('ready', async () => {
 		ateball.play_game({ type: "play", ...data});
 	});
 
+	ipcMain.on('update-targets', (e, data) => {
+		ateball.update_targets(data);
+	});
+
 	ipcMain.on('realtime-configure', (e, draw) => {
 		ateball.realtime_configure(draw);
 	});
