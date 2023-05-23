@@ -12,6 +12,7 @@ import numpy as np
 import json
 from pathlib import Path
 import base64
+import math
 
 from abc import ABC
 
@@ -232,6 +233,7 @@ class TwoPlayerGame(Game):
 
                 threading.Thread(target=self.record).start()
                 
+                threading.Thread(target=self.determine_suit, daemon=True).start()
                 threading.Thread(target=self.wait_for_turn_start, daemon=True).start()
 
                 # game loop
@@ -300,6 +302,109 @@ class TwoPlayerGame(Game):
                     self.ipc.send_message({"type" : "GAME-CANCELLED"})
                 elif self.game_end.is_set():
                     self.ipc.send_message({"type" : "GAME-END"})
+
+    def determine_suit(self):
+        suit_mask = utils.CV2Helper.imread(constants.images.img_suit_mask, 0)
+
+        while not self.game_over_event.is_set() and self.game_data["suit"] is None:
+            try:
+                image = self.window_capturer.get()
+                if image.any() and (self.player_turn.is_set() or self.opponent_turn.is_set()):
+                    # slice bot/opponent target regions
+                    targets_bot = utils.CV2Helper.slice_image(image, constants.regions.targets_bot)
+                    targets_opponent = utils.CV2Helper.slice_image(image, constants.regions.targets_opponent)
+
+                    # create gamma lookup table
+                    inv_gamma = (1.0 / constants.target.gamma)
+                    gamma_look_up = np.array([((i / 255.0) ** inv_gamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+
+                    # adjust contrast and gamma based on turn
+                    if self.opponent_turn.is_set():
+                        opponent_hsv = cv2.cvtColor(targets_opponent, cv2.COLOR_BGR2HSV)
+
+                        # adjust image contrast by equalizing histogram across
+                        bot_hsv = cv2.cvtColor(targets_bot, cv2.COLOR_BGR2HSV)
+                        bot_hsv[:,:,2] = cv2.equalizeHist(bot_hsv[:,:,2])
+                        targets_bot_equalized = cv2.cvtColor(bot_hsv, cv2.COLOR_HSV2BGR)
+
+                        # gamma correction to improve color accuracy
+                        targets_bot = cv2.LUT(targets_bot_equalized, gamma_look_up)
+                    else:
+                        bot_hsv = cv2.cvtColor(targets_bot, cv2.COLOR_BGR2HSV)
+                        
+                        # adjust image contrast by equalizing histogram across
+                        opponent_hsv = cv2.cvtColor(targets_opponent, cv2.COLOR_BGR2HSV)
+                        opponent_hsv[:,:,2] = cv2.equalizeHist(opponent_hsv[:,:,2])
+                        targets_opponent_equalized = cv2.cvtColor(opponent_hsv, cv2.COLOR_HSV2BGR)
+                    
+                        # gamma correction to improve color accuracy
+                        targets_opponent = cv2.LUT(targets_opponent_equalized, gamma_look_up)
+
+                    targets_bot_masked = cv2.bitwise_and(targets_bot, targets_bot, mask=suit_mask)
+                    targets_opponent_masked = cv2.bitwise_and(targets_opponent, targets_opponent, mask=suit_mask)
+
+                    bot_boosted_hsv = cv2.cvtColor(targets_bot_masked, cv2.COLOR_BGR2HSV)
+                    opponent_boosted_hsv = cv2.cvtColor(targets_opponent_masked, cv2.COLOR_BGR2HSV)
+
+                    targets = 0
+
+                    # identify possible hittable targets
+                    for c, iden_d in self.table.targetable_ball_identities.items():
+                        # create color mask range
+                        color_d = constants.table.balls.__dict__[self.gamemode_info.balls].colors.__dict__[c]
+                        lower, upper = np.array(color_d.mask_lower), np.array(color_d.mask_upper)
+
+                        # mask ball target regions and count nonzero pixels for each color
+                        bot_result, opponent_result = cv2.inRange(bot_boosted_hsv, lower, upper), cv2.inRange(opponent_boosted_hsv, lower, upper)
+                        bot_color_total, opponent_color_total = np.count_nonzero(bot_result), np.count_nonzero(opponent_result)
+                        
+                        # calculate % color occupies
+                        bot_color_ratio = (bot_color_total / constants.ball.area)
+                        opponent_color_ratio = (opponent_color_total / constants.ball.area)
+
+                        # eightball is a given target
+                        if c == "eightball":
+                            if constants.suit.max_threshold > bot_color_ratio > constants.suit.min_threshold or constants.suit.max_threshold > opponent_color_ratio > constants.suit.min_threshold:
+                                targets += 1
+                            continue
+
+                        # possible target percentages should be large enough to be considered - if neither are, remove from consideration
+                        if bot_color_ratio < constants.suit.min_threshold and opponent_color_ratio < constants.suit.min_threshold:
+                            continue
+                        else:
+                            # both possible targets are large enough - compare against each other to determine suit
+                            if bot_color_ratio > constants.suit.min_threshold and opponent_color_ratio > constants.suit.min_threshold:
+                                self.game_data["suit"] = "solid" if bot_color_ratio > opponent_color_ratio else "stripe"
+                                break
+                            else:
+                                # only one possible target is large enough - compare against a predetermined threshold to determine suit 
+                                if bot_color_ratio > constants.suit.min_threshold:
+                                    solid_ratio = math.fabs(constants.ball.suit.solid.expected_ratio - bot_color_ratio)
+                                    stripe_ratio = math.fabs(constants.ball.suit.stripe.expected_ratio - bot_color_ratio)
+                                    self.game_data["suit"] = "solid" if solid_ratio < stripe_ratio else "stripe"
+                                    break
+                                else:
+                                    solid_ratio = math.fabs(constants.ball.suit.solid.expected_ratio - opponent_color_ratio)
+                                    stripe_ratio = math.fabs(constants.ball.suit.stripe.expected_ratio - opponent_color_ratio)
+                                    self.game_data["suit"] = "stripe" if solid_ratio < stripe_ratio else "solid"
+                                    break
+                            
+                            targets += 1
+                    
+                    if targets == 1:
+                        raise Exception("Unable to determine suit: not enough balls.")
+            except Exception as e:
+                self.logger.error(e)
+                break
+            else:
+                self.ipc.send_message(
+                    {
+                        "type" : "SUIT-SELECT", 
+                        "data" : { 
+                            "suit" : self.game_data["suit"]
+                        }
+                    }
+                )
 
     def wait_for_turn_start(self):
         self.logger.info("Waiting for turn to start...")
