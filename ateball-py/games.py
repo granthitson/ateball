@@ -124,28 +124,53 @@ class Game(threading.Thread, ABC):
 
     def wait_for_game_start(self):
         self.logger.info("Waiting for game to start...")
-
-        # get contour of marker
-        needle = utils.CV2Helper.imread(self.img_game_start)
-        needle_contours = self.get_game_marker_contours(needle)
-
+        
         while not self.game_start.is_set() and not self.game_over_event.is_set():
             try:
                 image = self.window_capturer.get()
-                if image.any() and needle_contours.any():
-                    # get contour of (potential) marker of current game
-                    haystack = utils.CV2Helper.slice_image(image, constants.regions.turn_start)
-                    haystack_contours = self.get_game_marker_contours(haystack)
-                    
-                    # match shape of contours - contours similar closer to 0
-                    match = cv2.matchShapes(haystack_contours, needle_contours, cv2.CONTOURS_MATCH_I1 , 0.0)
-                    if match <= .02:
-                        self.get_game_num()
-                        self.game_start.set()
+                marker_match = self.match_game_marker(image)
+                if marker_match:
+                    self.get_game_num()
+                    self.game_start.set()                            
             except Exception as e:
                 self.logger.error(traceback.format_exc())
 
-    def get_game_marker_contours(self, image):
+    def match_game_marker(self, image):
+        # get contour shape of original marker
+        needle = utils.CV2Helper.imread(self.img_game_start)
+        needle_height, needle_width, needle_channels = needle.shape
+        needle_outline = self.get_marker_outline(needle)
+
+        try:
+            if image.any() and needle_outline.any():
+                # slice region where game marker can be found, matching the size of original image
+                region = constants.regions.__dict__[self.gamemode_info.game_start.region].copy()
+                region[0] = int(region[0] - (needle_width / 2))
+                region[2], region[3] = needle_width, needle_height
+
+                # get contour shape of prospective marker
+                haystack = utils.CV2Helper.slice_image(image, region)   
+                haystack_outline = self.get_marker_outline(haystack)
+
+                if haystack_outline.any():
+                    # match shape of prospective marker within inverse of original (needle)
+                    invert_needle_outline = cv2.bitwise_not(needle_outline)
+                    combined = cv2.bitwise_and(invert_needle_outline, haystack_outline)
+                    match = utils.clamp(len(np.nonzero(combined)[0]) / len(np.nonzero(needle_outline)[0]), 0, 1)
+
+                    # prospective marker should match within confines of original marker, or within and is only slighly larger than original (less than 5% larger)
+                    if match == 0 or (match > 0 and match < .1):
+                        match_shape = math.fabs(1 - (len(np.nonzero(haystack_outline)[0]) / len(np.nonzero(needle_outline)[0])))
+
+                        # prospective marker should occupy at least 80% when compared with original
+                        if match_shape <= .2:
+                            return True
+                
+                return False
+        except Exception as e:
+            self.logger.error(traceback.format_exc())
+
+    def get_marker_outline(self, image):
         try:
             # resize & blur to get clearer contours
             image = utils.CV2Helper.resize(image, 4)
@@ -154,16 +179,21 @@ class Game(threading.Thread, ABC):
             image_hsv = cv2.cvtColor(image_blur, cv2.COLOR_BGR2HSV)
 
             # filter out gray background to get shape of marker
-            image_mask = cv2.inRange(image_hsv, np.array([0, 0, 40]), np.array([180, 255, 255]))
+            marker_backround_mask = np.array(self.gamemode_info.game_start.mask.lower), np.array(self.gamemode_info.game_start.mask.upper)
+            image_mask = cv2.inRange(image_hsv, *marker_backround_mask)
             image_mask = cv2.morphologyEx(image_mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8), iterations=3)
 
             # return largest contour
-            contours, hierarchy = cv2.findContours(image_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-            contours = sorted(contours, key=cv2.contourArea, reverse=True)[0]
+            contours, hierarchy = cv2.findContours(image_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+            height, width, channels = image.shape
+            contour = np.full((height, width), 0, np.uint8)
+            cv2.drawContours(contour, contours, -1, (255, 255, 255), -1)
         except IndexError as e:
             return np.array([])
         else:
-            return contours
+            return contour
 
     def get_game_num(self):
         json_path = Path("ateball-py", "game.json")
