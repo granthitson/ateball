@@ -35,26 +35,26 @@ class Formatter(logging.Formatter):
 class OrEvent:
     def __init__(self, event1, event2, *args):
         self.condition = threading.Condition()
+
         self.events = [event1, event2, *args]
         self.timeout = threading.Event()
 
     def wait(self, timeout=None):
-        logger.debug("or event start")
-        with self.condition:
-            while not any([e.is_set() for e in self.events]) and not self.timeout.is_set():
-                logger.debug(f"or event waiting")
+        while not any([e.is_set() for e in self.events]) and not self.timeout.is_set():
+            with self.condition:
                 timed_out = not self.condition.wait(timeout)
                 if timed_out:
                     self.timeout.set()
-                    logger.debug("or event timeout")
 
-        result = " - ".join([str(e.is_set()) for e in self.events])
-        logger.debug(f"or event end: {result} - {self.timeout.is_set()}")
+        return any([e.is_set() for e in self.events])
 
     def notify(self, event):
-        event.set()
-        with self.condition:
-            self.condition.notify()
+        if event in self.events:
+            event.set()
+            with self.condition:
+                self.condition.notify_all()
+        else:
+            raise ValueError("event does not belong to OrEvent")
 
     def clear(self):
         for e in self.events:
@@ -62,12 +62,7 @@ class OrEvent:
         self.timeout.clear()
 
     def is_set(self):
-        is_set = False
-        for e in self.events:
-            if e.is_set():
-                is_set = True
-
-        return is_set
+        return any([e.is_set() for e in self.events])
 
     def has_timed_out(self):
         return self.timeout.is_set()
@@ -129,20 +124,21 @@ class WindowCapturer(threading.Thread):
         self.region = (region[2], region[3])
         self.offset = offset
 
+        self.image = np.array([])
+
+        self.exception = threading.Event()
+        self.exit = threading.Event()
+        self.stop_event = OrEvent(self.exception, self.exit)
+
         self.fps = fps
         self.last_tick = 0
         self.on_tick = threading.Event()
-
-        self.image = None
-
-        self.stop_event = threading.Event()
+        self.on_tick_event = OrEvent(self.on_tick, self.exception, self.exit)
 
         self.logger = logging.getLogger("ateball.utils.WindowCapturer")
 
     def tick(self, fps):
         # synchronize loop with fps
-        self.on_tick.clear()
-
         interval = 1 / fps 
         current_time = time.time()
         delta = current_time - self.last_tick
@@ -151,53 +147,61 @@ class WindowCapturer(threading.Thread):
             time.sleep(interval - delta)
 
         self.last_tick = time.time()
+        self.on_tick.clear()
 
     def run(self):
         self.stop_event.clear()
+        self.on_tick.clear()
+
+        w, h = self.region
+
+        left, top, right, bot = win32gui.GetWindowRect(self.hwnd)
+        offset = (self.offset[0] + left, self.offset[1] + top)
+
+        # can't capture hardware accelerated window
+        desktop = win32gui.GetDesktopWindow()
+        wDC = win32gui.GetWindowDC(desktop)
+
+        # wDC = win32gui.GetWindowDC(self.hwnd)
+        dcObj=win32ui.CreateDCFromHandle(wDC)
+        cDC=dcObj.CreateCompatibleDC()
 
         while not self.stop_event.is_set():
-            self.tick(self.fps)
+            try:
+                # allow threads to retrieve latest
+                self.tick(self.fps)
 
-            w, h = self.region
+                dataBitMap = win32ui.CreateBitmap()
+                dataBitMap.CreateCompatibleBitmap(dcObj, w, h)
+                cDC.SelectObject(dataBitMap)
+                cDC.BitBlt((0,0), (w, h), dcObj, offset, win32con.SRCCOPY)
 
-            left, top, right, bot = win32gui.GetWindowRect(self.hwnd)
-            offset = (self.offset[0] + left, self.offset[1] + top)
+                signedIntsArray = dataBitMap.GetBitmapBits(True)
+                img = np.frombuffer(signedIntsArray, dtype='uint8').reshape((h, w, 4))
+                img.shape = (h, w, 4)
 
-            # can't capture hardware accelerated window
-            desktop = win32gui.GetDesktopWindow()
-            wDC = win32gui.GetWindowDC(desktop)
-
-            # wDC = win32gui.GetWindowDC(self.hwnd)
-            dcObj=win32ui.CreateDCFromHandle(wDC)
-            cDC=dcObj.CreateCompatibleDC()
-            dataBitMap = win32ui.CreateBitmap()
-            dataBitMap.CreateCompatibleBitmap(dcObj, w, h)
-            cDC.SelectObject(dataBitMap)
-            cDC.BitBlt((0,0), (w, h), dcObj, offset, win32con.SRCCOPY)
-
-            signedIntsArray = dataBitMap.GetBitmapBits(True)
-            img = np.frombuffer(signedIntsArray, dtype='uint8').reshape((h, w, 4))
-            img.shape = (h, w, 4)
-
-            img = img[...,:3]
-            self.image = np.ascontiguousarray(img)
-
-            # Free Resources
-            dcObj.DeleteDC()
-            cDC.DeleteDC()
-            win32gui.ReleaseDC(self.hwnd, wDC)
-            win32gui.DeleteObject(dataBitMap.GetHandle())
-
-            # allow threads to retrieve latest
-            self.on_tick.set()
+                img = img[...,:3]
+                self.image = np.ascontiguousarray(img)
+                self.on_tick_event.notify(self.on_tick)
+            except (win32ui.error, Exception) as e:
+                self.logger.error(f"unable to capture window: {e}")
+                self.on_tick_event.notify(self.exception)
+                self.stop_event.notify(self.exception)
+        
+        # Free Resources
+        dcObj.DeleteDC()
+        cDC.DeleteDC()
+        win32gui.ReleaseDC(self.hwnd, wDC)
+        win32gui.DeleteObject(dataBitMap.GetHandle())
 
     def get(self):
         # get latest image added to stack
-        self.on_tick.wait()
+        self.on_tick_event.wait()
         return self.image if self.image.any() else np.array([])
 
     def stop(self):
-        self.stop_event.set()
+        self.on_tick_event.notify(self.exit)
+        self.stop_event.notify(self.exit)
 
 class CV2Helper:
     logger = logging.getLogger("ateball.utils.CV2Helper")
