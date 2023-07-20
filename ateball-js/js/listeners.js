@@ -221,26 +221,26 @@ pending_cancel.addEventListener("click", (e) => {
     window.api.ateball.game.cancel();
 });
 
-var cancel_press_n_hold; const cancel_press_n_hold_duration = 1000;
-var game_cancel = document.querySelector("#game-cancel-btn");
-game_cancel.addEventListener("mousedown", (e) => {
-    if (!game_cancel.classList.contains("pending") && !game_cancel.classList.contains("running")) {
-        game_cancel.classList.add("pending");
-        game_cancel.style.animationDuration = `${(cancel_press_n_hold_duration  / 1000)}s`;
-        cancel_press_n_hold = setTimeout(() => {
-            game_cancel.classList.remove("pending");
-            toggleButtonSpinner(game_cancel, true);
-            window.api.ateball.game.cancel();
-        }, cancel_press_n_hold_duration)
+var game_stop_press_n_hold; const game_stop_press_n_hold_duration = 1000;
+var game_stop = document.querySelector("#game-stop-btn");
+game_stop.addEventListener("mousedown", (e) => {
+    if (!game_stop.classList.contains("pending") && !game_stop.classList.contains("running")) {
+        game_stop.classList.add("pending");
+        game_stop.style.animationDuration = `${(game_stop_press_n_hold_duration  / 1000)}s`;
+        game_stop_press_n_hold = setTimeout(() => {
+            game_stop.classList.remove("pending");
+            toggleButtonSpinner(game_stop, true);
+            window.api.ateball.game.stop();
+        }, game_stop_press_n_hold_duration)
     }
 });
 
-game_cancel.addEventListener("mouseup", (e) => {
-    game_cancel.classList.remove('pending');
-    clearTimeout(cancel_press_n_hold);
+game_stop.addEventListener("mouseup", (e) => {
+    game_stop.classList.remove('pending');
+    clearTimeout(game_stop_press_n_hold);
 });
 
-var stop_press_n_hold; const stop_press_n_hold_duration = 1000;
+var ateball_stop_press_n_hold; const ateball_stop_press_n_hold_duration = 1000;
 var stop = document.querySelector("#ateball-stop");
 stop.addEventListener("mousedown", (e) => {
     window.api.get_state().then((s) => {
@@ -250,12 +250,12 @@ stop.addEventListener("mousedown", (e) => {
         } else {
             if (!stop.classList.contains("pending") && !stop.classList.contains("running")) {
                 stop.classList.add("pending");
-                stop.style.animationDuration = `${(stop_press_n_hold_duration  / 1000)}s`;
-                stop_press_n_hold = setTimeout(() => {
+                stop.style.animationDuration = `${(ateball_stop_press_n_hold_duration  / 1000)}s`;
+                ateball_stop_press_n_hold = setTimeout(() => {
                     stop.classList.remove("pending");
                     toggleButtonSpinner(stop, true);
                     window.api.ateball.stop();
-                }, stop_press_n_hold_duration)
+                }, ateball_stop_press_n_hold_duration)
             }
         }
     });
@@ -263,7 +263,7 @@ stop.addEventListener("mousedown", (e) => {
 
 stop.addEventListener("mouseup", (e) => {
     stop.classList.remove('pending');
-    clearTimeout(stop_press_n_hold);
+    clearTimeout(ateball_stop_press_n_hold);
 });
 
 const get_realtime_config = () => {

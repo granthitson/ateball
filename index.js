@@ -134,6 +134,10 @@ app.on('ready', async () => {
 		ateball.cancel_game();
 	});
 
+	ipcMain.on('game-stop', (e) => {
+		ateball.stop_game();
+	});
+
 	ipcMain.on('ateball-stop', (e) => {
 		ateball.stop();
 	});

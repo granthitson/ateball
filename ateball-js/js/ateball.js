@@ -65,6 +65,10 @@ class Ateball {
 		this.send_message({ "type" : "cancel" });
 	}
 
+	stop_game() {
+		this.send_message({ "type" : "stop" });
+	}
+
 	end_game() {
 		this.window.setAlwaysOnTop(false);
 		this.reset_game_state();
@@ -188,7 +192,8 @@ class Ateball {
 							break;
 						case "GAME-EXCEPTION":
 						case "GAME-CANCELLED":
-							console.log("game cancelled");
+						case "GAME-STOPPED":
+							console.log("game stopped");
 							this.end_game();
 							break;
 						case "GAME-END":

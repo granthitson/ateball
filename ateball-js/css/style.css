@@ -254,12 +254,12 @@ webview {
     background-image: -webkit-linear-gradient(top, #ff8520, #ffcc34, #ff8520);
 }
 
-#game-cancel-btn {
+#game-stop-btn {
     border-color: #c91717;
     background-image: -webkit-linear-gradient(top, #c91717, #ff2a2a, #c91717);
 }
 
-#game-cancel-btn:not([disabled], .running):hover {
+#game-stop-btn:not([disabled], .running):hover {
     border-color: #e02020;
     background-image: -webkit-linear-gradient(top, #e02020, #ff4747, #e02020);
 }
@@ -464,6 +464,10 @@ webview {
     white-space: -moz-pre-wrap;
     word-wrap: break-word; 
     font-size: 12px;
+}
+
+.crosshair {
+    cursor: crosshair !important;
 }
 
 .dropdown::after {
@@ -822,7 +826,7 @@ webview {
     background: -webkit-linear-gradient(top, #8b1010, #cf2424, #8b1010);
 }
 
-#game-cancel-btn .timer-progress {
+#game-stop-btn .timer-progress {
     background: -webkit-linear-gradient(top, #8b1010, #cf2424, #8b1010);
 }
 

@@ -39,7 +39,7 @@ window.api.ateball.game.realtime.on_stream( (e, msg) => {
 
 window.api.ateball.game.on_end((e) => {
     console.log("game ended");
-    toggleButtonSpinner(game_cancel, false);
+    toggleButtonSpinner(game_stop, false);
 
     var realtime = document.querySelector("#realtime canvas");
     var context = realtime.getContext("2d");
@@ -48,7 +48,7 @@ window.api.ateball.game.on_end((e) => {
 
 window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
-    toggleButtonSpinner(game_cancel, false);
+    toggleButtonSpinner(game_stop, false);
     toggleButtonSpinner(stop, false);
 
     var realtime = document.querySelector("#realtime canvas");
