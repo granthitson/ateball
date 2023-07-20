@@ -26,7 +26,7 @@ window.api.ateball.on_start( (e) => {
     debug.innerHTML = "";
 });
 
-var image_stream = null;
+var image_stream = Promise.resolve();
 window.api.ateball.game.realtime.on_stream( (e, msg) => {
     image_stream = new Promise((resolve, reject) => {
         var realtime = document.querySelector("#realtime canvas");
