@@ -87,15 +87,16 @@ class Table(object):
                 angle = math.atan2((target.center[1] - cueball.center[1]), (target.center[0] - cueball.center[0])) * (180 / math.pi)
                 cueball.target_vector = Vector(cueball.center, radius, angle)
 
-            for n, b in self.hittable_balls.items():
-                radius = target.distance(b)
-                angle = math.atan2((b.center[1] - target.center[1]), (b.center[0] - target.center[0])) * (180 / math.pi)
-                
-                if radius <= 21:
-                    is_viable_angle = math.fabs(angle) < 90
-                    if is_viable_angle:
-                        radius_f_angle = (radius + 5) * (1 - clamp(math.fabs(angle / 90), 0, 1))
-                        b.target_vector = Vector(b.center, radius_f_angle, angle)
+                for n, b in self.hittable_balls.items():
+                    radius = target.distance(b)
+                    angle = math.atan2((b.center[1] - target.center[1]), (b.center[0] - target.center[0])) * (180 / math.pi)
+                    
+                    if radius <= 22:
+                        viable_angle = math.fabs(180 - target.get_angle(cueball, b))
+                        is_viable_angle = viable_angle < 90
+                        if is_viable_angle:
+                            radius_f_angle = (radius + 5) * (1 - clamp(math.fabs(viable_angle / 90), 0, 1))
+                            b.target_vector = Vector(b.center, radius_f_angle, angle)
 
     def __prepare_table(self, image):
         # table --
