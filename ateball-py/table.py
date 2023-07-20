@@ -39,7 +39,7 @@ class Table(object):
         # dict lookup of currently available
         self.all_ball_identities = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
         self.available_ball_identities = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
-        self.targetable_ball_identities = {c : d for c, d in self.available_ball_identities.items() if c not in ["white", "target"]}
+        self.targetable_ball_identities = {c : d for c, d in self.available_ball_identities.items() if c not in ["cueball", "target"]}
 
         self.balls = [Ball((None, None), name=name, target=target) for name, target in self.targets.items()]
         self.hittable_balls = [b for b in self.balls if b.target]
