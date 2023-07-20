@@ -26,24 +26,33 @@ window.api.ateball.on_start( (e) => {
     debug.innerHTML = "";
 });
 
+var image_stream = null;
 window.api.ateball.game.realtime.on_stream( (e, msg) => {
-    var realtime = document.querySelector("#realtime canvas");
-    var context = realtime.getContext("2d");
+    image_stream = new Promise((resolve, reject) => {
+        var realtime = document.querySelector("#realtime canvas");
+        var context = realtime.getContext("2d");
 
-    var image = new Image();
-    image.onload = function() {
-        context.drawImage(image, 0, 0);
-    };
-    image.src = msg.data;
+        var image = new Image();
+        image.onload = function() {
+            context.drawImage(image, 0, 0);
+            resolve();
+        };
+        image.onerror = function() {
+            reject();
+        }
+        image.src = msg.data;
+    });
 });
 
 window.api.ateball.game.on_end((e) => {
     console.log("game ended");
     toggleButtonSpinner(game_stop, false);
 
-    var realtime = document.querySelector("#realtime canvas");
-    var context = realtime.getContext("2d");
-    context.clearRect(0, 0, realtime.width, realtime.height);
+    image_stream.then(() => {
+        var realtime = document.querySelector("#realtime canvas");
+        var context = realtime.getContext("2d");
+        context.clearRect(0, 0, realtime.width, realtime.height);
+    });
 });
 
 window.api.ateball.on_stop(() => {
