@@ -49,16 +49,21 @@ class Table(object):
         self.holes = [Hole(name, data, self) for i, (name, data) in enumerate(constants.table.holes.__dict__.items())]
 
         self.images = {
-            "table" : None,
-            "combined_mask" : None,
-            "mask" : None,
-            "none" : None
+            "original" : (np.array([]), np.array([])),
+            "table" : (np.array([]), np.array([])),
+            "combined_mask" : (np.array([]), np.array([])),
+            "mask" : (np.array([]), np.array([])),
+            "none" : (np.array([]), np.array([]))
         }
 
         self.logger = logging.getLogger("ateball.table")
 
     def copy(self):
-        return copy.copy(self)
+        cpy = Table(self.gamemode_info, self.game_data)
+        cpy.balls = copy.copy(self.balls)
+        cpy.hittable_balls = copy.copy(self.hittable_balls)
+        cpy.images = copy.copy(self.images)
+        return cpy
 
     def identify_targets(self, image):
         self.updated.clear()
@@ -97,7 +102,8 @@ class Table(object):
 
         targets_pocketed_masked = cv2.bitwise_and(targets_pocketed, targets_pocketed, mask=targets_pocketed_mask)
 
-        self.images["table"] = table
+        self.images["original"] = image.copy()
+        self.images["table"] = table.copy()
         self.images["combined_mask"] = table_masked
         self.images["mask"] = table_mask
         self.images["none"] = np.zeros((height, width, channels), np.uint8)

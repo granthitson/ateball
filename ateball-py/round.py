@@ -31,12 +31,12 @@ class Round(threading.Thread):
         self.regions = constants.regions
 
         # round constants
-        self.table = data["table_data"]
+        self.table = data["table"]
         
         self.turn_num = data['turn_num']
         self.round_path = str(Path(data["path"], f"round-{self.turn_num}"))
         self.images = { 
-            "game" : data["round_image"],
+            "game" : self.table.images["original"],
             "table" : None,
             "pocketed" : None,
             "targets_bot" : None,

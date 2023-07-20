@@ -57,8 +57,7 @@ class Game(threading.Thread, ABC):
             "path" : "",
             "suit" : None,
             "turn_num" : 0, 
-            "table_data" : None,
-            "round_image" : None
+            "table" : None,
         }
 
         self.realtime_config = realtime_config
@@ -106,16 +105,16 @@ class Game(threading.Thread, ABC):
         while not self.game_over_event.is_set():
             try:
                 table = self.recording.get()
+                if table is not None:
+                    original = table.images["table"]
+                    empty = np.stack((table.images["none"],)*3, axis=-1)
+                    if not original.any():
+                        break
 
-                original = table.images["table"]
-                empty = np.stack((table.images["none"],)*3, axis=-1)
-                if not original.any():
-                    break
-
-                drawn = table.draw()
+                    drawn = table.draw()
                 
-                stack = np.concatenate((original, drawn), axis=0)
-                video_writer.write(stack)
+                    stack = np.concatenate((original, drawn), axis=0)
+                    video_writer.write(stack)
             except Exception as e:
                 self.logger.error(traceback.format_exc())
         
@@ -272,24 +271,31 @@ class TwoPlayerGame(Game):
                 while not self.game_over_event.is_set():
                     image = self.window_capturer.get()
                     if image.any():
-                        self.table.identify_targets(image)
+                        table = self.table.copy()
+                        table.identify_targets(image)
+                        self.table = table
 
                         # keep history of image and table data
                         if len(self.table_history) >= 30:
                             self.table_history.pop(0)
-                        self.table_history.append((image, self.table.copy()))
+                        self.table_history.append(self.table.copy())
 
                         if self.turn_start.is_set():
-                            # update round start image on turn start (play or opponent)
                             self.turn_start.clear()
-                            self.set_current_round_data()
+                            
+                            # update round start image on turn start (play or opponent)
+                            if self.game_data["table"] is None:
+                                self.game_data["table"] = self.table_history[0]
+                            else:
+                                if not self.timed_out.is_set():
+                                    self.game_data["table"] = self.table_history[0]
 
                             # update ball state on round by round basis
                             self.ipc.send_message(
                                 {
                                     "type" : "UPDATE-BALL-STATE", 
                                     "data" : { 
-                                        "balls" : { b.name: b.get_state() for b in self.table.hittable_balls }
+                                        "balls" : { b.name: b.get_state() for b in table.hittable_balls }
                                     }
                                 }
                             )
@@ -317,7 +323,7 @@ class TwoPlayerGame(Game):
 
                         self.recording.put(self.table.copy())
 
-                self.recording.put((np.array([]), np.array([])))
+                self.recording.put(None)
         except Exception as e:
             self.logger.error(traceback.format_exc())
 
@@ -562,13 +568,6 @@ class TwoPlayerGame(Game):
                 "hierarchy" : len(o_hierarchy[0]) > 1 if o_hierarchy is not None else False
             },
         }
-
-    def set_current_round_data(self):
-        if self.game_data["table_data"] is None:
-            self.game_data["round_image"], self.game_data["table_data"] = self.table_history[0]
-        else:
-            if not self.timed_out.is_set():
-                self.game_data["round_image"], self.game_data["table_data"] = self.table_history[0]
 
     def end_existing_round(self):
         self.opponent_turn.clear()
