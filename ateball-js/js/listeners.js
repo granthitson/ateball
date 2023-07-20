@@ -237,6 +237,7 @@ var image_options_menu = document.querySelector("#image-options-menu");
 image_options_menu.addEventListener("change", (e) => {
     var data = get_realtime_config();
     window.api.ateball.game.realtime.configure(data);
+    updateFormUI(image_options_menu);
 });
 
 var pending_cancel = document.querySelector("#pending-cancel");
@@ -305,11 +306,30 @@ const get_realtime_config = () => {
     };
 }
 
+const toggleSwapButton = (btn1, btn2, state) => {
+    btn1.disabled = !state;
+    btn1.classList.toggle("active", state);
+
+    btn2.disabled = state;
+    btn2.classList.toggle("active", !state);
+}
+
 const toggleButtonSpinner = (elem, state) => {
     state ? elem.classList.add("running") : elem.classList.remove("running");
     if (!state) {
         stop.classList.remove("pending");
     }
+}
+
+const updateFormUI = (form) => {
+    var fieldsets = form.querySelectorAll("fieldset");
+    fieldsets.forEach((fieldset) => {
+        if (fieldset.dataset.dependsOn) {
+            var depends_on = document.querySelector(`input[name='${fieldset.dataset.dependsOn}']`);
+            fieldset.disabled = !depends_on.checked;
+            fieldset.classList.toggle("show", depends_on.checked);
+        }
+    });
 }
 
 const loading_overlay = document.querySelector("#loading-overlay");
@@ -336,11 +356,7 @@ const toggleWebviewControls = (s) => {
 }
 
 const toggleAteballControls = (s) => {
-    start.disabled = s.process.started;
-    start.style.width = s.process.started ? "0" : "";
-
-    stop.disabled = !s.process.started;
-    stop.style.width = !s.process.started ? "0" : "";
+    toggleSwapButton(stop, start, s.process.started);
 }
 
 const gamemode_controls = document.querySelector("#gamemode-controls");
@@ -470,10 +486,10 @@ const trackBallPositions = () => {
         function setVectorLine(vector_wrapper, vector_line, ball) {
             vector_wrapper.style.left = `${ball.position.x}px`;
             vector_wrapper.style.top = `${ball.position.y}px`;
-            vector_wrapper.style.rotate = (ball.vector) ? `${(ball.vector.angle + 90)}deg` : "";
+            vector_wrapper.style.rotate = (ball.vector) ? `${(ball.vector.angle - 90)}deg` : "";
     
             vector_line.style.display = (ball.vector) ? "" : "none";
-            vector_line.style.height = (ball.vector) ? `${ball.vector.radius}px` : "";
+            vector_line.style.height = (ball.vector) ? `${(ball.vector.radius + vector_line.offsetWidth)}px` : "";
         }
     
         var table = document.querySelector("#realtime #table");

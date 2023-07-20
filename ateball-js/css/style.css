@@ -23,6 +23,10 @@ webview {
     height: inherit;
 }
 
+form fieldset:not(.show) {
+    display: none;
+}
+
 [hidden] {
     display: unset !important;
 }
@@ -174,6 +178,7 @@ webview {
 #realtime canvas {
     display: none;
     position: absolute;
+    background-image: url("../images/table-placeholder.png");
 }
 
 #realtime #table {
@@ -910,4 +915,73 @@ webview {
     to {
         width: 100%
     }
+}
+
+.swap-btn-wrapper {
+    display: flex;
+    overflow: hidden;
+}
+
+.swap-btn:not(.active) {
+    width: 0;
+}
+
+.toggle {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+  
+.toggle input {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+}
+  
+.option-toggle-btn {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s cubic-bezier(0,1,0.5,1);
+}
+  
+.toggle-btn:before {
+    position: absolute;
+    content: attr(data-content);
+    background-color: white;
+    color: #036;
+    -webkit-transition: .4s;
+    transition: .4s cubic-bezier(0,1,0.5,1);
+    padding: 0 2px;
+}
+
+.option-toggle-btn {
+    display: flex;
+    overflow: hidden;
+}
+  
+.option-toggle-btn .option {
+    flex: 1 0 0%;
+    text-align: center;
+    -webkit-transition: .4s;
+    transition: .4s cubic-bezier(0,1,0.5,1);
+    background-color: #e3e3e3;
+    color: #939393;
+}
+
+input:checked + .option-toggle-btn.inverse .option:nth-child(1),
+input:not(:checked) + .option-toggle-btn.inverse .option:nth-child(2) {
+    background-color: white;
+    color: #036;
+}
+
+input:not(:checked) + .option-toggle-btn:not(.inverse) .option:nth-child(1),
+input:checked + .option-toggle-btn:not(.inverse) .option:nth-child(2) {
+    background-color: white;
+    color: #036;
 }

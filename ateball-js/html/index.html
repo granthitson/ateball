@@ -116,49 +116,70 @@
 								<div id="game-operations-menu" class="row flex-column flex-grow-1">
 									<div id="game-operations" class="col flex-grow-1">
 										<div class="row">
-											<button id="image-options-btn" class="_btn menu-btn dropdown" data-target="#image-options-menu">Show</button>
+											<button id="image-options-btn" class="_btn menu-btn dropdown" data-target="#image-options-menu">Options</button>
 											<form id="image-options-menu" class="col menu">
 												<div class="row">
-													<div class="col">
-														<label for="draw_solid">
-															<input name="draw_solid" type="checkbox" checked="checked"> Solid
-														</label>
-													</div>
-													<div class="col">
-														<label for="draw_stripe">
-															<input name="draw_stripe" type="checkbox" checked="checked"> Stripe
-														</label>
-													</div>
-												</div>
-
-												<div class="row">
-													<div class="col">
-														<label for="draw_raw">
-															<input name="draw_raw" type="checkbox"> Raw
+													<div class="col p-0">
+														<label class="toggle">
+															<input name="draw_raw" type="checkbox">
+															<span class="option-toggle-btn">
+																<span class="option">Default</span>
+																<span class="option">Raw</span>
+															</span>
 														</label>
 													</div>
 												</div>
 
 												<div class="row">
-													<div class="col">
-														<label for="draw_walls">
-															<input name="draw_walls" type="checkbox" disabled> Walls
+													<div class="col p-0">
+														<label class="toggle">
+															<input name="draw_solid" type="checkbox" checked="checked">
+															<span class="option-toggle-btn inverse">
+																<span class="option">Solid</span>
+															</span>
 														</label>
 													</div>
-													<div class="col">
-														<label for="draw_holes">
-															<input name="draw_holes" type="checkbox" disabled> Holes
+													<div class="col p-0">
+														<label class="toggle">
+															<input name="draw_stripe" type="checkbox" checked="checked">
+															<span class="option-toggle-btn inverse">
+																<span class="option">Stripe</span>
+															</span>
 														</label>
 													</div>
 												</div>
 
-												<div class="row">
-													<div class="col">
-														<label for="draw_background">
-															<input name="draw_background" type="checkbox" checked="checked" disabled> Background
-														</label>
+												<fieldset id="ui-mode-raw-options" data-depends-on="draw_raw" disabled>
+													<div class="row">
+														<div class="col p-0">
+															<label class="toggle">
+																<input name="draw_walls" type="checkbox" checked="checked">
+																<span class="option-toggle-btn inverse">
+																	<span class="option">Walls</span>
+																</span>
+															</label>
+														</div>
+														<div class="col p-0">
+															<label class="toggle">
+																<input name="draw_holes" type="checkbox" checked="checked">
+																<span class="option-toggle-btn inverse">
+																	<span class="option">Holes</span>
+																</span>
+															</label>
+														</div>
 													</div>
-												</div>
+
+													<div class="row">
+														<div class="col p-0">
+															<label class="toggle">
+																<input name="draw_background" type="checkbox" checked="checked">
+																<span class="option-toggle-btn inverse">
+																	<span class="option">Background</span>
+																</span>
+															</label>
+														</div>
+													</div>
+												</fieldset>
 											</form>
 										</div>
 									</div>
@@ -403,13 +424,13 @@
 										<div id="ateball-debug-panel" class="tab-pane fade show active">
 											<div id="ateball-btns">
 												<div class="row">
-													<div class="col d-flex overflow-hidden">
-														<button id="ateball-start" class="_btn slim press-n-hold ld-over-inverse p-0">
+													<div class="col swap-btn-wrapper">
+														<button id="ateball-start" class="_btn swap-btn slim press-n-hold ld-over-inverse p-0 active">
 															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
 															<div class="ld ld-ring ld-spin"></div>
 															<div>Start</div>
 														</button>
-														<button id="ateball-stop" class="_btn slim timer press-n-hold ld-over-inverse p-0">
+														<button id="ateball-stop" class="_btn swap-btn slim timer press-n-hold ld-over-inverse p-0">
 															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
 															<div class="ld ld-ring ld-spin"></div>
 															<div class="timer-c timer-content">Stop</div>
