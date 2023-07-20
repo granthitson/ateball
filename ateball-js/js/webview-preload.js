@@ -1,5 +1,16 @@
 const { ipcRenderer } = require('electron');
 
+ipcRenderer.on('mousemove', (e, data) =>{
+    var event = new MouseEvent("mousemove", {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+        clientX: data.x,
+        clientY: data.y
+    });
+    window.dispatchEvent(event);
+});
+
 window.addEventListener("DOMContentLoaded", () => {
     try {
         if (location.host == "me.miniclip.com") {

@@ -210,6 +210,29 @@ cancel_targeting_btn.addEventListener("click", (e) => {
     targeting_menu.classList.remove("selecting");
 });
 
+var ateball_webview = document.querySelector("#ateball-webview");
+ateball_webview.addEventListener("mousedown", (e) => {
+    window.api.get_state().then((s) => {
+        if (s !== null && s.ateball.game.started) {
+            ateball_webview.addEventListener("mousemove", mousemove);
+        }
+    });
+});
+
+ateball_webview.addEventListener("mouseup", (e) => {
+    ateball_webview.classList.remove("crosshair");
+    ateball_webview.removeEventListener("mousemove", mousemove);
+});
+ateball_webview.addEventListener("mouseout", (e) => {
+    ateball_webview.classList.remove("crosshair");
+    ateball_webview.removeEventListener("mousemove", mousemove);
+});
+
+const mousemove = (e) => {
+    ateball_webview.classList.add("crosshair");
+    webview.send("mousemove", {x: e.clientX, y: e.clientY});
+}
+
 var image_options_menu = document.querySelector("#image-options-menu");
 image_options_menu.addEventListener("change", (e) => {
     var data = get_realtime_config();
@@ -294,7 +317,8 @@ const toggleGUIElements = () => {
     window.api.get_state().then((s) => {
         // enable/disable everything else
         if (s !== null) {
-            toggleAteballControls(s.process.started);
+            toggleWebviewControls(s);
+            toggleAteballControls(s);
             toggleGamemodeControls(s);
             toggleGameControls(s);
 
@@ -304,12 +328,17 @@ const toggleGUIElements = () => {
     });
 }
 
-const toggleAteballControls = (state) => {
-    start.disabled = state;
-    start.style.width = state ? "0" : "";
+const toggleWebviewControls = (s) => {
+    webview.style.pointerEvents = (!s.ateball.game.started) ? "" : "none";
+    webview.style.cursor = (!s.ateball.game.started) ? "" : "not-allowed";
+}
 
-    stop.disabled = !state;
-    stop.style.width = !state ? "0" : "";
+const toggleAteballControls = (s) => {
+    start.disabled = s.process.started;
+    start.style.width = s.process.started ? "0" : "";
+
+    stop.disabled = !s.process.started;
+    stop.style.width = !s.process.started ? "0" : "";
 }
 
 const gamemode_controls = document.querySelector("#gamemode-controls");
