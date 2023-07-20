@@ -29,8 +29,31 @@
 						</div>
 
 						<fieldset id="game-controls" class="row controls" disabled="">
-							<div id="realtime" class="col-sm-auto p-0">
-								<canvas width="687px" height="356px"></canvas>
+							<div id="realtime" class="col-sm-auto d-flex p-0">
+								<div id="table">
+									<div id="table_background">
+										<canvas id="raw-realtime" width="687px" height="356px"></canvas>
+									</div>
+									<div id="table_balls">
+										<div id="_target" class="_ball"></div>
+										<div id="_cueball" class="_ball b0"></div>
+										<div id="_1ball" class="_ball b1"></div>
+										<div id="_2ball" class="_ball b2"></div>
+										<div id="_3ball" class="_ball b3"></div>
+										<div id="_4ball" class="_ball b4"></div>
+										<div id="_5ball" class="_ball b5"></div>
+										<div id="_6ball" class="_ball b6"></div>
+										<div id="_7ball" class="_ball b7"></div>
+										<div id="_eightball" class="_ball b8"></div>
+										<div id="_9ball" class="_ball b9"></div>
+										<div id="_10ball" class="_ball b10"></div>
+										<div id="_11ball" class="_ball b11"></div>
+										<div id="_12ball" class="_ball b12"></div>
+										<div id="_13ball" class="_ball b13"></div>
+										<div id="_14ball" class="_ball b14"></div>
+										<div id="_15ball" class="_ball b15"></div>
+									</div>
+								</div>
 							</div>
 
 							<div id="realtime-menu" class="col d-flex flex-column">
@@ -110,13 +133,21 @@
 
 												<div class="row">
 													<div class="col">
+														<label for="draw_raw">
+															<input name="draw_raw" type="checkbox"> Raw
+														</label>
+													</div>
+												</div>
+
+												<div class="row">
+													<div class="col">
 														<label for="draw_walls">
-															<input name="draw_walls" type="checkbox"> Walls
+															<input name="draw_walls" type="checkbox" disabled> Walls
 														</label>
 													</div>
 													<div class="col">
 														<label for="draw_holes">
-															<input name="draw_holes" type="checkbox"> Holes
+															<input name="draw_holes" type="checkbox" disabled> Holes
 														</label>
 													</div>
 												</div>
@@ -124,7 +155,7 @@
 												<div class="row">
 													<div class="col">
 														<label for="draw_background">
-															<input name="draw_background" type="checkbox" checked="checked"> Background
+															<input name="draw_background" type="checkbox" checked="checked" disabled> Background
 														</label>
 													</div>
 												</div>

@@ -18,8 +18,9 @@ class Ball(Point):
         self.pocketed = pocketed
 
         self.bgr = (0, 255, 0)
-
         self.mask_info = BallMaskInfo()
+
+        self.target_vector = None
 
         self.logger = logging.getLogger("ateball.ball")
 
@@ -58,8 +59,18 @@ class Ball(Point):
 
     def get_state(self):
         return {
+            "suit" : self.suit,
             "target" : self.target,
-            "pocketed" : self.pocketed
+            "pocketed" : self.pocketed,
+            "position" : self.get_position(),
+            "vector" : self.target_vector.json() if self.target_vector is not None else None
+        }
+
+    def get_position(self):
+        # return top left position
+        return {
+            "x" : int(self.center[0]) - 10  if self.center[0] is not None else 0,
+            "y" : int(self.center[1]) - 10 if self.center[1] is not None else 0
         }
 
     def draw(self, image):

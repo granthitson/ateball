@@ -297,6 +297,7 @@ const get_realtime_config = () => {
             "stripe" : document.querySelector("input[name='draw_stripe']").checked
         },
         "table" : {
+            "raw" : document.querySelector("input[name='draw_raw']").checked,
             "walls" : document.querySelector("input[name='draw_walls']").checked,
             "holes" : document.querySelector("input[name='draw_holes']").checked,
             "background" : document.querySelector("input[name='draw_background']").checked
@@ -321,6 +322,7 @@ const toggleGUIElements = () => {
             toggleAteballControls(s);
             toggleGamemodeControls(s);
             toggleGameControls(s);
+            toggleRealtimeInterface(s);
 
             webview.style.display = (s.webview.formatted) ? "flex" : "none";
             loading_overlay.style.display = (s.webview.loaded) ? "none" : "block";
@@ -450,4 +452,88 @@ const toggleGameControls = (s) => {
     });
 }
 
+const toggleRealtimeInterface = (s) => {
+    var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
+
+    var config = get_realtime_config();
+
+    var table_ui = document.querySelector("#realtime #table");
+    table_ui.classList.toggle("raw", config.table.raw);
+
+    if (!interact) {
+        table_ui.querySelectorAll(".vector-wrapper").forEach(e => { e.remove(); });
+    }
+}
+
+const trackBallPositions = () => {
+    const drawVectorLine = (name, ball, draw) => {
+        function setVectorLine(vector_wrapper, vector_line, ball) {
+            vector_wrapper.style.left = `${ball.position.x}px`;
+            vector_wrapper.style.top = `${ball.position.y}px`;
+            vector_wrapper.style.rotate = (ball.vector) ? `${(ball.vector.angle + 90)}deg` : "";
+    
+            vector_line.style.display = (ball.vector) ? "" : "none";
+            vector_line.style.height = (ball.vector) ? `${ball.vector.radius}px` : "";
+        }
+    
+        var table = document.querySelector("#realtime #table");
+        var vector_wrapper = table.querySelector(`.vector-wrapper[data-ball='${name}']`);
+        var vector_line = null;
+    
+        if (draw && ball != null && ball.vector) {
+            if (!vector_wrapper) {
+                vector_line = document.createElement('div');
+                vector_line.classList.add(['vector-line']);
+    
+                vector_wrapper = document.createElement('div');
+                vector_wrapper.classList.add(['vector-wrapper']);
+                vector_wrapper.dataset.ball = name;
+    
+                vector_wrapper.append(vector_line);
+                table.append(vector_wrapper);
+            } else {
+                vector_line = vector_wrapper.querySelector(".vector-line");
+            }
+    
+            setVectorLine(vector_wrapper, vector_line, ball);
+        } else if (vector_wrapper) {
+            vector_wrapper.remove();
+        }
+    }
+
+    var config = get_realtime_config();
+
+    window.api.get_state().then((s) => {
+        var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
+        
+        var realtime = document.querySelector("#realtime #table");
+        var balls = realtime.querySelectorAll("._ball");
+
+        balls.forEach(ball => {
+            ball.style.display = (interact) ? "" : "none";
+
+            if (interact) {
+                var name = ball.id.replace("_", "");
+                var _ball = s.ateball.game.balls[name];
+
+                if (_ball && !_ball.pocketed) {
+                    let draw = (_ball.suit == null || (_ball.suit != null && config.balls[_ball.suit]));
+                    ball.style.display = (draw) ? "unset" : "";
+                    ball.style.left = `${_ball.position.x}px`;
+                    ball.style.top = `${_ball.position.y}px`;
+
+                    if (!config.table.raw) {
+                        drawVectorLine(name, _ball, draw);
+                    }
+                } else {
+                    ball.style.display = "none";
+                }
+            } else {
+                ball.style.display = "none";
+            }
+        });
+    });
+}
+
 setInterval(toggleGUIElements, 1000 / 10);
+setInterval(trackBallPositions, 1000 / 30);

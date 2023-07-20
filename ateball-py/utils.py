@@ -434,5 +434,28 @@ class Point(object):
     def draw(self, image, radius=1, rgb=(0, 255, 0), dtype=1):
         cv2.circle(image, self.center, radius, rgb, dtype)
 
+class Vector(object):
+    def __init__(self, center, radius, theta):
+        self.center = center
+        self.radius = radius
+        self.theta = theta
+
+        self.logger = logging.getLogger("ateball.utils.Vector")
+
+    def __str__(self):
+        return f"Vector({self.radius}, {self.theta})"
+
+    def json(self):
+        return {
+            "radius" : self.radius,
+            "angle" : self.theta
+        }
+
+    def draw(self, image, rgb=(0, 255, 0), thickness=2):
+        radians = self.theta *  (math.pi / 180)
+        x2 = int(self.center[0] + (self.radius * math.cos(radians)))
+        y2 = int(self.center[1] + (self.radius * math.sin(radians)))
+        cv2.line(image, self.center, (x2, y2), rgb, thickness)
+
 def clamp(n, low, high):
     return max(min(high, n), low)

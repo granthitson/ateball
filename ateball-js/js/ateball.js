@@ -25,6 +25,7 @@ class Ateball {
 				}
 			}
 		};
+		this.original_state = structuredClone(this.state);
 
 		this.started = null;
 		this.stopped = null;
@@ -183,7 +184,11 @@ class Ateball {
 							this.state.ateball.game.suit = p_msg.data.suit;
 							break;
 						case "REALTIME-STREAM":
-							this.window.webContents.send("realtime-stream", { data: p_msg.data});
+							this.state.ateball.game.balls = p_msg.data.balls;
+
+							if (p_msg.data.image) {
+								this.window.webContents.send("realtime-stream", { data: p_msg.data.image});
+							}
 							break;
 						case "ROUND-END":
 						case "ROUND-COMPLETE":
@@ -248,35 +253,11 @@ class Ateball {
 	}
 
 	reset_game_state() {
-		this.state.ateball.pending = false;
-		this.state.ateball.game.started = false;
-		this.state.ateball.game.suit = null;
-		this.state.ateball.game.targets = null;
-		this.state.ateball.game.balls = []
-		this.state.ateball.game.round.started = false;
-		this.state.ateball.game.round.num = null;
+		this.state.ateball = structuredClone(this.original_state.ateball);
 	}
 
 	reset_ateball_state() {
-		this.state = {
-			process : {
-				started: false,
-				connected: false,
-			},
-			ateball : {
-				pending: false,
-				game: {
-					started: false,
-					suit: null,
-					targets: null,
-					balls: {},
-					round: {
-						started: false,
-						num: null
-					}
-				}
-			}
-		};
+		this.state = structuredClone(this.original_state);
 	}
 
 	kill() {

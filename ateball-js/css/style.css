@@ -172,8 +172,40 @@ webview {
 }
 
 #realtime canvas {
+    display: none;
+    position: absolute;
+}
+
+#realtime #table {
     display: block;
+    position: relative;
+}
+
+#realtime #table_background {
+    width: 687px;
+    height: 356px;
     background-image: url("../images/table-placeholder.png");
+}
+
+#realtime #table.raw #table_background {
+    background-image: unset;
+}
+
+#realtime #table.raw canvas {
+    display: unset;
+}
+
+#realtime #table.raw ._ball {
+    background-image: unset;
+    border: unset;
+}
+
+#realtime #table.raw .vector-wrapper {
+    display: none;
+}
+
+#realtime #table.targeting ._ball:hover {
+    border: 2px solid lime !important;
 }
 
 #realtime-menu {
@@ -582,6 +614,19 @@ webview {
     background-image: -webkit-linear-gradient(top, #59d354, #0d8f01);
 }
 
+._ball {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 0px;
+    left: 0px;
+    filter: drop-shadow(0px 0px 2px black);
+    background-size: 150%;
+    background-position: center;
+    border-radius: 20px;
+    display: none;
+}
+
 .ball {
     width: calc(100% / 8);
     height: calc(213px / 8);
@@ -590,67 +635,95 @@ webview {
     background-position: center;
 }
 
-.ball.b0 {
+.ball:hover {
+    filter: brightness(1.2);
+}
+
+#_target {
+    border: 2px solid white;
+    pointer-events: none;
+    z-index: 9;
+}
+
+.vector-wrapper {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    z-index: 9;
+    pointer-events: none;
+}
+
+.vector-line {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 4px;
+    background-color: white;
+    border: 1px solid black;
+    border-radius: 4px;
+}
+
+.b0 {
     background-image: url("../images/balls/0ball.png");
 }
 
-.ball.b1 {
+.b1 {
     background-image: url("../images/balls/1ball.png");
 }
 
-.ball.b2 {
+.b2 {
     background-image: url("../images/balls/2ball.png");
 }
 
-.ball.b3 {
+.b3 {
     background-image: url("../images/balls/3ball.png");
 }
 
-.ball.b4 {
+.b4 {
     background-image: url("../images/balls/4ball.png");
 }
 
-.ball.b5 {
+.b5 {
     background-image: url("../images/balls/5ball.png");
 }
 
-.ball.b6 {
+.b6 {
     background-image: url("../images/balls/6ball.png");
 }
 
-.ball.b7 {
+.b7 {
     background-image: url("../images/balls/7ball.png");
 }
 
-.ball.b8 {
+.b8 {
     background-image: url("../images/balls/8ball.png");
 }
 
-.ball.b9 {
+.b9 {
     background-image: url("../images/balls/9ball.png");
 }
 
-.ball.b10 {
+.b10 {
     background-image: url("../images/balls/10ball.png");
 }
 
-.ball.b11 {
+.b11 {
     background-image: url("../images/balls/11ball.png");
 }
 
-.ball.b12 {
+.b12 {
     background-image: url("../images/balls/12ball.png");
 }
 
-.ball.b13 {
+.b13 {
     background-image: url("../images/balls/13ball.png");
 }
 
-.ball.b14 {
+.b14 {
     background-image: url("../images/balls/14ball.png");
 }
 
-.ball.b15 {
+.b15 {
     background-image: url("../images/balls/15ball.png");
 }
 

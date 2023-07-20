@@ -8,7 +8,7 @@ import math
 import numpy as np
 
 from ball import Ball
-from utils import Point, CV2Helper
+from utils import Point, Vector, CV2Helper, clamp
 from constants import constants
 
 class Table(object):
@@ -41,8 +41,9 @@ class Table(object):
         self.available_ball_identities = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
         self.targetable_ball_identities = {c : d for c, d in self.available_ball_identities.items() if c not in ["cueball", "target"]}
 
-        self.balls = [Ball((None, None), name=name, target=target) for name, target in self.targets.items()]
-        self.hittable_balls = [b for b in self.balls if b.target]
+        self.balls = {name : Ball((None, None), name=name, target=target) for name, target in self.targets.items()}
+        self.hittable_balls = { n : b for n, b in self.balls.items() if b.target }
+
         self.updated = threading.Event()
 
         self.walls = [Wall(name, data) for i, (name, data) in enumerate(constants.table.walls.__dict__.items())]
@@ -70,9 +71,31 @@ class Table(object):
 
         prepared_table, prepared_pocketed = self.__prepare_table(image)
         self.balls = self.__identify_targets(prepared_table, prepared_pocketed)
-        self.hittable_balls = [b for b in self.balls if self.targets[b.name]]
+        self.hittable_balls = { n : b for n, b in self.balls.items() if self.targets[b.name] }
+        self.calculate_vector_lines()
 
         self.updated.set()
+
+    def calculate_vector_lines(self):
+        if "target" in self.balls:
+            target = self.balls["target"]
+
+            if "cueball" in self.balls:
+                cueball = self.balls["cueball"]
+
+                radius = cueball.distance(target)
+                angle = math.atan2((target.center[1] - cueball.center[1]), (target.center[0] - cueball.center[0])) * (180 / math.pi)
+                cueball.target_vector = Vector(cueball.center, radius, angle)
+
+            for n, b in self.hittable_balls.items():
+                radius = target.distance(b)
+                angle = math.atan2((b.center[1] - target.center[1]), (b.center[0] - target.center[0])) * (180 / math.pi)
+                
+                if radius <= 21:
+                    is_viable_angle = math.fabs(angle) < 90
+                    if is_viable_angle:
+                        radius_f_angle = (radius + 5) * (1 - clamp(math.fabs(angle / 90), 0, 1))
+                        b.target_vector = Vector(b.center, radius_f_angle, angle)
 
     def __prepare_table(self, image):
         # table --
@@ -144,7 +167,7 @@ class Table(object):
 
             identified.append(b)
 
-        return identified
+        return { b.name : b for b in identified}
 
     def __find_targets(self, image, **kwargs):
         image = image.copy()
@@ -328,7 +351,7 @@ class Table(object):
                 h.draw(image)
                 h.draw_points(image)
 
-        for b in self.balls:
+        for n, b in self.balls.items():
             if b.suit is None:
                 b.draw(image)
             else:
@@ -337,6 +360,9 @@ class Table(object):
 
                 if draw_stripe and (b.suit == "stripe" and not b.pocketed):
                     b.draw(image)
+
+            if b.target_vector is not None:
+                b.target_vector.draw(image)
 
         return image
 

@@ -256,7 +256,7 @@ class TwoPlayerGame(Game):
                         "type" : "GAME-START", 
                         "data" : { 
                             "suit" : self.gamemode_rules.suit.choice,
-                            "balls" : { b.name: b.get_state() for b in self.table.hittable_balls }
+                            "balls" : { n : b.get_state() for n, b in self.table.hittable_balls.items() }
                         }
                     }
                 )
@@ -295,7 +295,7 @@ class TwoPlayerGame(Game):
                                 {
                                     "type" : "UPDATE-BALL-STATE", 
                                     "data" : { 
-                                        "balls" : { b.name: b.get_state() for b in table.hittable_balls }
+                                        "balls" : { n : b.get_state() for n, b in self.table.hittable_balls.items() }
                                     }
                                 }
                             )
@@ -315,11 +315,17 @@ class TwoPlayerGame(Game):
                         if self.table.updated.is_set() or self.realtime_update.is_set():
                             self.realtime_update.clear()
 
-                            retval, image_buffer = cv2.imencode('.png', drawn_image)
-                            image_buffer = base64.b64encode(image_buffer.tobytes()).decode('ascii')
-                            image_b64 = f"data:image/png;base64,{image_buffer}"
+                            ball_positions = { name : ball.get_state() for name, ball in self.table.balls.items() }
+                            data = { "balls" : ball_positions, "image" : None}
 
-                            self.ipc.send_message({"type" : "REALTIME-STREAM", "data" : image_b64})
+                            if "table" in self.realtime_config and bool(self.realtime_config["table"]["raw"]):
+                                retval, image_buffer = cv2.imencode('.png', drawn_image)
+                                image_buffer = base64.b64encode(image_buffer.tobytes()).decode('ascii')
+                                image_b64 = f"data:image/png;base64,{image_buffer}"
+
+                                data["image"] = image_b64
+
+                            self.ipc.send_message({"type" : "REALTIME-STREAM", "data" : data})
 
                         self.recording.put(self.table.copy())
 
