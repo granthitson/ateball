@@ -41,7 +41,7 @@ class Game(threading.Thread, ABC):
         self.gamemode_info = constants.gamemodes.__dict__[self.__class__.__name__]
         self.gamemode_rules = constants.rules.__dict__[self.gamemode_info.rules] if "rules" in self.gamemode_info.__dict__ else constants.rules.__dict__[self.location.rules]
 
-        self.img_game_start = constants.gamemodes.__dict__[self.__class__.__name__].img_game_start
+        self.img_game_start = constants.gamemodes.__dict__[self.__class__.__name__].game_start.img
 
         # start/stop by user
         self.game_started = threading.Event()
