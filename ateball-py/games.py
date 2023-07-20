@@ -32,6 +32,9 @@ class Game(threading.Thread, ABC):
 
         self.ipc = ipc
 
+        self.window_capturer = utils.WindowCapturer(constants.regions.game, constants.regions.window_offset, 30, daemon=True)
+        self.recording = q.Queue()
+
         self.name = self.__class__.__name__
         self.location = constants.locations.__dict__[location] if location else None
 
@@ -40,12 +43,14 @@ class Game(threading.Thread, ABC):
 
         self.img_game_start = constants.gamemodes.__dict__[self.__class__.__name__].img_game_start
 
-        self.game_start = threading.Event()
-        self.game_cancelled = threading.Event()
+        # start/stop by user
+        self.game_started = threading.Event()
+        self.game_stopped = threading.Event()
 
-        self.game_end = threading.Event()
+        # stop by exception or game completion
+        self.game_ended = threading.Event()
         self.game_exception = threading.Event()
-        self.game_over_event = utils.OrEvent(self.game_end, self.game_cancelled, self.game_exception)
+        self.game_over_event = utils.OrEvent(self.game_ended, self.game_stopped, self.game_exception, self.window_capturer.stop_event)
 
         self.game_data = {
             "num" : 0,
@@ -55,9 +60,6 @@ class Game(threading.Thread, ABC):
             "table_data" : None,
             "round_image" : None
         }
-
-        self.window_capturer = utils.WindowCapturer(constants.regions.game, constants.regions.window_offset, 30, daemon=True)
-        self.recording = q.Queue()
 
         self.realtime_config = realtime_config
         self.realtime_update = threading.Event()
@@ -125,13 +127,13 @@ class Game(threading.Thread, ABC):
     def wait_for_game_start(self):
         self.logger.info("Waiting for game to start...")
         
-        while not self.game_start.is_set() and not self.game_over_event.is_set():
+        while not self.game_started.is_set() and not self.game_over_event.is_set():
             try:
                 image = self.window_capturer.get()
                 marker_match = self.match_game_marker(image)
                 if marker_match:
                     self.get_game_num()
-                    self.game_start.set()                            
+                    self.game_started.set()                            
             except Exception as e:
                 self.logger.error(traceback.format_exc())
 
@@ -215,9 +217,9 @@ class Game(threading.Thread, ABC):
     def update_user_targets(self, data):
         self.table.user_targets = data["targets"]
 
-    def cancel(self):
-        self.logger.debug("cancelling current game")
-        self.game_over_event.notify(self.game_cancelled)
+    def stop(self):
+        self.logger.debug("stopping current game")
+        self.game_over_event.notify(self.game_stopped)
 
     def is_game_over(self, image):
         pos = utils.CV2Helper.imageSearch(self.img_game_end, image, region=constants.regions.table)
@@ -246,7 +248,7 @@ class TwoPlayerGame(Game):
             self.window_capturer.start()
 
             self.wait_for_game_start()
-            if self.game_start.is_set():
+            if self.game_started.is_set():
                 self.configure_game_dir()
                 self.configure_logging()
 
@@ -321,16 +323,19 @@ class TwoPlayerGame(Game):
 
             self.game_over_event.notify(self.game_exception)
         finally:
+            if self.current_round:
+                self.current_round.stop()
+                self.current_round.join()
             self.window_capturer.stop()
             self.clear_logging()
 
             if self.game_exception.is_set():
                 self.ipc.send_message({"type" : "GAME-EXCEPTION"})
             else:
-                self.game_over_event.notify(self.game_end)
-                if self.game_cancelled.is_set():
-                    self.ipc.send_message({"type" : "GAME-CANCELLED"})
-                elif self.game_end.is_set():
+                self.game_over_event.notify(self.game_ended)
+                if self.game_stopped.is_set():
+                    self.ipc.send_message({"type" : "GAME-STOPPED"})
+                elif self.game_ended.is_set():
                     self.ipc.send_message({"type" : "GAME-END"})
 
     def determine_suit(self):
@@ -572,14 +577,14 @@ class TwoPlayerGame(Game):
         self.ipc.send_message({"type" : "ROUND-END"})
 
         if self.current_round is not None and not self.current_round.round_over_event.is_set():
-            self.current_round.round_over_event.notify(self.current_round.round_cancel)
+            self.current_round.round_over_event.notify(self.current_round.round_stopped)
             self.current_round = None
             self.logger.info("Turn #{} Complete".format(self.game_data["turn_num"]))
 
     def cancel(self):
         self.logger.debug("cancelling current game")
         self.turn_start_event.notify(self.turn_end)
-        self.game_over_event.notify(self.game_cancelled)
+        self.game_over_event.notify(self.game_stopped)
 
 class ONE_ON_ONE(TwoPlayerGame):
     def __init__(self, location, pipe, *args, **kwargs):

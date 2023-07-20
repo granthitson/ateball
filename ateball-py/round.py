@@ -56,10 +56,14 @@ class Round(threading.Thread):
         self.clear_table = (0,0)
         self.can_pick_up = False
 
-        self.round_cancel = threading.Event()
+        # start/stop by user/game
+        self.round_start = threading.Event()
+        self.round_stopped = threading.Event()
+
+        # stop by exception or round completion
         self.round_complete = threading.Event()
         self.round_exception = threading.Event()
-        self.round_over_event = utils.OrEvent(self.round_complete, self.round_cancel, self.round_exception)
+        self.round_over_event = utils.OrEvent(self.round_complete, self.round_stopped, self.round_exception)
 
         self.logger = logging.getLogger("ateball.round")
 
@@ -96,6 +100,9 @@ class Round(threading.Thread):
             self.logger.info("ROUND COMPLETE")
             self.ipc.send_message({"type" : "ROUND-COMPLETE"})
 
+    def stop(self):
+        self.logger.debug("stopping current round")
+        self.round_over_event.notify(self.round_stopped)
 
 ### Obtain shot on ball ###
 

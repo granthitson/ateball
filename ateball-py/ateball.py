@@ -27,12 +27,15 @@ class AteBall():
 
                 msg = self.ipc.incoming.get()
 
-                m_type = msg["type"]                
+                m_type = msg["type"]
                 if m_type == "play":
-                    if not self.processing_play_request.is_set() and self.active_game is None:
-                        threading.Thread(target=self.play, args=(msg,), daemon=True).start()
-                    else:
+                    if self.processing_play_request.is_set() or (self.active_game and not self.active_game.game_over_event.is_set()):
                         response = { "type" : "BUSY"}
+                    else:
+                        if self.active_game and self.active_game.game_over_event.is_set():
+                            self.active_game = None
+
+                        threading.Thread(target=self.play, args=(msg,), daemon=True).start()
                 elif m_type == "show-realtime":
                     if self.active_game:
                         if self.active_game.show_realtime_event.is_set():
@@ -46,8 +49,8 @@ class AteBall():
                 elif m_type == "update-targets":
                     if self.active_game:
                         self.active_game.update_user_targets(msg["data"])
-                elif m_type == "cancel":
-                    self.cancel()
+                elif m_type == "cancel" or m_type == "stop":
+                    self.stop()
                 elif m_type == "quit":
                     self.quit()
                 else:
@@ -107,19 +110,19 @@ class AteBall():
                 self.logger.error(f"error playing game: invalid gamemode location - {data['game_config']['location']}")
             elif isinstance(e, AttributeError):
                 self.logger.error(f"error playing game: invalid gamemode - {data['game_config']['gamemode']}")
-            else:
-                self.logger.error(f"error playing game: {traceback.format_exc()}")
+            # else:
+            self.logger.error(f"error playing game: {traceback.format_exc()}")
 
             self.ipc.send_message({"type" : "GAME-CANCELLED"})
         finally:
             self.processing_play_request.clear()
 
-    def cancel(self):
+    def stop(self):
         if self.active_game:
-            self.active_game.cancel()
+            self.active_game.stop()
             self.active_game.join()
             self.active_game = None
-            self.ipc.send_message({"type" : "GAME-CANCELLED"})
+            self.ipc.send_message({"type" : "GAME-STOPPED"})
 
     ###menu
 
