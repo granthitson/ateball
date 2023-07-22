@@ -1,5 +1,6 @@
 const electron = require('electron');
 const { app, BrowserWindow, session, screen, globalShortcut, ipcMain, webContents } = electron;
+const windowStateKeeper = require('electron-window-state');
 
 const dotenv = require('dotenv');
 const path = require('path');
@@ -30,9 +31,13 @@ if (instance_lock) {
 
 
 app.on('ready', async () => {
+	let window_state = windowStateKeeper();
+
 	// Create the browser window.
 	window = new BrowserWindow({
 		icon: "",
+		x: window_state.x,
+		y: window_state.y,
 		width: 1200,
 		height: 600,
 		minHeight: 600,
@@ -51,6 +56,8 @@ app.on('ready', async () => {
 			preload: path.join(__dirname, '/ateball-js/js/preload.js'),
 		}
 	});
+	window_state.manage(window);
+
 	window.webContents.openDevTools();
 
 	// clear persistent data

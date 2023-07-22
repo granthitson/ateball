@@ -19,7 +19,8 @@
   "homepage": "https://github.com/granthitson/AteBallPool#readme",
   "dependencies": {
     "dotenv": "^16.0.3",
-    "electron": "^23.0.0"
+    "electron": "^23.0.0",
+    "electron-window-state": "^5.0.3"
   },
   "devDependencies": {
     "electron-rebuild": "^2.0.3"
