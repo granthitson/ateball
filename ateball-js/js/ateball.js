@@ -109,7 +109,7 @@ class Ateball {
 			stop_reject = reject;
 		});
 
-		this.process = subpy.spawn("python", ["./ateball-py/main.py"], { stdio: 'pipe', windowsHide: false });
+		this.process = subpy.spawn(process.env.PYTHON, ["./ateball-py/main.py"], { stdio: 'pipe', windowsHide: false });
 
 		this.process.once('spawn', function () {
 			console.log("ateball process spawned");
