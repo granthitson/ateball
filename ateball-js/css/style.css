@@ -75,7 +75,7 @@ form fieldset:not(.show) {
 #game-controls {
     width: 900px;
     height: 356px;
-    /* display: none; */
+    display: none;
 }
 
 #game-operations-menu {
