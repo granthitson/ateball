@@ -397,6 +397,7 @@ const toggleGameControls = (s) => {
     var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
 
     game_controls.disabled = !interact;
+    game_controls.style.display = !interact ? "none" : "";
 
     if (s.ateball.game.round.started) {
         turn_num.textContent = s.ateball.game.round.turn_num;
