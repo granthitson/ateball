@@ -75,7 +75,7 @@ window.api.ateball.log_message((e, msg) => {
 
 // ------------------
 
-var log = document.querySelector('#webview-debug-panel');
+var log = document.querySelector('#webview-debug-console');
 ['log','debug','info','warn','error'].forEach(function (verb) {
     console[verb] = (function (method, verb, log) {
         return function () {
