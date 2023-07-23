@@ -183,6 +183,8 @@ class WindowCapturer(threading.Thread):
                 img = img[...,:3]
                 self.image = np.ascontiguousarray(img)
                 self.on_tick_event.notify(self.on_tick)
+
+                win32gui.DeleteObject(dataBitMap.GetHandle())
             except (win32ui.error, Exception) as e:
                 self.logger.error(f"unable to capture window: {e}")
                 self.on_tick_event.notify(self.exception)
@@ -192,7 +194,6 @@ class WindowCapturer(threading.Thread):
         dcObj.DeleteDC()
         cDC.DeleteDC()
         win32gui.ReleaseDC(self.hwnd, wDC)
-        win32gui.DeleteObject(dataBitMap.GetHandle())
 
     def get(self):
         # get latest image added to stack
