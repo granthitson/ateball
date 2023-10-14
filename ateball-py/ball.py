@@ -7,20 +7,22 @@ from utils import Point
 from constants import constants
 
 class Ball(Point):
-    def __init__(self, center, suit=None, name=None, color=None, target=False, pocketed=False):
+    def __init__(self, center, suit=None, name=None, number=None, color=None, target=False, pocketed=False):
         super().__init__(center)
 
         self.name = name
+        self.number = number
         self.color = color
 
         self.suit = suit
-        self.target = target
+        self.is_target = target
         self.pocketed = pocketed
 
         self.bgr = (0, 255, 0)
         self.mask_info = BallMaskInfo()
 
         self.target_vector = None
+        self.neighbors = {}
 
         self.logger = logging.getLogger("ateball.ball")
 
@@ -44,7 +46,24 @@ class Ball(Point):
         return (not self.__eq__(other))
 
     def __copy__(self):
-        return Ball(self.center, self.suit, self.name, self.color, self.target, self.pocketed)
+        return Ball(self.center, self.suit, self.name, self.color, self.is_target, self.pocketed)
+
+    def to_json(self):
+        return {
+            "info" : {
+                "name" : self.name,
+                "number" : self.number,
+                "color" : self.color,
+                "suit" : self.suit,
+                "target" : self.is_target,
+                "pocketed" : self.pocketed
+            },
+            "center" : {
+                "x" : (self.center[0] - constants.ball.radius) if self.center[0] is not None else 0,
+                "y" : (self.center[1] - constants.ball.radius) if self.center[1] is not None else 0
+            },
+            "vector" : self.target_vector if self.target_vector is not None else None
+        }
 
     def update(self, center):
         self.center = (center[0], center[1])
@@ -53,25 +72,14 @@ class Ball(Point):
     def set_identity(self, data, color_info, is_target):
         self.suit = data.suit if "suit" in data.__dict__ else None
         self.name = data.name
+        self.number = data.number
         self.color = data.color if "color" in data.__dict__ else None
         self.bgr = color_info.bgr if "color" in data.__dict__ else (0, 255, 0)
-        self.target = is_target
+        self.is_target = is_target
 
-    def get_state(self):
-        return {
-            "suit" : self.suit,
-            "target" : self.target,
-            "pocketed" : self.pocketed,
-            "position" : self.get_position(),
-            "vector" : self.target_vector.json() if self.target_vector is not None else None
-        }
-
-    def get_position(self):
-        # return top left position
-        return {
-            "x" : int(self.center[0]) - 10  if self.center[0] is not None else 0,
-            "y" : int(self.center[1]) - 10 if self.center[1] is not None else 0
-        }
+    def get_closest_neighbors(self, balls, exclude={}):
+        # return { n:balls[n] for n, d in self.neighbors.items() if (n not in exclude) and d <= (constants.ball.radius * 5) }
+        return { n:balls[n] for n, d in self.neighbors.items() if (n not in exclude) and d <= (constants.ball.radius * 4) }
 
     def draw(self, image):
         if self.suit == "solid":
@@ -121,3 +129,35 @@ class BallMaskInfo:
 
         # generate avg ratio comparing total white pixels and colored pixels against their max totals of solids
         self.ratio = ((self.white_total / solid_white_total) + (self.color_total / solid_color_total)) / 2
+
+class BallCluster(object):
+    def __init__(self, balls):
+        self.balls = balls
+
+        self.min_bound = [0, 0]
+        self.max_bound = [0, 0]
+
+        self.logger = logging.getLogger("ateball.ball_cluster")
+
+        for n, b in self.balls.items():
+            if self.min_bound[0] == 0 or (b.center[0] - constants.ball.radius) < self.min_bound[0]:
+                self.min_bound[0] = int(b.center[0] - constants.ball.radius)
+
+            if self.min_bound[1] == 0 or (b.center[1] - constants.ball.radius) < self.min_bound[1]:
+                self.min_bound[1] = int(b.center[1] - constants.ball.radius)
+
+            if self.max_bound[0] == 0 or (b.center[0] + constants.ball.radius) > self.max_bound[0]:
+                self.max_bound[0] = int(b.center[0] + constants.ball.radius)
+
+            if self.max_bound[1] == 0 or (b.center[1] + constants.ball.radius) > self.max_bound[1]:
+                self.max_bound[1] = int(b.center[1] + constants.ball.radius)
+
+    def to_json(self):
+        return {
+            "min" : self.min_bound,
+            "max" : self.max_bound
+        }
+
+    def draw(self, image):
+        cv2.rectangle(image, self.min_bound, self.max_bound, (255, 255, 255), 1)
+        cv2.line(image, self.min_bound, self.max_bound, (255, 255, 255), 1)

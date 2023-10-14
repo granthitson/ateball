@@ -45,13 +45,6 @@ form fieldset:not(.show) {
     font-weight: 600;
 }
 
-#calibration {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    padding: 0;
-}
-
 #ateball-debug-panels {
     position: relative;
 }
@@ -187,7 +180,7 @@ form fieldset:not(.show) {
 }
 
 #realtime #table_background {
-    width: 687px;
+    width: 688px;
     height: 356px;
     background-image: url("../images/table-placeholder.png");
 }
@@ -642,6 +635,23 @@ form fieldset:not(.show) {
 
 .ball:hover {
     filter: brightness(1.2);
+}
+
+.ball-cluster {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    outline: 1px solid white;
+    display: none;
+}
+
+.ball-cluster.show {
+    display: unset;
+}
+
+.ball-cluster line {
+    stroke: #e2e2e2;
+    stroke-width: 1;
 }
 
 #_target {

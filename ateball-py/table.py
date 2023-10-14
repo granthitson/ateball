@@ -8,7 +8,7 @@ import math
 import numpy as np
 
 from ball import Ball
-from utils import Point, Vector, CV2Helper, clamp
+from utils import Point, Line, Vector, CV2Helper, clamp
 from constants import constants
 
 class Table(object):
@@ -17,8 +17,10 @@ class Table(object):
         self.game_data = game_data
 
         self.table = constants.regions.table
-        self.table_end = Point((self.table[2], self.table[3]/2))
+        self.table_start = Point((self.table[0], self.table[3]/2))
         self.table_center = Point((self.table[2]/2, self.table[3]/2))
+        self.table_end = Point((self.table[2], self.table[3]/2))
+        self.table_midpoint_line_y = Line(self.table_start, self.table_end)
 
         self.table_background_mask = np.array(self.gamemode_info.table_mask.mask_lower), np.array(self.gamemode_info.table_mask.mask_upper)
         self.table_background_black_mask = np.array(constants.table.masks.table.black_mask.lower), np.array(constants.table.masks.table.black_mask.upper)
@@ -41,8 +43,8 @@ class Table(object):
         self.available_ball_identities = {c : copy.copy(d) for c, d in constants.table.balls.__dict__[self.gamemode_info.balls].identities.__dict__.items()}
         self.targetable_ball_identities = {c : d for c, d in self.available_ball_identities.items() if c not in ["cueball", "target"]}
 
-        self.balls = {name : Ball((None, None), name=name, target=target) for name, target in self.targets.items()}
-        self.hittable_balls = { n : b for n, b in self.balls.items() if b.target }
+        self.balls = {}
+        self.hittable_balls = {}
 
         self.updated = threading.Event()
 
@@ -71,7 +73,7 @@ class Table(object):
 
         prepared_table, prepared_pocketed = self.__prepare_table(image)
         self.balls = self.__identify_targets(prepared_table, prepared_pocketed)
-        self.hittable_balls = { n : b for n, b in self.balls.items() if self.targets[b.name] }
+        self.hittable_balls = { n : b for n, b in self.balls.items() if self.targets[b.name] and not b.pocketed }
         self.calculate_vector_lines()
 
         self.updated.set()
@@ -85,7 +87,7 @@ class Table(object):
 
                 radius = cueball.distance(target)
                 angle = math.atan2((target.center[1] - cueball.center[1]), (target.center[0] - cueball.center[0])) * (180 / math.pi)
-                cueball.target_vector = Vector(cueball.center, radius, angle)
+                cueball.target_vector = Vector(cueball, radius, angle)
 
                 for n, b in self.hittable_balls.items():
                     radius = target.distance(b)
@@ -96,7 +98,7 @@ class Table(object):
                         is_viable_angle = viable_angle < 90
                         if is_viable_angle:
                             radius_f_angle = (radius + 5) * (1 - clamp(math.fabs(viable_angle / 90), 0, 1))
-                            b.target_vector = Vector(b.center, radius_f_angle, angle)
+                            b.target_vector = Vector(b, radius_f_angle, angle)
 
     def __prepare_table(self, image):
         # table --
@@ -333,15 +335,17 @@ class Table(object):
                             #     del available_targets[c]
                     break
 
-    def draw(self, config={}):
+    def draw(self, config={}, g_round=None):
         draw_background = bool(config["table"]["background"]) if "table" in config else True
         image = self.images["table"].copy() if draw_background else self.images["none"].copy()
         
         draw_walls = bool(config["table"]["walls"]) if "table" in config else True
         draw_holes = bool(config["table"]["holes"]) if "table" in config else True
 
-        draw_solid = True if "balls" in config and config["balls"]["solid"] else False
-        draw_stripe = True if "balls" in config and config["balls"]["stripe"] else False
+        draw_solid = bool(config["balls"]["solid"]) if "balls" in config else False
+        draw_stripe = bool(config["balls"]["stripe"]) if "balls" in config else False
+
+        highlight_clusters = bool(config["balls"]["clusters"]["highlight"]) if g_round is not None and "balls" in config else False
         
         if draw_walls:
             for w in self.walls:
@@ -365,54 +369,69 @@ class Table(object):
             if b.target_vector is not None:
                 b.target_vector.draw(image)
 
+        if highlight_clusters:
+            for cluster in g_round.ball_clusters:
+                cluster.draw(image)
+
         return image
 
     def capture(self):
         return (self.images["combined_mask"], self.balls)
 
-class Wall:
+class Wall(Line):
     def __init__(self, name, data):
+        super().__init__(Point(tuple(data.start)), Point(tuple(data.end)))
+
         self.name = name
-
-        self.start = tuple(data.start)
-        self.end = tuple(data.end)
-
-    def __str__(self):
-        return self.name
 
     def __repr__(self):
-        return str(self)
+        return f"Wall({self.p1} to {self.p2})"
 
-    def draw(self, image):
-        cv2.line(image, self.start, self.end, (0, 0, 255), 1)
+    def draw(self, image, bgr=(0, 0, 255)):
+        super().draw(image, bgr)
 
-class Hole:
+class Hole(object):
     def __init__(self, name, data, table):
         self.name = name
-        self.image = data.image
         
         self.center = Point(tuple(data.center))
-        self.rotated_center = Point((0, 0))
-
         self.corner = Point(tuple(data.corner))
+
         self.outer_left = Point(tuple(data.outer_left))
         self.inner_left = Point(tuple(data.inner_left))
         self.inner_right = Point(tuple(data.inner_right))
         self.outer_right = Point(tuple(data.outer_right))
+        
+        # position descriptors
+        self.top = self.center.center[1] < table.table_center.center[1]
+        self.left = self.center.center[0] < table.table_center.center[0]
 
-        self.hole_gap_rise, self.hole_gap_run, self.hole_gap_slope = self.outer_left.get_rise_run_slope(self.outer_right)
+        self.max_angle_of_entry = data.entry_angle
 
-        self.angle_from_center = table.table_center.get_angle(table.table_end, self.center)
+        self.hole_gap_length = self.outer_left.distance(self.outer_right)
+        self.shot_bounds_length = (self.hole_gap_length - (constants.ball.radius * 2)) / 2
+
+        self.h_dy, self.h_dx, self.h_dydx = self.outer_left.get_slope_to(self.outer_right)
+        self.hole_gap_center = (self.outer_right + self.outer_left) / 2
+
+        if self.corner == self.center:
+            midpoint_slice = Line(self.center - (0, 10), self.corner) if self.center.center[1] > table.table_center.center[1] else Line(self.corner, self.center + (0, 10))
+        else:
+            midpoint_slice = Line(self.center, self.corner) if self.center.center[1] > table.table_center.center[1] else Line(self.corner, self.center)
+        self.midpoint_table_intersection = table.table_midpoint_line_y.intersects_line(midpoint_slice)
+
+        self.angle_from_center = self.midpoint_table_intersection.get_angle(table.table_end, self.hole_gap_center)
         self.min_x = min(self.outer_left, self.outer_right, key = lambda p: p.center[0])
         self.max_x = max(self.outer_left, self.outer_right, key = lambda p: p.center[0])
 
-        self.radius = int(self.min_x.distance(self.center))
+        self.radius = int(self.min_x.distance(self.hole_gap_center))
 
         self.opening_angle = self.min_x.get_angle(self.corner, self.max_x) if self.min_x.center[0] > table.table_center.center[0] else self.max_x.get_angle(self.corner, self.min_x)
         self.opening_angle_start = 180 if self.angle_from_center >= 180 else 0
         self.opening_angle_end = 360 if self.angle_from_center >= 180 else 180
 
-        self.points = self.create_points()
+        self.is_obscured_by_ball = False
+        self.obscuring_ball = None
 
         self.logger = logging.getLogger("ateball.hole")
 
@@ -422,40 +441,27 @@ class Hole:
     def __repr__(self):
         return str(self)
 
-    def create_points(self):
-        min_x = min(self.inner_left.center[0], self.inner_right.center[0])
-        max_x = max(self.inner_left.center[0], self.inner_right.center[0])
+    def to_json(self):
+        return {
+            "name" : self.name,
+            "center" : self.center
+        }
 
-        min_y = min(self.inner_left.center[1], self.inner_right.center[1])
-        max_y = max(self.inner_left.center[1], self.inner_right.center[1])
+    def inside_pocket(self, ball):
+        # checks if ball is inside pocket - if inside, mark hole as obscured for other balls
+        a, b = (self.outer_right, self.outer_left) if self.top else (self.outer_left, self.outer_right)
+        inside_pocket = (b.center[0] - a.center[0])*(ball.center[1] - a.center[1]) - (b.center[1] - a.center[1])*(ball.center[0] - a.center[0]) > 0
+        
+        self.is_obscured_by_ball = inside_pocket
+        self.obscuring_ball = ball
 
-        if self.hole_gap_slope > 0:
-            y = min_y
-            increment = 1
-        elif self.hole_gap_slope < 0:
-            y = max_y
-            increment = -1
-        else:
-            y = min_y
-            increment = 0
-
-        points = []
-        for x in range(min_x, max_x+1, 1):
-            points.append(Point((x, y)))
-
-            y += increment
-
-        points.sort(key=lambda p: (p.center[0], p.center[1]))
-
-        return points
+        return inside_pocket
 
     def draw(self, image):
-        cv2.ellipse(image, self.center.center, (self.radius, self.radius), self.opening_angle, self.opening_angle_start, self.opening_angle_end, (52, 222, 235))
+        self.hole_gap_center.draw(image, (self.radius, self.radius), self.opening_angle, self.opening_angle_start, self.opening_angle_end, (52, 222, 235))
 
     def draw_points(self, image):
         self.center.draw(image)
         self.outer_left.draw(image)
-        self.inner_left.draw(image)
-        self.inner_right.draw(image)
         self.outer_right.draw(image)
         self.corner.draw(image)

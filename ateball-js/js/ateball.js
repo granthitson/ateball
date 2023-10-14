@@ -16,11 +16,12 @@ class Ateball {
 				game: {
 					started: false,
 					suit: null,
+					turn_num: null,
 					targets: null,
 					balls: {},
 					round: {
 						started: false,
-						num: null
+						ball_clusters: {}
 					}
 				}
 			}
@@ -174,8 +175,10 @@ class Ateball {
 							break;
 						case "ROUND-START":
 							console.log("round started");
+							this.state.ateball.game.turn_num = p_msg.data.turn_num;
 							this.state.ateball.game.round.started = true;
-							this.state.ateball.game.round.num = p_msg.data.turn_num;
+							this.state.ateball.game.round.ball_clusters = {};
+
 							break;
 						case "UPDATE-BALL-STATE":
 							this.state.ateball.game.balls = p_msg.data.balls;
@@ -190,10 +193,23 @@ class Ateball {
 								this.window.webContents.send("realtime-stream", { data: p_msg.data.image});
 							}
 							break;
+						case "ROUND-UPDATE":
+							if (p_msg.data) {
+								switch (p_msg.data.type) {
+									case "SET-BALL-CLUSTERS":
+										this.state.ateball.game.round.ball_clusters = p_msg.data.ball_clusters;
+										break;
+									default:
+										break;
+								}
+							}
+
+							break;
 						case "ROUND-END":
 						case "ROUND-COMPLETE":
 							console.log("round ended");
-							this.state.ateball.game.round.started = false;
+							this.reset_round_state();
+
 							break;
 						case "GAME-EXCEPTION":
 						case "GAME-CANCELLED":
@@ -250,6 +266,10 @@ class Ateball {
 
 	get_state() {
 		return this.state;
+	}
+
+	reset_round_state() {
+		this.state.ateball.game.round = structuredClone(this.original_state.ateball.game.round);
 	}
 
 	reset_game_state() {

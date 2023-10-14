@@ -53,6 +53,10 @@ class Game(threading.Thread, ABC):
         self.game_over_event = utils.OrEvent(self.game_ended, self.game_stopped, self.game_exception, self.window_capturer.stop_event)
 
         self.game_data = {
+            "gamemode" : {
+                "info" : self.gamemode_info,
+                "rules" : self.gamemode_rules
+            },
             "num" : 0,
             "path" : "",
             "suit" : None,
@@ -218,6 +222,8 @@ class Game(threading.Thread, ABC):
 
     def stop(self):
         self.logger.debug("stopping current game")
+        if self.current_round is not None:
+            self.current_round.stop()
         self.game_over_event.notify(self.game_stopped)
 
     def is_game_over(self, image):
@@ -256,11 +262,12 @@ class TwoPlayerGame(Game):
                         "type" : "GAME-START", 
                         "data" : { 
                             "suit" : self.gamemode_rules.suit.choice,
-                            "balls" : { n : b.get_state() for n, b in self.table.hittable_balls.items() }
+                            "balls" : { n : b for n, b in self.table.hittable_balls.items() }
                         }
                     }
                 )
                 self.logger.info(f"Game #{self.game_data['num']}")
+                self.logger.debug(f"Gamemode rules:\nSuit Choice: - {self.gamemode_rules.suit.choice}\nCall: Eight - {self.gamemode_rules.call.eight}\nCall: All - {self.gamemode_rules.call.all}\nOrder: Inorder - {self.gamemode_rules.order.inorder}")
 
                 threading.Thread(target=self.record).start()
                 
@@ -280,43 +287,47 @@ class TwoPlayerGame(Game):
                             self.table_history.pop(0)
                         self.table_history.append(self.table.copy())
 
-                        if self.turn_start.is_set():
-                            self.turn_start.clear()
-                            
+                        if self.turn_start.is_set():                    
                             # update round start image on turn start (play or opponent)
                             if self.game_data["table"] is None:
-                                self.game_data["table"] = self.table_history[0]
+                                round_table = self.table_history[0]
                             else:
-                                if not self.timed_out.is_set():
-                                    self.game_data["table"] = self.table_history[0]
+                                round_table = self.table_history[0] if not self.timed_out.is_set() else self.game_data["table"]
 
-                            # update ball state on round by round basis
-                            self.ipc.send_message(
-                                {
-                                    "type" : "UPDATE-BALL-STATE", 
-                                    "data" : { 
-                                        "balls" : { n : b.get_state() for n, b in self.table.hittable_balls.items() }
+                            if (round_table.balls and "cueball" in round_table.balls):
+                                self.game_data["table"] = round_table
+                                self.turn_start.clear()
+
+                                # update ball state on round by round basis
+                                self.ipc.send_message(
+                                    {
+                                        "type" : "UPDATE-BALL-STATE", 
+                                        "data" : { 
+                                            "balls" : { n : b for n, b in self.table.hittable_balls.items() }
+                                        }
                                     }
-                                }
-                            )
-                            
-                            if self.player_turn.is_set():
-                                self.game_data["turn_num"] += 1
+                                )
+                                
+                                if self.player_turn.is_set():
+                                    self.game_data["turn_num"] += 1
 
-                                self.current_round = Round(self.ipc, self.game_data)
-                                self.current_round.start()
+                                    self.current_round = Round(self.ipc, self.game_data, daemon=True)
+                                    self.current_round.start()
 
-                            self.timed_out.clear()
+                                self.timed_out.clear()
 
                         # draw table
-                        drawn_image = self.table.draw(self.realtime_config)
+                        if self.current_round is not None and not self.current_round.round_over_event.is_set():
+                            drawn_image = self.table.draw(self.realtime_config, self.current_round)
+                        else:
+                            drawn_image = self.table.draw(self.realtime_config)
 
                         # send updated table image if it differs from last
                         if self.table.updated.is_set() or self.realtime_update.is_set():
                             self.realtime_update.clear()
 
-                            ball_positions = { name : ball.get_state() for name, ball in self.table.balls.items() }
-                            data = { "balls" : ball_positions, "image" : None}
+                            ball_positions = { name : ball for name, ball in self.table.balls.items() }
+                            data = { "balls" : ball_positions, "image" : None }
 
                             if "table" in self.realtime_config and bool(self.realtime_config["table"]["raw"]):
                                 retval, image_buffer = cv2.imencode('.png', drawn_image)
@@ -444,14 +455,16 @@ class TwoPlayerGame(Game):
                 self.logger.error(e)
                 break
             else:
-                self.ipc.send_message(
-                    {
-                        "type" : "SUIT-SELECT", 
-                        "data" : { 
-                            "suit" : self.game_data["suit"]
+                if self.game_data['suit']:
+                    self.logger.info(f"Determined suit: {self.game_data['suit']}")
+                    self.ipc.send_message(
+                        {
+                            "type" : "SUIT-SELECT", 
+                            "data" : { 
+                                "suit" : self.game_data["suit"]
+                            }
                         }
-                    }
-                )
+                    )
 
     def wait_for_turn_start(self):
         self.logger.info("Waiting for turn to start...")

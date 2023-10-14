@@ -18,15 +18,6 @@ body {
    margin: 0 !important;
 }
 
-#calibration {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    padding: 0;
-    background-size: contain;
-    background-repeat: no-repeat;
-}
-
 #game-container {
     height: fit-content;
     width: fit-content;

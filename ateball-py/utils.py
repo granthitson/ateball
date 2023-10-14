@@ -74,7 +74,7 @@ class IPC:
         
         self.listen_event = threading.Event()
         self.listen_exception_event = threading.Event() 
-        self.exception_event = threading.Event() 
+        self.send_exception_event = threading.Event() 
         self.stop_event = threading.Event()
 
         self.exception = None
@@ -99,19 +99,39 @@ class IPC:
             while not self.stop_event.is_set():
                 try:
                     msg = self.outgoing.get()
-                    sys.stdout.write(f"{json.dumps(msg)}\n")
+                    sys.stdout.write(f"{json.dumps(msg, cls=IPCJSONEncoder)}\n")
                     sys.stdout.flush()
                 except q.Empty:
                     pass
-        except Exception as e:
-            self.start_exception_event.set()
+        except Exception as e: 
+            self.send_exception_event.set()
             self.logger.exception(f"error handling ipc messages: {e}")
+            self.logger.exception(msg)
 
     def send_message(self, msg):
         self.outgoing.put(msg)
 
     def quit(self):
         self.stop_event.set()
+
+class IPCJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        # handle numpy types
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+
+        try:
+            # handle custom objects
+            return obj.to_json()
+        except Exception as e:
+            self.logger.exception(f"could not encode object of type {type(obj)} - {obj}")
+            return super(IPCJSONEncoder, self).default(obj)
 
 class WindowCapturer(threading.Thread):
     def __init__(self, region, offset, fps, *args, **kwargs):
@@ -288,13 +308,19 @@ class Point(object):
         self.logger = logging.getLogger("ateball.utils.Point")
 
     def __str__(self):
-        return f"Point({self.center})"
+        return f"{self.center}"
 
     def __repr__(self):
         return f"Point({self.center})"
 
     def __hash__(self):
         return hash(self.__repr__())
+
+    def __lt__(self, other):
+        return self.center < other.center
+
+    def __le__(self, other):
+        return self.center <= other.center
 
     def __eq__(self, other):
         if isinstance(other, Point):
@@ -305,8 +331,51 @@ class Point(object):
     def __ne__(self, other):
         return (not self.__eq__(other))
 
-    def add(self, p):
-        return (self.center[0] + p.center[0], self.center[1] + p.center[0])
+    def __gt__(self, other):
+        return self.center > other.center
+
+    def __ge__(self, other):
+        return self.center >= other.center
+
+    def __add__(self, p):
+        if isinstance(p, tuple):
+            return Point((self.center[0] + p[0], self.center[1] + p[1]))
+        elif isinstance(p, Point):
+            return Point((self.center[0] + p.center[0], self.center[1] + p.center[1]))
+        elif isinstance(p, int) or isinstance(p, float):
+            return Point((self.center[0] + p, self.center[1] + p))
+
+    def __sub__(self, p):
+        if isinstance(p, tuple):
+            return Point((self.center[0] - p[0], self.center[1] - p[1]))
+        elif isinstance(p, Point):
+            return Point((self.center[0] - p.center[0], self.center[1] - p.center[1]))
+        elif isinstance(p, int) or isinstance(p, float):
+            return Point((self.center[0] - p, self.center[1] - p))
+
+    def __rmul__(self, p):
+        if isinstance(p, tuple):
+            return Point((self.center[0] * p[0], self.center[1] * p[1]))
+        elif isinstance(p, Point):
+            return Point((self.center[0] * p.center[0], self.center[1] * p.center[1]))
+        elif isinstance(p, int) or isinstance(p, float):
+            return Point((self.center[0] * p, self.center[1] * p))
+
+    def __truediv__(self, p):
+        if isinstance(p, tuple):
+            return Point((self.center[0] / p[0], self.center[1] / p[1]))
+        elif isinstance(p, Point):
+            return Point((self.center[0] / p.center[0], self.center[1] / p.center[1]))
+        elif isinstance(p, int) or isinstance(p, float):
+            return Point((self.center[0] / p, self.center[1] / p))
+
+    def to_json(self):
+        return {
+            "center" : {
+                "x" : self.center[0] if self.center[0] is not None else 0,
+                "y" : self.center[1] if self.center[1] is not None else 0
+            }
+        }
 
     def distance(self, p):
         return round(math.hypot(self.center[0] - p.center[0], self.center[1] - p.center[1]), 2)
@@ -314,7 +383,7 @@ class Point(object):
     def average(self, p):
         return (int((self.center[0] + p.center[0])/2),int((self.center[1] + p.center[1])/2))
 
-    def get_rise_run_slope(self, p):
+    def get_slope_to(self, p):
         rise = float(self.center[1]) - float(p.center[1])
         run = float(self.center[0]) - float(p.center[0])
         if run != 0:
@@ -334,6 +403,9 @@ class Point(object):
         ang = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
         return ang + 360 if ang < 0 else ang
 
+    def is_on_left(self, a, b):
+        return (b.center[0] - a.center[0])*(self.center[1] - a.center[1]) - (b.center[1] - a.center[1])*(self.center[0] - a.center[0]) > 0
+
     def to_float(self):
         return (float(self.center[0]), float(self.center[1]))
 
@@ -343,120 +415,117 @@ class Point(object):
     def round(self, precision=2):
         return (round(self.center[0]), round(self.center[1]))
 
-    def findPointsOnEitherSideOf(self, distance, rise, run, invert=False):
-        try:
-            slope = rise/run
-        except ZeroDivisionError:
-            slope = 0
-
-        if invert is False:
-            if slope != 0:
-                left = findPointsAlongSlope(self.center, distance, slope, True)
-                right = findPointsAlongSlope(self.center, distance, slope)
-            else:
-                if math.fabs(rise) > 0:
-                    left = (self.center[0], self.center[1]-distance)
-                    right = (self.center[0], self.center[1]+distance)
-                else:
-                    left = (self.center[0]-distance, self.center[1])
-                    right = (self.center[0]+distance, self.center[1])
-        else:
-            if slope != 0:
-                left = findPointsAlongSlope(self.center, distance, slope)
-                right = findPointsAlongSlope(self.center, distance, slope, True)
-            else:
-                if math.fabs(rise) > 0:
-                    left = (self.center[0], self.center[1]+distance)
-                    right = (self.center[0], self.center[1]-distance)
-                else:
-                    left = (self.center[0]+distance, self.center[1])
-                    right = (self.center[0]-distance, self.center[1])
+    def find_points_on_either_side(self, distance, rise, run):
+        left = self.find_points_along_slope(-distance, rise, run)
+        right = self.find_points_along_slope(distance, rise, run)
 
         return left, right
 
-    def findPointsAlongSlope(self, distance, slope, subtract=False):
-        if subtract:
-            x = (self.center[0] - (distance * math.sqrt(1 / (1 + slope ** 2))))
-            y = (self.center[1] - ((slope * distance) * math.sqrt(1 / (1 + slope ** 2))))
-        else:
-            x = (self.center[0] + (distance * math.sqrt(1 / (1 + slope ** 2))))
-            y = (self.center[1] + ((slope * distance) * math.sqrt(1 / (1 + slope ** 2))))
+    def find_points_along_slope(self, distance, rise, run):
+        try:
+            slope = rise / run
 
-        return x, y
+            dy = ((slope * distance) * math.sqrt(1 / (1 + slope ** 2)))
+            dx = (distance * math.sqrt(1 / (1 + slope ** 2)))
+        except ZeroDivisionError:
+            dy, dx = (0, distance) if rise == 0 else (distance, 0)
 
-    def rotateAround(self, anchor, angle):
-        angle = math.radians(angle)
-        s = math.sin(angle)
-        c = math.cos(angle)
+        return Point((self.center[0] + dx, self.center[1] + dy))
 
-        pX = int(self.center[0]) - int(self.center[0])
-        pY = int(self.center[1]) - int(self.center[1])
+    def draw(self, image, radius=(1, 1), angle=0, angle_start=0, end_angle=360, bgr=(0, 255, 0)):
+        cv2.ellipse(image, self.to_int(), radius, angle, angle_start, end_angle, bgr)
 
-        newX = (pX * c - pY * s) + anchor[0]
-        newY = (pX * s + pY * c) + anchor[1]
+class Line(object):
+    def __init__(self, p1, p2):
+        self.p1 = p1
+        self.p2 = p2
 
-        center = tupleToInt((newX, newY))
+    def __str__(self):
+        return f"{self.p1} to {self.p2}"
 
-        return center
+    def __repr__(self):
+        return f"Line({self.p1} to {self.p2})"
 
-    def line_intersection(self, line1, line2, xmin=None, xmax=None, ymin=None, ymax=None):
-        xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
-        ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+    def to_json(self):
+        return {
+            "start" : self.p1.center,
+            "end" : self.p2.center
+        }
 
-        def det(a, b):
-            return a[0] * b[1] - a[1] * b[0]
+    def intersects_line(self, line):
+        p = self.p1
+        r = (self.p2-self.p1)
 
-        div = det(xdiff, ydiff)
-        if div == 0:
-            raise Exception('lines do not intersect')
+        q = line.p1
+        s = (line.p2-line.p1)
 
-        d = (det(*line1), det(*line2))
-        x = det(d, xdiff) / div
-        y = det(d, ydiff) / div
+        t = np.cross((q - p).center,s.center)/(np.cross(r.center,s.center))
 
-        if xmin is not None:
-            if x < xmin:
-                return None
+        # This is the intersection point
+        return p + t*r
 
-        if xmax is not None:
-            if x > xmax:
-                return None
+    def dist(self, p3): # x3,y3 is the point
+        x1, y1 = self.p1.center
+        x2, y2 = self.p2.center
+        x3, y3 = p3.center
 
-        if ymin is not None:
-            if y < ymin:
-                return None
+        px = x2-x1
+        py = y2-y1
 
-        if ymax is not None:
-            if y > ymax:
-                return None
+        norm = px*px + py*py
 
-        return x, y
+        u =  ((x3 - x1) * px + (y3 - y1) * py) / float(norm)
 
-    def draw(self, image, radius=1, rgb=(0, 255, 0), dtype=1):
-        cv2.circle(image, self.center, radius, rgb, dtype)
+        if u > 1:
+            u = 1
+        elif u < 0:
+            u = 0
+
+        x = x1 + u * px
+        y = y1 + u * py
+
+        dx = x - x3
+        dy = y - y3
+
+        # Note: If the actual distance does not matter,
+        # if you only want to compare what this function
+        # returns to other results of this function, you
+        # can just return the squared distance instead
+        # (i.e. remove the sqrt) to gain a little performance
+
+        dist = (dx*dx + dy*dy)**.5
+
+        return dist
+
+    def draw(self, image, bgr):
+        cv2.line(image, self.p1.to_int(), self.p2.to_int(), bgr, 1)
 
 class Vector(object):
-    def __init__(self, center, radius, theta):
-        self.center = center
+    def __init__(self, origin, radius, theta):
+        self.origin = origin
         self.radius = radius
         self.theta = theta
 
         self.logger = logging.getLogger("ateball.utils.Vector")
 
+    @classmethod
+    def from_line(cls, p1, p2):
+        return cls()
+
     def __str__(self):
         return f"Vector({self.radius}, {self.theta})"
 
-    def json(self):
+    def to_json(self):
         return {
             "radius" : self.radius,
             "angle" : self.theta
         }
 
-    def draw(self, image, rgb=(0, 255, 0), thickness=2):
+    def draw(self, image, bgr=(0, 255, 0), thickness=2):
         radians = self.theta *  (math.pi / 180)
-        x2 = int(self.center[0] + (self.radius * math.cos(radians)))
-        y2 = int(self.center[1] + (self.radius * math.sin(radians)))
-        cv2.line(image, self.center, (x2, y2), rgb, thickness)
+        vector = self.origin + ((self.radius * math.cos(radians)), (self.radius * math.sin(radians)))
+
+        cv2.line(image, self.origin.to_int(), vector.to_int(), bgr, thickness)
 
 def clamp(n, low, high):
     return max(min(high, n), low)

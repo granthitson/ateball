@@ -295,7 +295,10 @@ const get_realtime_config = () => {
     return data = {
         "balls" : {
             "solid" : document.querySelector("input[name='draw_solid']").checked,
-            "stripe" : document.querySelector("input[name='draw_stripe']").checked
+            "stripe" : document.querySelector("input[name='draw_stripe']").checked,
+            "clusters" : {
+                "highlight" : document.querySelector("input[name='highlight_clusters']").checked
+            }
         },
         "table" : {
             "raw" : document.querySelector("input[name='draw_raw']").checked,
@@ -397,10 +400,10 @@ const toggleGameControls = (s) => {
     var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
 
     game_controls.disabled = !interact;
-    game_controls.style.display = !interact ? "none" : "";
+    game_controls.style.display = !interact ? "none" : "flex";
 
     if (s.ateball.game.round.started) {
-        turn_num.textContent = s.ateball.game.round.turn_num;
+        turn_num.textContent = s.ateball.game.turn_num;
         turn_timer.classList.add("start");
         turn_timer.classList.remove("pending");
     } else {
@@ -444,14 +447,14 @@ const toggleGameControls = (s) => {
                         let is_target = true; let is_targetable = true;
 
                         if (s.ateball.game.suit != null) {
-                            is_targetable = elem.classList.contains(s.ateball.game.suit) && !s.ateball.game.balls[elem.id].pocketed;
-                            is_target = is_targetable && ((s.ateball.game.targets != null) ? s.ateball.game.targets[elem.id] : s.ateball.game.balls[elem.id].target);
+                            is_targetable = elem.classList.contains(s.ateball.game.suit) && !s.ateball.game.balls[elem.id].info.pocketed;
+                            is_target = is_targetable && ((s.ateball.game.targets != null) ? s.ateball.game.targets[elem.id] : s.ateball.game.balls[elem.id].info.target);
                         } else {
-                            is_targetable = !s.ateball.game.balls[elem.id].pocketed;
-                            is_target = is_targetable && ((s.ateball.game.targets != null) ? s.ateball.game.targets[elem.id] : s.ateball.game.balls[elem.id].target);
+                            is_targetable = !s.ateball.game.balls[elem.id].info.pocketed;
+                            is_target = is_targetable && ((s.ateball.game.targets != null) ? s.ateball.game.targets[elem.id] : s.ateball.game.balls[elem.id].info.target);
                         }
 
-                        elem.disabled = s.ateball.game.balls[elem.id].pocketed;
+                        elem.disabled = s.ateball.game.balls[elem.id].info.pocketed;
                         elem.classList.toggle("target", is_target);
                         elem.classList.toggle("targetable", is_targetable);
                     }
@@ -477,24 +480,63 @@ const toggleRealtimeInterface = (s) => {
     var table_ui = document.querySelector("#realtime #table");
     table_ui.classList.toggle("raw", config.table.raw);
 
-    if (!interact) {
+    if (interact) {
+        if (s.ateball.game.round.started && s.ateball.game.round.ball_clusters) {
+            let show = !config.table.raw && config.balls.clusters.highlight;
+
+            var existing_ball_clusters = table_ui.querySelectorAll(".ball-cluster");
+            if (existing_ball_clusters.length > 0) {
+                existing_ball_clusters.forEach(e => { e.classList.toggle("show", show); });
+            } else {
+                for (const [identifier, cluster] of Object.entries(s.ateball.game.round.ball_clusters)) {
+                    const [min_x, min_y] = cluster.min;
+                    const [max_x, max_y] = cluster.max;
+                    let width = max_x - min_x;
+                    let height = max_y - min_y;
+
+                    var ball_cluster = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    ball_cluster.classList.add(['ball-cluster']);
+                    ball_cluster.classList.toggle("show", show);
+                    ball_cluster.dataset.identifier = identifier;
+    
+                    ball_cluster.style.top = `${min_y}px`;
+                    ball_cluster.style.left = `${min_x}px`;
+                    ball_cluster.style.width = `${width}px`;
+                    ball_cluster.style.height = `${height}px`;
+
+                    var ball_cluster_line = document.createElementNS("http://www.w3.org/2000/svg","line");
+                    ball_cluster_line.setAttribute("x1", 0);
+                    ball_cluster_line.setAttribute("y1", 0);
+                    ball_cluster_line.setAttribute("x2", "100%");
+                    ball_cluster_line.setAttribute("y2", "100%");
+
+                    ball_cluster.append(ball_cluster_line);
+    
+                    table_ui.append(ball_cluster);
+                }
+            }
+        } else {
+            table_ui.querySelectorAll(".ball-cluster").forEach(e => { e.remove(); });
+        }
+    } else {
         table_ui.querySelectorAll(".vector-wrapper").forEach(e => { e.remove(); });
+        table_ui.querySelectorAll(".ball-cluster").forEach(e => { e.remove(); });
     }
 }
 
 const trackBallPositions = () => {
     const drawVectorLine = (name, ball, draw) => {
         function setVectorLine(vector_wrapper, vector_line, ball) {
-            vector_wrapper.style.left = `${ball.position.x}px`;
-            vector_wrapper.style.top = `${ball.position.y}px`;
+            vector_wrapper.style.left = `${ball.center.x}px`;
+            vector_wrapper.style.top = `${ball.center.y}px`;
             vector_wrapper.style.rotate = (ball.vector) ? `${(ball.vector.angle - 90)}deg` : "";
     
             vector_line.style.display = (ball.vector) ? "" : "none";
             vector_line.style.height = (ball.vector) ? `${(ball.vector.radius + vector_line.offsetWidth)}px` : "";
         }
     
-        var table = document.querySelector("#realtime #table");
-        var vector_wrapper = table.querySelector(`.vector-wrapper[data-ball='${name}']`);
+        var table_ui = document.querySelector("#realtime #table");
+        var vector_wrapper = table_ui.querySelector(`.vector-wrapper[data-ball='${name}']`);
         var vector_line = null;
     
         if (draw && ball != null && ball.vector) {
@@ -507,7 +549,7 @@ const trackBallPositions = () => {
                 vector_wrapper.dataset.ball = name;
     
                 vector_wrapper.append(vector_line);
-                table.append(vector_wrapper);
+                table_ui.append(vector_wrapper);
             } else {
                 vector_line = vector_wrapper.querySelector(".vector-line");
             }
@@ -523,8 +565,8 @@ const trackBallPositions = () => {
     window.api.get_state().then((s) => {
         var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
         
-        var realtime = document.querySelector("#realtime #table");
-        var balls = realtime.querySelectorAll("._ball");
+        var table_ui = document.querySelector("#realtime #table");
+        var balls = table_ui.querySelectorAll("._ball");
 
         balls.forEach(ball => {
             ball.style.display = (interact) ? "" : "none";
@@ -533,11 +575,11 @@ const trackBallPositions = () => {
                 var name = ball.id.replace("_", "");
                 var _ball = s.ateball.game.balls[name];
 
-                if (_ball && !_ball.pocketed) {
-                    let draw = (_ball.suit == null || (_ball.suit != null && config.balls[_ball.suit]));
+                if (_ball && !_ball.info.pocketed) {
+                    let draw = (_ball.suit == null || (_ball.info.suit != null && config.balls[_ball.info.suit]));
                     ball.style.display = (draw) ? "unset" : "";
-                    ball.style.left = `${_ball.position.x}px`;
-                    ball.style.top = `${_ball.position.y}px`;
+                    ball.style.left = `${_ball.center.x}px`;
+                    ball.style.top = `${_ball.center.y}px`;
 
                     if (!config.table.raw) {
                         drawVectorLine(name, _ball, draw);
