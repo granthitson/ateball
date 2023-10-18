@@ -49,7 +49,7 @@ class Round(threading.Thread):
         }
         #round constants
 
-        self.ball_clusters = []
+        self.ball_clusters = {}
         self.in_cluster = {}
         self.break_required = False
 
@@ -58,8 +58,10 @@ class Round(threading.Thread):
         self.targets = {}
         self.non_targets = {}
 
-        self.viable_ball_paths =  []
-        self.unviable_ball_paths =  []
+        self.ball_paths = {}
+        self.viable_ball_paths =  {}
+        self.unviable_ball_paths =  {}
+        self.selected_ball_path = None
 
         self.generate_viable_paths_complete = threading.Event()
 
@@ -103,6 +105,9 @@ class Round(threading.Thread):
                 self.determine_ball_clusters()
 
             self.generate_viable_paths()
+
+            # self.predict_future_positions()
+            # self.determine_power_requirements()
 
             self.round_over_event.notify(self.round_complete)
         except Exception as e:
@@ -154,20 +159,20 @@ class Round(threading.Thread):
                 except StopIteration:
                     break
                 
-            self.ball_clusters.append(BallCluster(cluster))
+            # create unique_id
+            cluster_id = sum(map(ord, "".join([ b for b in cluster ] )))
+            self.ball_clusters[cluster_id] = BallCluster(cluster)
 
             # break if cluster contains all
             if len(cluster) == len(self.table.hittable_balls):
                 self.break_required = True
                 break
         
-        # create dict of cluster_identifier : bounds - identifier created by the summation of ord(combined names of balls in cluster)
-        ball_clusters = { sum(map(ord, "".join([ b for b in cluster.balls ] ))) : cluster for cluster in self.ball_clusters }
         self.ipc.send_message({
             "type" : "ROUND-UPDATE", 
             "data" : {
                 "type" : "SET-BALL-CLUSTERS",
-                "ball_clusters" : ball_clusters
+                "ball_clusters" : self.ball_clusters
             }
         })
 
@@ -190,26 +195,9 @@ class Round(threading.Thread):
             self.logger.info(f"Determined targets: {[n for n, b in self.targets.items()]}")
             self.logger.info(f"Determined non-targets: {[n for n, b in self.non_targets.items()]}")
 
-            # target ball clusters
-            # for cluster in self.ball_clusters:
-            #     self.logger.debug(list(cluster.balls))
-
             # sort targets in order of out-of-cluster to in-cluster
             sorted_targets = { n:b for n,b in sorted(self.targets.items(), key=lambda nb: nb[0] in self.in_cluster)}
 
-            # testing
-            color_order = {
-                "yellow" : 1,
-                "lightred" : 2,
-                "darkred" : 3,
-                "blue" : 4,
-                "purple" : 5,
-                "green" : 6,
-                "orange" : 7,
-                "eightball" : 8,
-            }
-            sorted_targets = { n:b for n,b in sorted(sorted_targets.items(), key=lambda nb: color_order[nb[1].color])}
-            
             # check if there is AT LEAST one target available 
             if not sorted_targets:
                 self.logger.debug(f"could not generate any shots (sorted_targets is empty) - {sorted_targets}")
@@ -218,8 +206,6 @@ class Round(threading.Thread):
             sorted_target_indexes = [ n for n in sorted_targets ]
             index = 0
 
-            test = self.images["table"].copy()
-            
             while not self.generate_viable_paths_complete.is_set() and not self.round_over_event.is_set():
                 try:
                     b = sorted_targets[sorted_target_indexes[index]]
@@ -235,12 +221,16 @@ class Round(threading.Thread):
                     ball_paths = self.find_eligible_paths(b)
                     ball_paths = sorted(ball_paths, key=lambda p: p.difficulty, reverse=True)
 
-                    # confirm eligible path from cueball to blal and sort by score
-                    viable_ball_paths, unviable_ball_paths = self.confirm_path_eligibility(test, ball_paths)
+                    # confirm eligible path from cueball to ball and sort by score
+                    viable_ball_paths, unviable_ball_paths = self.confirm_path_eligibility(ball_paths)
                     viable_ball_paths = sorted(viable_ball_paths, key=lambda p: p.difficulty, reverse=True)
 
-                    self.viable_ball_paths = [*self.viable_ball_paths, *viable_ball_paths]
-                    self.unviable_ball_paths = [*self.unviable_ball_paths, *unviable_ball_paths]
+                    viable_ball_paths = { hash(bp) : bp for bp in viable_ball_paths }
+                    unviable_ball_paths = { hash(bp) : bp for bp in unviable_ball_paths }
+
+                    self.ball_paths = { **self.ball_paths, **viable_ball_paths, **unviable_ball_paths }
+                    self.viable_ball_paths = { **self.viable_ball_paths, **viable_ball_paths }
+                    self.unviable_ball_paths = { **self.unviable_ball_paths, **unviable_ball_paths }
 
                     if index == (len(sorted_target_indexes) - 1):
                         self.generate_viable_paths_complete.set()
@@ -252,18 +242,9 @@ class Round(threading.Thread):
                 "type" : "ROUND-UPDATE", 
                 "data" : {
                         "type" : "SET-BALL-PATHS",
-                        "ball_paths" : { bp.get_uuid() : bp for bp in self.viable_ball_paths }
+                        "ball_paths" : self.viable_ball_paths
                     }
             })
-
-            for p in self.viable_ball_paths:
-                p.draw(test)
-                cue_to_ball_angle = p.target_ball_point.get_angle(p.cueball, p.target_hole.hole_gap_center)
-                self.logger.debug(f"{p.target_ball.name} - {cue_to_ball_angle}")
-                self.logger.debug(f"{constants.ball.entry_angle_bound.min < cue_to_ball_angle < constants.ball.entry_angle_bound.max}")
-                cv2.imshow("Test", test)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
 
             end_time = time.time() - start_time
 
@@ -272,8 +253,8 @@ class Round(threading.Thread):
         except Exception as e:
             self.logger.error(traceback.format_exc())
 
-    def queryReboundedShot(self, ball):
-        pass
+    def select_ball_path(self, id):
+        self.selected_ball_path = self.ball_paths[int(id)]
 
 ### Obtain shot on ball ###
 
@@ -287,7 +268,6 @@ class Round(threading.Thread):
             start = time.time()
 
             # sort holes by whether or not they can be target - enough room for a ball?
-            # goes here
             sorted_holes = self.table.holes
 
             for hole in sorted_holes:
@@ -303,8 +283,6 @@ class Round(threading.Thread):
                     break
                 else:
                     ball_paths = [*ball_paths, *viable_paths]
-
-            # self.logger.debug(f"found eligible shots {len(ball_paths)} - {time.time() - start} seconds")
         except Exception as e:
             self.logger.error(traceback.format_exc())
 
@@ -345,8 +323,6 @@ class Round(threading.Thread):
             try:
                 index += 1
 
-                test = self.table.images["table"].copy() # testing
-                
                 hole_target_point = hole_target_bounds[index]
 
                 ball_path = BallPath(self.cueball, ball, hole, hole_target_point, ball_inside_pocket)
@@ -357,13 +333,12 @@ class Round(threading.Thread):
                     continue
 
                 paths.append(ball_path)
-
             except IndexError as e:
                 break
 
         return paths
 
-    def confirm_path_eligibility(self, image, _ball_paths):
+    def confirm_path_eligibility(self, _ball_paths):
         viable_ball_paths = []
         unviable_ball_paths = []
 
@@ -371,7 +346,7 @@ class Round(threading.Thread):
             start = time.time()
 
             for ball_path in _ball_paths:
-                is_clear = ball_path.is_cueball_trajectory_clear(image,  self.table.hittable_balls)
+                is_clear = ball_path.is_cueball_trajectory_clear(self.table.hittable_balls)
 
                 if not is_clear or ball_path.obscuring_cue_to_ball_trajectory:
                     # cannot be direct - must rebound or not possible
@@ -388,13 +363,6 @@ class Round(threading.Thread):
     
 
 ### Check paths ###
-
-
-### Drawing ###
-
-    def savePic(self):
-        cv2.imwrite(self.round_path + "pooltableOutlined.png", self.round_image)
-### Drawing ###
 
 
 ### Hit Ball ###

@@ -21,7 +21,8 @@ class Ateball {
 					balls: {},
 					round: {
 						started: false,
-						ball_clusters: {}
+						ball_clusters: {},
+						ball_paths: {},
 					}
 				}
 			}
@@ -52,6 +53,10 @@ class Ateball {
 
 		this.window.setAlwaysOnTop(true, 'pop-up-menu');
 		this.send_message(msg);
+	}
+
+	select_ball_path(data) {
+		this.send_message({ "type" : "select-ball-path", "data" : data});
 	}
 
 	update_targets(data) {
@@ -178,6 +183,7 @@ class Ateball {
 							this.state.ateball.game.turn_num = p_msg.data.turn_num;
 							this.state.ateball.game.round.started = true;
 							this.state.ateball.game.round.ball_clusters = {};
+							this.state.ateball.game.round.ball_paths = {};
 
 							break;
 						case "UPDATE-BALL-STATE":
@@ -198,6 +204,9 @@ class Ateball {
 								switch (p_msg.data.type) {
 									case "SET-BALL-CLUSTERS":
 										this.state.ateball.game.round.ball_clusters = p_msg.data.ball_clusters;
+										break;
+									case "SET-BALL-PATHS":
+										this.state.ateball.game.round.ball_paths = p_msg.data.ball_paths;
 										break;
 									default:
 										break;

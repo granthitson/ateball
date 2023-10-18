@@ -22,6 +22,7 @@ class Ball(Point):
         self.mask_info = BallMaskInfo()
 
         self.target_vector = None
+        self.deflect_vector = None
         self.neighbors = {}
 
         self.logger = logging.getLogger("ateball.ball")
@@ -45,10 +46,10 @@ class Ball(Point):
     def __ne__(self, other):
         return (not self.__eq__(other))
 
-    def __copy__(self):
+    def copy(self):
         return Ball(self.center, self.suit, self.name, self.color, self.is_target, self.pocketed)
 
-    def to_json(self):
+    def serialize(self):
         return {
             "info" : {
                 "name" : self.name,
@@ -62,7 +63,10 @@ class Ball(Point):
                 "x" : (self.center[0] - constants.ball.radius) if self.center[0] is not None else 0,
                 "y" : (self.center[1] - constants.ball.radius) if self.center[1] is not None else 0
             },
-            "vector" : self.target_vector if self.target_vector is not None else None
+            "vectors" : {
+                "target" : (self.target_vector - constants.ball.radius) if self.target_vector is not None else None,
+                "deflect" : (self.deflect_vector - constants.ball.radius) if self.deflect_vector is not None else None
+            }
         }
 
     def update(self, center):
@@ -152,7 +156,7 @@ class BallCluster(object):
             if self.max_bound[1] == 0 or (b.center[1] + constants.ball.radius) > self.max_bound[1]:
                 self.max_bound[1] = int(b.center[1] + constants.ball.radius)
 
-    def to_json(self):
+    def serialize(self):
         return {
             "min" : self.min_bound,
             "max" : self.max_bound

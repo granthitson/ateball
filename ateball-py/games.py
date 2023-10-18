@@ -326,8 +326,7 @@ class TwoPlayerGame(Game):
                         if self.table.updated.is_set() or self.realtime_update.is_set():
                             self.realtime_update.clear()
 
-                            ball_positions = { name : ball for name, ball in self.table.balls.items() }
-                            data = { "balls" : ball_positions, "image" : None }
+                            data = { "balls" : self.table.balls, "image" : None }
 
                             if "table" in self.realtime_config and bool(self.realtime_config["table"]["raw"]):
                                 retval, image_buffer = cv2.imencode('.png', drawn_image)

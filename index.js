@@ -129,6 +129,10 @@ app.on('ready', async () => {
 		ateball.play_game({ type: "play", ...data});
 	});
 
+	ipcMain.on('select-ball-path', (e, data) => {
+		ateball.select_ball_path(data);
+	});
+
 	ipcMain.on('update-targets', (e, data) => {
 		ateball.update_targets(data);
 	});

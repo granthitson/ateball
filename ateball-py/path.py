@@ -40,7 +40,7 @@ class BallPath:
     def __repr__(self):
         return str(self)
 
-    def get_uuid(self):
+    def __hash__(self):
         return hash(f"{self.cueball}{self.target_ball}{self.target_ball_point}{self.target_hole}{self.hole_target_point}")
 
     def update_difficulty(self, add=1):
@@ -49,17 +49,16 @@ class BallPath:
     def update_benefit(self, add=1):
         self.benefit += add
 
-    def to_json(self):
+    def serialize(self):
         return {
             "cueball" : {
                 "ball" : self.cueball,
-                "path" : self.cue_to_ball_trajectory,
+                "trajectory" : self.cue_to_ball_trajectory.to_vector() - constants.ball.radius,
                 "obscuring" : { b.name : b for b in self.obscuring_cue_to_ball_trajectory }
             },
             "target_ball" : {
                 "ball" : self.target_ball,
-                "point" : self.target_ball_point,
-                "path" : self.cue_to_ball_trajectory,
+                "trajectory" : self.ball_to_hole_trajectory.to_vector() - constants.ball.radius,
                 "obscuring" : { b.name : b for b in self.obscuring_ball_to_hole_trajectory }
             },
             "target_hole" : {
@@ -97,7 +96,7 @@ class BallPath:
         else:
             self.target_ball_point = min(bp1, bp2, key=lambda p: p.center[0] if dx else p.center[1]) if dy < 0 else max(bp1, bp2, key=lambda p: p.center[0] if dx else p.center[1])
 
-        self.ball_to_hole_trajectory = Line(self.hole_target_point, self.target_ball_point)
+        self.ball_to_hole_trajectory = Line(self.target_ball_point, self.hole_target_point)
         non_obscured_distances = []
         for n, b in targets.items():
             if n == self.target_ball.name:
@@ -126,7 +125,7 @@ class BallPath:
         
         return True
 
-    def is_cueball_trajectory_clear(self, image, targets):
+    def is_cueball_trajectory_clear(self, targets):
         left, above = self.cueball.center[0] < self.target_ball.center[0], self.cueball.center[1] < self.target_ball.center[1]
         right, below = not left, not above
 
@@ -152,7 +151,7 @@ class BallPath:
             self.difficulty += sum(distance_scores) / len(non_obscured_distances)
 
         if self.obscuring_cue_to_ball_trajectory:
-            # self.logger.debug(f"{self.target_ball.name} is obscured to {self.target_hole.name} - {cue_to_ball_angle}")
+            # check for alternate, can obscuring be hit?
             return False
 
         # factor distance from cue to ball into difficulty
@@ -161,14 +160,14 @@ class BallPath:
         return True
 
     def draw(self, image):
-        if self.target_ball_point is not None:
-            self.target_ball_point.draw(image, radius=(2,2), bgr=(0, 0, 0))
-
         # draw ball to hole trajectory
         if self.ball_to_hole_trajectory is not None:
-            self.ball_to_hole_trajectory.draw(image, bgr=(0, 255, 0))
+            self.ball_to_hole_trajectory.draw(image, bgr=(243, 100, 255))
 
         # draw cue to ball trajectory
         if self.cue_to_ball_trajectory is not None:
-            self.cue_to_ball_trajectory.draw(image, bgr=(0, 255, 0))
+            self.cue_to_ball_trajectory.draw(image, bgr=(243, 100, 255))
+
+        if self.target_ball_point is not None:
+            self.target_ball_point.draw(image, radius=(2,2), bgr=(0, 0, 0))
 

@@ -52,6 +52,8 @@
 										<div id="_13ball" class="_ball b13"></div>
 										<div id="_14ball" class="_ball b14"></div>
 										<div id="_15ball" class="_ball b15"></div>
+										<div id="ball_vectors"></div>
+										<div id="ball_paths"></div>
 									</div>
 								</div>
 							</div>
@@ -115,6 +117,13 @@
 
 								<div id="game-operations-menu" class="row flex-column flex-grow-1">
 									<div id="game-operations" class="col flex-grow-1">
+										<div class="row">
+											<button id="ball-path-btn" class="_btn menu-btn dropdown" data-target="#ball-path-menu">Ball Paths</button>
+											<form id="ball-path-menu" class="col menu">
+												<div id="ball_path_placeholder" class="row">NO PATHS AVAILABLE</div>
+											</form>
+										</div>
+
 										<div class="row">
 											<button id="image-options-btn" class="_btn menu-btn dropdown" data-target="#image-options-menu">Options</button>
 											<form id="image-options-menu" class="col menu">

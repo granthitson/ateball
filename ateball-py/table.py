@@ -94,11 +94,25 @@ class Table(object):
                     angle = math.atan2((b.center[1] - target.center[1]), (b.center[0] - target.center[0])) * (180 / math.pi)
                     
                     if radius <= 22:
-                        viable_angle = math.fabs(180 - target.get_angle(cueball, b))
-                        is_viable_angle = viable_angle < 90
-                        if is_viable_angle:
-                            radius_f_angle = (radius + 5) * (1 - clamp(math.fabs(viable_angle / 90), 0, 1))
-                            b.target_vector = Vector(b, radius_f_angle, angle)
+                        target_angle = target.get_angle(cueball, b)
+
+                        viable_angle = 180 - target_angle
+                        is_viable_angle = math.fabs(viable_angle) < 90
+                        if not is_viable_angle:
+                            continue
+
+                        # target vector radius as inverse function of angle (max 90)
+                        radius_f_angle = (radius + 5) * (1 - clamp(math.fabs(viable_angle / 90), 0, 1))
+                        b.target_vector = Vector(b, radius_f_angle, angle)
+
+                        # deflection vector radius as a function of angle (max 90)
+                        
+                        c_radius_f_angle = (radius + 20) * (clamp(math.fabs(viable_angle / 90), 0, 1))
+                        if angle > 0:
+                            deflect_angle = math.fabs(angle + 90) if viable_angle > 0 else math.fabs(angle) - 90
+                        else:
+                            deflect_angle = (angle + 90) if viable_angle > 0 else (angle - 90)
+                        cueball.deflect_vector = Vector(target, c_radius_f_angle, deflect_angle)
 
     def __prepare_table(self, image):
         # table --
@@ -369,9 +383,15 @@ class Table(object):
             if b.target_vector is not None:
                 b.target_vector.draw(image)
 
-        if highlight_clusters:
-            for cluster in g_round.ball_clusters:
+            if b.deflect_vector is not None:
+                b.deflect_vector.draw(image)
+
+        if g_round and highlight_clusters:
+            for iden, cluster in g_round.ball_clusters.items():
                 cluster.draw(image)
+
+        if g_round and g_round.selected_ball_path:
+            g_round.selected_ball_path.draw(image)
 
         return image
 
@@ -441,7 +461,7 @@ class Hole(object):
     def __repr__(self):
         return str(self)
 
-    def to_json(self):
+    def serialize(self):
         return {
             "name" : self.name,
             "center" : self.center

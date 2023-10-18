@@ -46,6 +46,9 @@ class AteBall():
                     if self.active_game:
                         self.active_game.realtime_config.update(msg["data"])
                         self.active_game.realtime_update.set()
+                elif m_type == "select-ball-path":
+                    if self.active_game and self.active_game.current_round:
+                        self.active_game.current_round.select_ball_path(msg["data"])
                 elif m_type == "update-targets":
                     if self.active_game:
                         self.active_game.update_user_targets(msg["data"])

@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import time
+import copy
 
 import threading
 import queue as q
@@ -128,9 +129,9 @@ class IPCJSONEncoder(json.JSONEncoder):
 
         try:
             # handle custom objects
-            return obj.to_json()
+            return obj.serialize()
         except Exception as e:
-            self.logger.exception(f"could not encode object of type {type(obj)} - {obj}")
+            logger.exception(f"could not encode object of type {type(obj)} - {obj}")
             return super(IPCJSONEncoder, self).default(obj)
 
 class WindowCapturer(threading.Thread):
@@ -175,6 +176,7 @@ class WindowCapturer(threading.Thread):
 
         w, h = self.region
 
+        self.hwnd = win32gui.FindWindow(None, os.getenv("APP_NAME"))
         left, top, right, bot = win32gui.GetWindowRect(self.hwnd)
         offset = (self.offset[0] + left, self.offset[1] + top)
 
@@ -369,12 +371,10 @@ class Point(object):
         elif isinstance(p, int) or isinstance(p, float):
             return Point((self.center[0] / p, self.center[1] / p))
 
-    def to_json(self):
+    def serialize(self):
         return {
-            "center" : {
-                "x" : self.center[0] if self.center[0] is not None else 0,
-                "y" : self.center[1] if self.center[1] is not None else 0
-            }
+            "x" : self.center[0] if self.center[0] is not None else 0,
+            "y" : self.center[1] if self.center[1] is not None else 0
         }
 
     def distance(self, p):
@@ -446,11 +446,16 @@ class Line(object):
     def __repr__(self):
         return f"Line({self.p1} to {self.p2})"
 
-    def to_json(self):
+    def serialize(self):
         return {
             "start" : self.p1.center,
             "end" : self.p2.center
         }
+
+    def to_vector(self):
+        radius = self.p1.distance(self.p2)
+        angle = math.atan2((self.p2.center[1] - self.p1.center[1]), (self.p2.center[0] - self.p1.center[0])) * (180 / math.pi)
+        return Vector(self.p1, radius, angle)
 
     def intersects_line(self, line):
         p = self.p1
@@ -502,24 +507,30 @@ class Line(object):
 
 class Vector(object):
     def __init__(self, origin, radius, theta):
-        self.origin = origin
+        self.origin = Point(origin.center)
         self.radius = radius
         self.theta = theta
 
         self.logger = logging.getLogger("ateball.utils.Vector")
 
-    @classmethod
-    def from_line(cls, p1, p2):
-        return cls()
-
     def __str__(self):
         return f"Vector({self.radius}, {self.theta})"
 
-    def to_json(self):
+    def __repr__(self):
+        return f"Vector({self.origin} - {self.theta}deg - {self.radius})"
+
+    def serialize(self):
         return {
+            "origin" : self.origin,
             "radius" : self.radius,
             "angle" : self.theta
         }
+
+    def __add__(self, n):
+        return Vector(copy.copy(self.origin) + n, self.radius, self.theta)
+
+    def __sub__(self, n):
+        return Vector(copy.copy(self.origin) - n, self.radius, self.theta)
 
     def draw(self, image, bgr=(0, 255, 0), thickness=2):
         radians = self.theta *  (math.pi / 180)

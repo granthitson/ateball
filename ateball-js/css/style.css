@@ -53,6 +53,22 @@ form fieldset:not(.show) {
     height: 100%;
 }
 
+#ball_paths {
+    z-index: 10;
+}
+
+#ball_path_placeholder {
+    display: block;
+    color: #8b8b8b;
+    background-color: #c7c7c7;
+    font-family: monospace;
+    text-align: center;
+}
+
+#ball_vectors {
+    z-index: 9;
+}
+
 #debug-controls {
     width: 300px;
     max-width: 300px;
@@ -664,7 +680,7 @@ form fieldset:not(.show) {
     position: absolute;
     width: 20px;
     height: 20px;
-    z-index: 9;
+    z-index: inherit;
     pointer-events: none;
 }
 
@@ -676,6 +692,28 @@ form fieldset:not(.show) {
     background-color: white;
     border: 1px solid black;
     border-radius: 4px;
+}
+
+.vector-target-point {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 4px;
+    height: 4px;
+    border: 1px solid black;
+    border-radius: 8px;
+    z-index: 12
+}
+
+.predicted-vector-line {
+    position: absolute;
+    top: 9px;
+    left: 9px;
+    width: 2px;
+    background-image: linear-gradient(rgb(255 100 243) 50%, rgba(255,255,255,0) 0%);
+    background-position: right;
+    background-size: 2px 14px;
+    background-repeat: repeat-y;
 }
 
 .b0 {
@@ -740,6 +778,38 @@ form fieldset:not(.show) {
 
 .b15 {
     background-image: url("../images/balls/15ball.png");
+}
+
+.ball_path {
+    display: flex !important;
+    font-family: monospace;
+    background-color: #ffffff;
+}
+
+.ball_path.interact:hover {
+    cursor: pointer;
+    background-color: #d3d3d3;
+}
+
+.ball_path.interact.selected {
+    cursor: default;
+    background-color: #b9b9b9;
+}
+
+.ball_path.param {
+    width: auto;
+    text-align: end;
+    padding: 0 5px;
+}
+
+.ball_path_wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9;
+    pointer-events: none;
 }
 
 #targeting-menu #update-targeting-menu {

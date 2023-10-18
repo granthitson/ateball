@@ -210,6 +210,31 @@ cancel_targeting_btn.addEventListener("click", (e) => {
     targeting_menu.classList.remove("selecting");
 });
 
+const table_ui = document.querySelector("#realtime #table");
+const ball_path_menu = document.querySelector("#ball-path-menu");
+const ball_path_container = table_ui.querySelector("#ball_paths");
+
+ball_path_menu.addEventListener("click", (e) => {
+    if (e.target.classList.contains("ball_path") && !e.target.classList.contains("selected")) {
+        var selected = ball_path_menu.querySelector(".ball_path.selected");
+        if (selected && selected.dataset.id != e.target.dataset.id) {
+            selected.classList.remove("selected");
+            ball_path_container.querySelector(`.ball_path_wrapper[data-id='${selected.dataset.id}']`).remove();
+        }
+
+        e.target.classList.add("selected");
+        var id = e.target.dataset.id;
+
+        window.api.get_state().then((s) => {
+            if (id in s.ateball.game.round.ball_paths) {
+                var ball_path = s.ateball.game.round.ball_paths[id];
+                window.api.ateball.game.round.select_ball_path(id);
+                drawBallPath(id, ball_path);
+            }
+        });
+    }
+});
+
 var ateball_webview = document.querySelector("#ateball-webview");
 ateball_webview.addEventListener("mousedown", (e) => {
     window.api.get_state().then((s) => {
@@ -346,6 +371,7 @@ const toggleGUIElements = () => {
             toggleGamemodeControls(s);
             toggleGameControls(s);
             toggleRealtimeInterface(s);
+            listBallPaths(s);
 
             webview.style.display = (s.webview.formatted) ? "flex" : "none";
             loading_overlay.style.display = (s.webview.loaded) ? "none" : "block";
@@ -397,7 +423,8 @@ const suits = Array.from(document.querySelectorAll(".suit"));
 const ball_indicators = Array.from(document.querySelectorAll(".pool-ball-indicator"));
 
 const toggleGameControls = (s) => {
-    var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
+    var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" 
+        && s.ateball.game.started;
 
     game_controls.disabled = !interact;
     game_controls.style.display = !interact ? "none" : "flex";
@@ -473,11 +500,11 @@ const toggleGameControls = (s) => {
 }
 
 const toggleRealtimeInterface = (s) => {
-    var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
+    var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" 
+        && s.ateball.game.started;
 
     var config = get_realtime_config();
 
-    var table_ui = document.querySelector("#realtime #table");
     table_ui.classList.toggle("raw", config.table.raw);
 
     if (interact) {
@@ -495,7 +522,7 @@ const toggleRealtimeInterface = (s) => {
                     let height = max_y - min_y;
 
                     var ball_cluster = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                    ball_cluster.classList.add(['ball-cluster']);
+                    ball_cluster.classList.add('ball-cluster');
                     ball_cluster.classList.toggle("show", show);
                     ball_cluster.dataset.identifier = identifier;
     
@@ -525,36 +552,37 @@ const toggleRealtimeInterface = (s) => {
 }
 
 const trackBallPositions = () => {
-    const drawVectorLine = (name, ball, draw) => {
-        function setVectorLine(vector_wrapper, vector_line, ball) {
-            vector_wrapper.style.left = `${ball.center.x}px`;
-            vector_wrapper.style.top = `${ball.center.y}px`;
-            vector_wrapper.style.rotate = (ball.vector) ? `${(ball.vector.angle - 90)}deg` : "";
+    const drawVectorLine = (b_name, v_type, vector, draw) => {
+        function setVectorLine(vector_wrapper, vector_line) {
+            vector_wrapper.style.left = `${vector.origin.x}px`;
+            vector_wrapper.style.top = `${vector.origin.y}px`;
+            vector_wrapper.style.rotate = (vector) ? `${(vector.angle - 90)}deg` : "";
     
-            vector_line.style.display = (ball.vector) ? "" : "none";
-            vector_line.style.height = (ball.vector) ? `${(ball.vector.radius + vector_line.offsetWidth)}px` : "";
+            vector_line.style.display = (vector) ? "" : "none";
+            vector_line.style.height = (vector) ? `${(vector.radius + vector_line.offsetWidth)}px` : "";
         }
     
-        var table_ui = document.querySelector("#realtime #table");
-        var vector_wrapper = table_ui.querySelector(`.vector-wrapper[data-ball='${name}']`);
+        var vector_container = table_ui.querySelector("#ball_vectors");
+        var vector_wrapper = table_ui.querySelector(`.vector-wrapper[data-ball='${b_name}'][data-type='${v_type}']`);
         var vector_line = null;
     
-        if (draw && ball != null && ball.vector) {
+        if (draw && vector != null) {
             if (!vector_wrapper) {
                 vector_line = document.createElement('div');
                 vector_line.classList.add(['vector-line']);
     
                 vector_wrapper = document.createElement('div');
                 vector_wrapper.classList.add(['vector-wrapper']);
-                vector_wrapper.dataset.ball = name;
+                vector_wrapper.dataset.ball = b_name;
+                vector_wrapper.dataset.type = v_type;
     
                 vector_wrapper.append(vector_line);
-                table_ui.append(vector_wrapper);
+                vector_container.append(vector_wrapper);
             } else {
                 vector_line = vector_wrapper.querySelector(".vector-line");
             }
     
-            setVectorLine(vector_wrapper, vector_line, ball);
+            setVectorLine(vector_wrapper, vector_line);
         } else if (vector_wrapper) {
             vector_wrapper.remove();
         }
@@ -565,24 +593,25 @@ const trackBallPositions = () => {
     window.api.get_state().then((s) => {
         var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
         
-        var table_ui = document.querySelector("#realtime #table");
         var balls = table_ui.querySelectorAll("._ball");
 
         balls.forEach(ball => {
             ball.style.display = (interact) ? "" : "none";
 
             if (interact) {
-                var name = ball.id.replace("_", "");
-                var _ball = s.ateball.game.balls[name];
+                var b_name = ball.id.replace("_", "");
+                var _ball = s.ateball.game.balls[b_name];
 
                 if (_ball && !_ball.info.pocketed) {
-                    let draw = (_ball.suit == null || (_ball.info.suit != null && config.balls[_ball.info.suit]));
+                    let draw = (_ball.info.suit == null || (_ball.info.suit != null && config.balls[_ball.info.suit]));
                     ball.style.display = (draw) ? "unset" : "";
                     ball.style.left = `${_ball.center.x}px`;
                     ball.style.top = `${_ball.center.y}px`;
 
                     if (!config.table.raw) {
-                        drawVectorLine(name, _ball, draw);
+                        for (const [v_type, vector] of Object.entries(_ball.vectors)) {
+                            drawVectorLine(b_name, v_type, vector, draw);
+                        }
                     }
                 } else {
                     ball.style.display = "none";
@@ -592,6 +621,88 @@ const trackBallPositions = () => {
             }
         });
     });
+}
+
+const listBallPaths = (s) => {
+    var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" 
+        && s.ateball.game.started && s.ateball.game.round.started;
+
+    var ball_path_elems = Array.from(ball_path_menu.querySelectorAll(".ball_path[data-id]"));
+    var ball_path_placeholder = ball_path_menu.querySelector("#ball_path_placeholder");
+
+    if (interact && s.ateball.game.round.ball_paths) {
+        ball_path_placeholder.style.display = "none";
+
+        var ball_path_elems_map = ball_path_elems.reduce((a, v) => ({ ...a, [v.dataset.id]: v }), {});
+        var prev_ball_path = null;
+
+        for (const [id, ball_path] of Object.entries(s.ateball.game.round.ball_paths)) {
+            if (!(id in ball_path_elems_map)) {
+                var ball_path_item = document.createElement('div');
+                ball_path_item.classList.add('row', 'ball_path', 'interact');
+                ball_path_item.dataset.id = id;
+                ball_path_item.innerHTML = id;
+                
+                if (!prev_ball_path) {
+                    ball_path_menu.append(ball_path_item);
+                } else {
+                    prev_ball_path.after(ball_path_item)
+                }
+                
+                prev_ball_path = ball_path_item;
+            }
+        }
+    } else {
+        ball_path_placeholder.style.display = "";
+        ball_path_elems.forEach(e => { e.remove(); });
+        ball_path_container.querySelectorAll(".ball_path_wrapper").forEach(e => { e.remove(); });
+    }
+}
+
+const drawBallPath = (id, ball_path) => {
+    function setTrajectory(vector_wrapper, vector_line, trajectory) {
+        vector_wrapper.style.left = `${trajectory.origin.x}px`;
+        vector_wrapper.style.top = `${trajectory.origin.y}px`;
+        vector_wrapper.style.rotate = (trajectory) ? `${(trajectory.angle - 90)}deg` : "";
+
+        vector_line.style.display = (trajectory) ? "" : "none";
+        vector_line.style.height = (trajectory) ? `${(trajectory.radius + vector_line.offsetWidth)}px` : "";
+    }
+
+    var ball_path_wrapper = document.createElement('div');
+    ball_path_wrapper.classList.add('ball_path_wrapper');
+    ball_path_wrapper.dataset.id = id;
+
+    // create cueball wrapper
+    var cueball_to_ball_wrapper = document.createElement('div');
+    cueball_to_ball_wrapper.classList.add('vector-wrapper');
+
+    // create cueball vector
+    var cueball_to_ball_vector = document.createElement('div');
+    cueball_to_ball_vector.classList.add('predicted-vector-line');
+    cueball_to_ball_wrapper.append(cueball_to_ball_vector);
+
+    setTrajectory(cueball_to_ball_wrapper, cueball_to_ball_vector, ball_path.cueball.trajectory)
+    ball_path_wrapper.append(cueball_to_ball_wrapper);
+
+    // create ball wrapper
+    var ball_to_hole_wrapper = document.createElement('div');
+    ball_to_hole_wrapper.classList.add('vector-wrapper');
+
+    // mark ball target point
+    var ball_target_point = document.createElement('div');
+    ball_target_point.classList.add('vector-target-point');
+    ball_to_hole_wrapper.append(ball_target_point);
+
+    // create ball vector
+    var ball_to_hole_vector = document.createElement('div');
+    ball_to_hole_vector.classList.add('predicted-vector-line');
+    ball_to_hole_wrapper.append(ball_to_hole_vector);
+
+    setTrajectory(ball_to_hole_wrapper, ball_to_hole_vector, ball_path.target_ball.trajectory)
+    ball_path_wrapper.append(ball_to_hole_wrapper);
+
+    ball_path_container.append(ball_path_wrapper);
 }
 
 setInterval(toggleGUIElements, 1000 / 10);
