@@ -1,10 +1,9 @@
 .env
 *.json
-logs/
 node_modules/
-ateball-py/__pycache__
-ateball-py/poolpassword.txt
-ateball-py/games/
-ateball-py/images/
-ateball-py/ml/data/
-ateball-py/ml/
+ateball/__pycache__
+ateball/poolpassword.txt
+ateball/games/
+ateball/images/
+ateball/ml/data/
+ateball/ml/

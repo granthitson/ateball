@@ -6,8 +6,8 @@ const dotenv = require('dotenv');
 const path = require('path');
 const URL = require('url').URL
 
-const { Webview } = require('./ateball-js/js/webview');
-const { Ateball } = require('./ateball-js/js/ateball');
+const { Webview } = require('.client/js/webview');
+const { Ateball } = require('.client/js/ateball');
 
 dotenv.config();
 
@@ -53,7 +53,7 @@ app.on('ready', async () => {
 			devTools: !app.isPackaged,
 			sandbox: true,
 			webviewTag: true,
-			preload: path.join(__dirname, '/ateball-js/js/preload.js'),
+			preload: path.join(__dirname, 'client/js/preload.js'),
 		}
 	});
 	window_state.manage(window);
@@ -78,7 +78,7 @@ app.on('ready', async () => {
 	var webview = new Webview(window);
 	var ateball = new Ateball(window);
 	
-	window.loadFile(path.join(__dirname, "/ateball-js/html/index.html"));
+	window.loadFile(path.join(__dirname, "client/html/index.html"));
 	window.webContents.on('did-finish-load', (e) => {
 		window.focus();
 	});
