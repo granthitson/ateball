@@ -1,9 +1,4 @@
 .env
 *.json
 node_modules/
-ateball/__pycache__
-ateball/poolpassword.txt
-ateball/games/
-ateball/images/
-ateball/ml/data/
-ateball/ml/
+backend/

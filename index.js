@@ -6,8 +6,8 @@ const dotenv = require('dotenv');
 const path = require('path');
 const URL = require('url').URL
 
-const { Webview } = require('.client/js/webview');
-const { Ateball } = require('.client/js/ateball');
+const { Webview } = require('./client/js/webview');
+const { Ateball } = require('./client/js/ateball');
 
 dotenv.config();
 

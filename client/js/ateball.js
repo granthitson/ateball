@@ -115,7 +115,7 @@ class Ateball {
 			stop_reject = reject;
 		});
 
-		this.process = subpy.spawn(process.env.PYTHON, ["./ateball/main.py"], { stdio: 'pipe', windowsHide: false });
+		this.process = subpy.spawn(process.env.PYTHON, ["./backend/main.py"], { stdio: 'pipe', windowsHide: false });
 
 		this.process.once('spawn', function () {
 			console.log("ateball process spawned");
@@ -231,7 +231,7 @@ class Ateball {
 							this.end_game();
 							break;
 						default:
-							console.log("unrecognized message type: ", p_msg.type);
+							console.log("unrecognized message: ", p_msg);
 							break;
 					}
 				}
