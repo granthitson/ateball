@@ -118,6 +118,8 @@ class Ateball {
 		this.process = subpy.spawn(process.env.PYTHON, ["./backend/main.py"], { stdio: 'pipe', windowsHide: false });
 
 		this.process.once('spawn', function () {
+			self.send_message({ "type" : "init" });
+
 			console.log("ateball process spawned");
 			start_resolve();
 
