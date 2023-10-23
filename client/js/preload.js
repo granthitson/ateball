@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
         on_start: (callback) => ipcRenderer.on('ateball-started', callback),
         play: (data) => ipcRenderer.send('game-play', data),
         game : {
+            on_start: (callback) => ipcRenderer.on('game-started', callback),
             round : {
                 select_ball_path: (data) => ipcRenderer.send('select-ball-path', data)
             },

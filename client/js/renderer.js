@@ -26,6 +26,11 @@ window.api.ateball.on_start( (e) => {
     debug.innerHTML = "";
 });
 
+window.api.ateball.game.on_start(() => {
+    console.log("game started");
+    closeNavigationMenus(gamemode_controls);
+});
+
 var image_stream = Promise.resolve();
 window.api.ateball.game.realtime.on_stream( (e, msg) => {
     image_stream = new Promise((resolve, reject) => {
@@ -47,6 +52,7 @@ window.api.ateball.game.realtime.on_stream( (e, msg) => {
 window.api.ateball.game.on_end((e) => {
     console.log("game ended");
     toggleButtonSpinner(game_stop, false);
+    closeNavigationMenus(game_controls);
 
     image_stream.then(() => {
         var realtime = document.querySelector("#realtime canvas");

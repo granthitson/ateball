@@ -55,6 +55,17 @@ class Ateball {
 		this.send_message(msg);
 	}
 
+	start_game(msg) {
+		this.state.ateball.game.suit = (msg.data.suit) ? null : undefined;
+		this.state.ateball.game.balls = msg.data.balls;
+		
+		this.state.ateball.pending = false;
+		this.state.ateball.game.started = true;
+
+		this.toggle_game_controls();
+		this.window.webContents.send("game-started");
+	}
+
 	select_ball_path(data) {
 		this.send_message({ "type" : "select-ball-path", "data" : data});
 	}
@@ -172,13 +183,7 @@ class Ateball {
 							break;
 						case "GAME-START":
 							console.log("game started");
-							this.state.ateball.game.suit = (p_msg.data.suit) ? null : undefined;
-							this.state.ateball.game.balls = p_msg.data.balls;
-							
-							this.state.ateball.pending = false;
-							this.state.ateball.game.started = true;
-		
-							this.toggle_game_controls();
+							this.start_game(p_msg);
 							break;
 						case "ROUND-START":
 							console.log("round started");

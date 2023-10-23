@@ -1,27 +1,22 @@
 var dropdown_btns = document.querySelectorAll("._btn.dropdown[data-target]");
 
 var menu_btns = document.querySelectorAll(".menu-btn[data-target]");
-menu_btns.forEach(btn => {
-    btn.addEventListener("click", function(e) {
-        var btn_target = btn.dataset.target;
-        $(btn_target).slideToggle();
-        if (btn.classList.contains("open")) {
-            btn.classList.remove("open");
-        } else {
-            btn.classList.add("open");
-        }
+menu_btns.forEach(menu_btn => {
+    menu_btn.addEventListener("click", function(e) {
+        var menu = $(menu_btn.dataset.target);
+        menu.slideToggle();
+        menu_btn.classList.toggle("open");
 
         dropdown_btns.forEach((dropdown_btn, idx) => {
-            if (btn != dropdown_btn) {
-                var id = dropdown_btn.id;
-                var dropdown_target = dropdown_btn.dataset.target;
+            if (menu_btn != dropdown_btn) {
+                var dropdown_menu = $(dropdown_btn.dataset.target);
 
                 if (dropdown_btn.classList.contains("open")) {
-                    var target = document.querySelector("[data-parent='#" + id + "']");
-                    $(dropdown_target).slideUp(400, function() {
+                    var dropdown_content = document.querySelector(`[data-parent='#${dropdown_btn.id}']`);
+                    dropdown_menu.slideUp(400, function() {
                         dropdown_btn.classList.remove("open");
-                        if (target != null) {
-                            target.classList.add("d-none");
+                        if (dropdown_content != null) {
+                            dropdown_content.classList.add("d-none");
                         }
                     });
                 }
@@ -31,51 +26,46 @@ menu_btns.forEach(btn => {
 });
 
 var sub_menu_btns = document.querySelectorAll(".sub-menu-btn[data-target]");
-sub_menu_btns.forEach(btn => {
-    btn.addEventListener("click", function(e) {
-        var id = btn.id; 
-        var btn_target = btn.dataset.target;
+sub_menu_btns.forEach(sub_menu_btn => {
+    sub_menu_btn.addEventListener("click", function(e) {
+        var sub_menu = $(sub_menu_btn.dataset.target);
 
-        var target = document.querySelector("[data-parent='#" + id + "']");
-        if (target && target.classList.contains("d-none")) {
-            target.classList.remove("d-none");
-            if (!btn.classList.contains("open")) {
-                $(btn_target).slideDown();
-                btn.classList.add("open");
+        var sub_menu_content = document.querySelector(`[data-parent='#${sub_menu_btn.id}']`);
+        if (sub_menu_content && sub_menu_content.classList.contains("d-none")) {
+            sub_menu_content.classList.remove("d-none");
+            if (!sub_menu_btn.classList.contains("open")) {
+                sub_menu.slideDown();
+                sub_menu_btn.classList.add("open");
             }
         } else {
-            $(btn_target).slideUp(400, function() {
-                btn.classList.remove("open");
-                target.classList.add("d-none");
+            sub_menu.slideUp(400, function() {
+                sub_menu_btn.classList.remove("open");
+                sub_menu_content.classList.add("d-none");
             });
         }
 
-        sub_menu_btns.forEach((sub_menu_btn, idx) => {
-            var id = sub_menu_btn.id; 
-            var _target = document.querySelector("[data-parent='#" + id + "']");
-            if (btn != sub_menu_btn) {
-                _target.classList.add("d-none");
-                sub_menu_btn.classList.remove("open");
+        sub_menu_btns.forEach((_sub_menu_btn, idx) => {
+            var _sub_menu_content = document.querySelector(`[data-parent='#${_sub_menu_btn.id}']`);
+            if (_sub_menu_btn != sub_menu_btn) {
+                _sub_menu_content.classList.add("d-none");
+                _sub_menu_btn.classList.remove("open");
             }
         });
     });
 });
 
 var type_btns = document.querySelectorAll("._btn:not(.play-btn)[data-gamemode]");
-type_btns.forEach(btn => {
-    btn.addEventListener("click", function(e) {
-        var id = btn.id;
-        var target = btn.dataset.target;
-        
-        var parent_menu = document.querySelector(target);
-        var sub_menu = document.querySelector("[data-parent='#" + id + "']");
+type_btns.forEach(type_btn => {
+    type_btn.addEventListener("click", function(e) {
+        var parent_menu = document.querySelector(type_btn.dataset.target);
+        var sub_menu = document.querySelector(`[data-parent='#${type_btn.id}']`);
         var menu = (!sub_menu) ? parent_menu : sub_menu;
 
         var location = menu.querySelector("select[name='location']");
 
         var play_btn = parent_menu.querySelector("button.play-btn");
         if (play_btn.dataset.gamemode !== undefined) {
-            play_btn.dataset.gamemode = btn.dataset.gamemode;
+            play_btn.dataset.gamemode = type_btn.dataset.gamemode;
         }
         if (play_btn.dataset.location !== undefined) {
             play_btn.dataset.location = location.value;
@@ -375,6 +365,15 @@ const toggleGUIElements = () => {
 
             webview.style.display = (s.webview.formatted) ? "flex" : "none";
             loading_overlay.style.display = (s.webview.loaded) ? "none" : "block";
+        }
+    });
+}
+
+const closeNavigationMenus = (parent=document) => {
+    var nav_menu_btns = parent.querySelectorAll("._btn.dropdown[data-target]");
+    nav_menu_btns.forEach((nav_menu_btn) => {
+        if (nav_menu_btn.classList.contains("open")) {
+            nav_menu_btn.click();
         }
     });
 }
