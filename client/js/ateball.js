@@ -15,12 +15,12 @@ class Ateball {
 				pending: false,
 				game: {
 					started: false,
+					is_turn: false,
 					suit: null,
 					turn_num: null,
 					targets: null,
 					balls: {},
 					round: {
-						started: false,
 						ball_clusters: {},
 						ball_paths: {},
 					}
@@ -187,14 +187,17 @@ class Ateball {
 							break;
 						case "ROUND-START":
 							console.log("round started");
+							this.reset_round_state();
+							
 							this.state.ateball.game.turn_num = p_msg.data.turn_num;
-							this.state.ateball.game.round.started = true;
-							this.state.ateball.game.round.ball_clusters = {};
-							this.state.ateball.game.round.ball_paths = {};
+							this.state.ateball.game.is_turn = true;
 
 							break;
 						case "UPDATE-BALL-STATE":
 							this.state.ateball.game.balls = p_msg.data.balls;
+							break;
+						case "TURN-SWITCH":
+							this.reset_round_state();
 							break;
 						case "SUIT-SELECT":
 							this.state.ateball.game.suit = p_msg.data.suit;
@@ -224,8 +227,6 @@ class Ateball {
 						case "ROUND-END":
 						case "ROUND-COMPLETE":
 							console.log("round ended");
-							this.reset_round_state();
-
 							break;
 						case "GAME-EXCEPTION":
 						case "GAME-CANCELLED":
@@ -285,6 +286,7 @@ class Ateball {
 	}
 
 	reset_round_state() {
+		this.state.ateball.game.is_turn = false;
 		this.state.ateball.game.round = structuredClone(this.original_state.ateball.game.round);
 	}
 

@@ -428,7 +428,7 @@ const toggleGameControls = (s) => {
     game_controls.disabled = !interact;
     game_controls.style.display = !interact ? "none" : "flex";
 
-    if (s.ateball.game.round.started) {
+    if (s.ateball.game.is_turn) {
         turn_num.textContent = s.ateball.game.turn_num;
         turn_timer.classList.add("start");
         turn_timer.classList.remove("pending");
@@ -507,7 +507,7 @@ const toggleRealtimeInterface = (s) => {
     table_ui.classList.toggle("raw", config.table.raw);
 
     if (interact) {
-        if (s.ateball.game.round.started && s.ateball.game.round.ball_clusters) {
+        if (s.ateball.game.is_turn && s.ateball.game.round.ball_clusters) {
             let show = !config.table.raw && config.balls.clusters.highlight;
 
             var existing_ball_clusters = table_ui.querySelectorAll(".ball-cluster");
@@ -624,14 +624,12 @@ const trackBallPositions = () => {
 
 const listBallPaths = (s) => {
     var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" 
-        && s.ateball.game.started && s.ateball.game.round.started;
+        && s.ateball.game.started && s.ateball.game.is_turn;
 
     var ball_path_elems = Array.from(ball_path_menu.querySelectorAll(".ball_path[data-id]"));
     var ball_path_placeholder = ball_path_menu.querySelector("#ball_path_placeholder");
 
     if (interact && s.ateball.game.round.ball_paths) {
-        ball_path_placeholder.style.display = "none";
-
         var ball_path_elems_map = ball_path_elems.reduce((a, v) => ({ ...a, [v.dataset.id]: v }), {});
         var prev_ball_path = null;
 
@@ -651,6 +649,8 @@ const listBallPaths = (s) => {
                 prev_ball_path = ball_path_item;
             }
         }
+
+        ball_path_placeholder.style.display = "none";
     } else {
         ball_path_placeholder.style.display = "";
         ball_path_elems.forEach(e => { e.remove(); });
