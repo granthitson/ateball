@@ -416,6 +416,7 @@ const toggleGamemodeControls = (s) => {
 const game_controls = document.querySelector("#game-controls");
 
 const turn_timer = document.querySelector("#turn-timer");
+const turn_timer_progress = document.querySelector(".timer-progress")
 const turn_num = document.querySelector("#turn-timer #turn-num");
 
 const suits = Array.from(document.querySelectorAll(".suit"));
@@ -428,13 +429,12 @@ const toggleGameControls = (s) => {
     game_controls.disabled = !interact;
     game_controls.style.display = !interact ? "none" : "flex";
 
-    if (s.ateball.game.is_turn) {
+    turn_timer.classList.toggle("start", s.ateball.game.turn.is_turn);
+    turn_timer.classList.toggle("pending", !s.ateball.game.turn.is_turn);
+
+    if (s.ateball.game.turn.is_turn) {
+        turn_timer_progress.style.animationDuration = `${s.ateball.game.turn.length}s`
         turn_num.textContent = s.ateball.game.turn_num;
-        turn_timer.classList.add("start");
-        turn_timer.classList.remove("pending");
-    } else {
-        turn_timer.classList.add("pending");
-        turn_timer.classList.remove("start");
     }
 
     suit_selection.style.display = (s.ateball.game.suit !== undefined) ? "" : "none";
@@ -507,7 +507,7 @@ const toggleRealtimeInterface = (s) => {
     table_ui.classList.toggle("raw", config.table.raw);
 
     if (interact) {
-        if (s.ateball.game.is_turn && s.ateball.game.round.ball_clusters) {
+        if (s.ateball.game.turn.is_turn && s.ateball.game.round.ball_clusters) {
             let show = !config.table.raw && config.balls.clusters.highlight;
 
             var existing_ball_clusters = table_ui.querySelectorAll(".ball-cluster");
@@ -624,7 +624,7 @@ const trackBallPositions = () => {
 
 const listBallPaths = (s) => {
     var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" 
-        && s.ateball.game.started && s.ateball.game.is_turn;
+        && s.ateball.game.started && s.ateball.game.turn.is_turn;
 
     var ball_path_elems = Array.from(ball_path_menu.querySelectorAll(".ball_path[data-id]"));
     var ball_path_placeholder = ball_path_menu.querySelector("#ball_path_placeholder");

@@ -948,7 +948,8 @@ form fieldset:not(.show) {
 }
 
 #turn-timer.start .timer-progress {
-    animation: timer 30s linear;
+    animation: timer;
+    animation-timing-function: linear;
     animation-fill-mode: backwards;
 }
 
