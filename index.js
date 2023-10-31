@@ -109,6 +109,7 @@ app.on('ready', async () => {
 	});
 
 	ipcMain.on('webview-formatted', (e) => {
+		console.log("formatting complete");
 		webview.state.formatted = true;
 	});
 

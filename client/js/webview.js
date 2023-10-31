@@ -14,7 +14,7 @@ class Webview {
 	}
 
     format(type) {
-        console.log("formatting ", type);
+        console.log(`formatting ${type}`);
 
         if (type == "webview") {
 			this.state.formatted = false;
