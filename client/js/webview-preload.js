@@ -1,14 +1,57 @@
 const { ipcRenderer } = require('electron');
 
+var iframe = null;
+var canvas = null;
+
 ipcRenderer.on('mousemove', (e, data) =>{
-    var event = new MouseEvent("mousemove", {
-        view: window,
-        bubbles: true,
-        cancelable: true,
-        clientX: data.x,
-        clientY: data.y
-    });
-    window.dispatchEvent(event);
+    if (!canvas) { return; }
+
+    try {
+        var event = new MouseEvent("mousemove", {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+            clientX: data.x,
+            clientY: data.y
+        });
+        canvas.dispatchEvent(event);
+    } catch (e) {
+        console.log("couldn't mouse move");
+    }
+});
+
+ipcRenderer.on('mousedown', (e, data) =>{
+    if (!canvas) { return; }
+
+    try {
+        var event = new MouseEvent("mousedown", {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+            clientX: data.x,
+            clientY: data.y
+        });
+        canvas.dispatchEvent(event);
+    } catch (e) {
+        console.log("couldn't mouse down");
+    }
+});
+
+ipcRenderer.on('mouseup', (e, data) =>{
+    if (!canvas) { return; }
+
+    try {
+        var event = new MouseEvent("mouseup", {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+            clientX: data.x,
+            clientY: data.y
+        });
+        canvas.dispatchEvent(event);
+    } catch (e) {
+        console.log("couldn't mouse up");
+    }
 });
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -47,7 +90,7 @@ window.addEventListener("DOMContentLoaded", () => {
                     elem.remove();
                 })
                 
-                var iframe = play_area.querySelector("#iframe-game");
+                iframe = play_area.querySelector("#iframe-game");
                 iframe.onload = async () => {
                     var iframe_doc = iframe.contentDocument || iframe.contentWindow.document;
                     var style = document.createElement('style');
@@ -59,6 +102,14 @@ window.addEventListener("DOMContentLoaded", () => {
                         if (location.pathname == "/en/game") {
                             waitForElement("#loadingBox", iframe_doc, false).then(() => {
                                 ipcRenderer.send("webview-loaded", location.pathname, localStorage.getItem("accessToken"));
+
+                                canvas = iframe_doc.querySelector("#engine");
+                                var events = ["mouseup", "mousedown", "mousemove"];
+                                events.forEach((ev) => {
+                                    canvas.addEventListener(ev, (e) => {
+                                        ipcRenderer.sendToHost(ev, { x: e.x, y: e.y});
+                                    });
+                                });
                             });
                         }
                     });

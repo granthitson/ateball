@@ -230,6 +230,10 @@ class Ateball {
 							}
 
 							break;
+						case "EXECUTE-PATH":
+							console.log("executing path", p_msg.data);
+							this.window.webContents.send("execute-path", p_msg.data.execute);
+							break;
 						case "ROUND-END":
 						case "ROUND-COMPLETE":
 							console.log("round ended");
