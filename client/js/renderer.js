@@ -26,7 +26,8 @@ webview.addEventListener("ipc-message", (e) => {
         case "mouseup":
         case "mousedown":
             let data = e.args[0];
-            [current_x, current_y] = [data.x, data.y];
+            ateball_mouse.current_x = data.x;
+            ateball_mouse.current_y = data.y;
             break;
         default:
             console.log(`unknown channel: ${e.channel}`);
@@ -63,72 +64,21 @@ window.api.ateball.game.realtime.on_stream( (e, msg) => {
     });
 });
 
-var [current_x, current_y] = [null, null];
-var current_path_execution = null;
+const ateball_mouse = new AteballMouse(webview);
+
 window.api.ateball.game.round.on_execute_path((e, data) => {
-    console.log("executing path", data);
+    ateball_mouse.execute_path(data.path);
+});
 
-    const interpolate_mouse_movement = (move_to, duration=500, step=10) => {
-        return new Promise((resolve, reject) => {
-            var move_mouse = () => {
-                let dx = Math.floor((move_to.x - current_x) * 100) / 100;
-                let dy = Math.floor((move_to.y - current_y) * 100) / 100;
-    
-                dx = (Math.abs(dx) > 1) ? Math.floor(dx * .5) : dx;
-                dy = (Math.abs(dy) > 1) ? Math.floor(dy * .5) : dy;
-    
-                let from_x = current_x + dx;
-                let from_y = current_y + dy;
-    
-                webview.send("mousemove", {
-                    x: from_x,
-                    y: from_y
-                }).finally(() => {
-                    if (current_path_execution == null) {
-                        reject();
-                    }
-
-                    if (current_x == move_to.x && current_y == move_to.y) {
-                        resolve();
-                    } else {
-                        current_path_execution = setTimeout(move_mouse, duration / step);
-                    }
-                });
-            }
-    
-            current_path_execution = setTimeout(move_mouse, duration / step);
-        });
-    }
-
-    window.api.get_state().then((s) => {
-        if (data.id in s.ateball.game.round.ball_paths) {
-            var path_menu_item = document.querySelector(`.ball_path_wrapper[data-id='${data.id}']`);
-            console.log(path_menu_item);
-            path_menu_item.click();
-        }
-
-        const execute_path_events = [ 
-            {"type" : "mousemove", "point" : data.start},
-            {"type" : "mousedown", "point" : data.start},
-            {"type" : "mousemove", "point" : data.end},
-            {"type" : "mouseup", "point" : data.end}
-        ];
-
-        webview.focus();
-
-        const execute_path = async (events) => {
-            for (const e of events) {
-                console.log(e);
-                if (e.type === "mousemove") {
-                    await interpolate_mouse_movement(e.point);
-                } else {
-                    await webview.send(e.type, e.point);
-                }
-            }
-
-            console.log("path executed");
-        }
-        execute_path(execute_path_events);
+window.api.ateball.game.round.on_target_path((e, data) => {
+    // need to wait for menu items to be added 
+    waitForElement(`.ball_path[data-id="${data.id}"]`, ball_path_menu).then(() => {
+        try {
+            var ball_path = document.querySelector(`.ball_path[data-id="${data.id}"]`);
+            ball_path.click();
+        } catch (e) {
+            console.error("could not target path: ", e);
+        }   
     });
 });
 
@@ -136,6 +86,7 @@ window.api.ateball.game.on_end((e) => {
     console.log("game ended");
     toggleButtonSpinner(game_stop, false);
     closeNavigationMenus(game_controls);
+    ateball_mouse.cancel();
 
     image_stream.then(() => {
         var realtime = document.querySelector("#realtime canvas");
@@ -148,6 +99,7 @@ window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
     toggleButtonSpinner(game_stop, false);
     toggleButtonSpinner(stop, false);
+    ateball_mouse.cancel();
 
     var realtime = document.querySelector("#realtime canvas");
     var context = realtime.getContext("2d");

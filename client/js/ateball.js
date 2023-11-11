@@ -200,6 +200,7 @@ class Ateball {
 							this.state.ateball.game.balls = p_msg.data.balls;
 							break;
 						case "TURN-START":
+							this.reset_round_state();
 							this.state.ateball.game.turn.length = p_msg.data;
 							break;
 						case "TURN-SWAP":
@@ -230,9 +231,13 @@ class Ateball {
 							}
 
 							break;
+						case "TARGET-PATH":
+							console.log("targeting path", p_msg.data);
+							this.window.webContents.send("target-path", p_msg.data);
+							break;
 						case "EXECUTE-PATH":
 							console.log("executing path", p_msg.data);
-							this.window.webContents.send("execute-path", p_msg.data.execute);
+							this.window.webContents.send("execute-path", p_msg.data);
 							break;
 						case "ROUND-END":
 						case "ROUND-COMPLETE":

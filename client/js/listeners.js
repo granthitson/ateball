@@ -205,23 +205,36 @@ const ball_path_menu = document.querySelector("#ball-path-menu");
 const ball_path_container = table_ui.querySelector("#ball_paths");
 
 ball_path_menu.addEventListener("click", (e) => {
-    if (e.target.classList.contains("ball_path") && !e.target.classList.contains("selected")) {
-        var selected = ball_path_menu.querySelector(".ball_path.selected");
-        if (selected && selected.dataset.id != e.target.dataset.id) {
-            selected.classList.remove("selected");
-            ball_path_container.querySelector(`.ball_path_wrapper[data-id='${selected.dataset.id}']`).remove();
+    if (e.target.classList.contains("ball_path")) {
+        var id = null;
+
+        if (!e.target.classList.contains("selected")) {
+            var selected = ball_path_menu.querySelector(".ball_path.selected");
+            if (selected) {
+                selected.classList.remove("selected");
+                ball_path_container.querySelector(`.ball_path_wrapper[data-id='${selected.dataset.id}']`).remove();
+            }
+
+            id = e.target.dataset.id;
+            e.target.classList.add("selected");
+        } else {
+            e.target.classList.remove("selected");
+            ball_path_container.querySelector(`.ball_path_wrapper[data-id='${e.target.dataset.id}']`).remove();
         }
 
-        e.target.classList.add("selected");
-        var id = e.target.dataset.id;
-
-        window.api.get_state().then((s) => {
-            if (id in s.ateball.game.round.ball_paths) {
-                var ball_path = s.ateball.game.round.ball_paths[id];
-                window.api.ateball.game.round.select_ball_path(id);
-                drawBallPath(id, ball_path);
-            }
-        });
+        if (id === null) {
+            window.api.ateball.game.round.select_ball_path(id);
+        } else {
+            window.api.get_state().then((s) => {
+                if (id in s.ateball.game.round.ball_paths) {
+                    var ball_path = s.ateball.game.round.ball_paths[id];
+                    window.api.ateball.game.round.select_ball_path(id);
+                    drawBallPath(id, ball_path);
+    
+                    ateball_mouse.target_path(ball_path.path);
+                }
+            });
+        }
     }
 });
 
@@ -629,7 +642,7 @@ const listBallPaths = (s) => {
     var ball_path_elems = Array.from(ball_path_menu.querySelectorAll(".ball_path[data-id]"));
     var ball_path_placeholder = ball_path_menu.querySelector("#ball_path_placeholder");
 
-    if (interact && s.ateball.game.round.ball_paths) {
+    if (interact && Object.keys(s.ateball.game.round.ball_paths).length > 0) {
         var ball_path_elems_map = ball_path_elems.reduce((a, v) => ({ ...a, [v.dataset.id]: v }), {});
         var prev_ball_path = null;
 
