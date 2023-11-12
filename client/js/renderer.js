@@ -35,6 +35,23 @@ webview.addEventListener("ipc-message", (e) => {
     }
 });
 
+const log_level = {0 : "info", 1 : "log", 2 : "warn", 3 : "error"};
+['log','debug','info','warn','error'].forEach(function (verb) {
+    console[verb] = (function (method, verb) {
+        return function () {
+            method.apply(console, arguments);
+        };
+    })(console[verb], verb);
+});
+
+webview.addEventListener('console-message', (e) => {
+    console[log_level[e.level]](e.message);
+});
+
+// -------
+
+const debug = document.querySelector("#ateball-debug-console");
+
 window.api.ateball.on_start( (e) => {
     console.log("Ateball started");
     toggleButtonSpinner(start, false);
@@ -107,36 +124,15 @@ window.api.ateball.on_stop(() => {
 
     var empty = document.createElement('div')
     empty.classList.add('empty')
-    log_message(empty);
+    log_ateball_message(empty);
 });
 
 window.api.ateball.log_message((e, msg) => {
-    log_message(msg);
+    log_ateball_message(msg);
 });
 
-// ------------------
-
-var log = document.querySelector('#webview-debug-console');
-['log','debug','info','warn','error'].forEach(function (verb) {
-    console[verb] = (function (method, verb, log) {
-        return function () {
-            method.apply(console, arguments);
-            var msg = document.createElement('span');
-            msg.classList.add("log-object", verb);
-            msg.innerHTML += Array.prototype.slice.call(arguments).map((item, idx) => { return (typeof(item) === 'object') ? JSON.stringify(item) : item } ).join(' ');
-            log.prepend(msg);
-        };
-    })(console[verb], verb, log);
-});
-
-const log_level = {0 : "info", 1 : "log", 2 : "warn", 3 : "error"};
-webview.addEventListener('console-message', (e) => {
-    console[log_level[e.level]](e.message);
-});
-
-const debug = document.querySelector("#ateball-debug-console");
-const log_message = (msg) => {
-    var log = document.createElement('span');
+const log_ateball_message = (msg) => {
+    let log = document.createElement('span');
     log.classList.add("log-object");
 
     if (typeof(msg) === "object") {

@@ -1,0 +1,92 @@
+.b0 {
+    background-image: url("../images/balls/0ball.png");
+}
+
+.b1 {
+    background-image: url("../images/balls/1ball.png");
+}
+
+.b2 {
+    background-image: url("../images/balls/2ball.png");
+}
+
+.b3 {
+    background-image: url("../images/balls/3ball.png");
+}
+
+.b4 {
+    background-image: url("../images/balls/4ball.png");
+}
+
+.b5 {
+    background-image: url("../images/balls/5ball.png");
+}
+
+.b6 {
+    background-image: url("../images/balls/6ball.png");
+}
+
+.b7 {
+    background-image: url("../images/balls/7ball.png");
+}
+
+.b8 {
+    background-image: url("../images/balls/8ball.png");
+}
+
+.b9 {
+    background-image: url("../images/balls/9ball.png");
+}
+
+.b10 {
+    background-image: url("../images/balls/10ball.png");
+}
+
+.b11 {
+    background-image: url("../images/balls/11ball.png");
+}
+
+.b12 {
+    background-image: url("../images/balls/12ball.png");
+}
+
+.b13 {
+    background-image: url("../images/balls/13ball.png");
+}
+
+.b14 {
+    background-image: url("../images/balls/14ball.png");
+}
+
+.b15 {
+    background-image: url("../images/balls/15ball.png");
+}
+
+/* ball status/selection */
+
+._ball {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 0px;
+    left: 0px;
+    filter: drop-shadow(0px 0px 2px black);
+    background-size: 150%;
+    background-position: center;
+    border-radius: 20px;
+    display: none;
+}
+
+.ball {
+    width: calc(100% / 8);
+    height: calc(213px / 8);
+    padding: 0;
+    background-size: 175%;
+    background-position: center;
+}
+
+.ball:hover {
+    filter: brightness(1.2);
+}
+
+/* ball status/selection */

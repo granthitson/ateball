@@ -5,13 +5,16 @@
 		<meta charset="UTF-8">
 		<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
 		<link rel="stylesheet" type="text/css" href="../css/style.css">
+		<link rel="stylesheet" type="text/css" href="../css/balls.css">
+		<link rel="stylesheet" type="text/css" href="../css/realtime.css">
+		<link rel="stylesheet" type="text/css" href="../css/buttons.css">
+
 		<link href="../vendor/bootstrap.min.css" rel="stylesheet">
 		<link href="../vendor/ldbutton.min.css" rel="stylesheet">
 		<script src="../vendor/jquery-3.6.0.min.js" rel="stylesheet"></script>
-		<script src="../vendor/bootstrap.bundle.min.js" rel="stylesheet"></script>
 
-		<script src="../js/utils.js" defer></script>
-		<script src="../js/mouse.js" defer></script>
+		<script src="../js/utils.js"></script>
+		<script src="../js/mouse.js"></script>
 		<script src="../js/renderer.js" defer></script>
 		<script src="../js/listeners.js" defer></script>
 	</head>
@@ -437,21 +440,11 @@
 
 						<div id="debug-controls" class="row flex-grow-1">
 							<div class="col d-flex flex-column">
-								<div id="ateball-debug-nav" class="row">
-									<ul class="nav nav-tabs p-0" role="tablist">
-										<li class="col nav-item">
-											<a id="ateball-debug-nav" class="panel-btn active" data-bs-toggle="tab" data-bs-target="#ateball-debug-panel" type="button" role="tab">Ateball</a>
-										</li>
-										<li class="col nav-item">
-											<a id="console-debug-nav" class="panel-btn" data-bs-toggle="tab" data-bs-target="#webview-debug-panel" type="button" role="tab">Console</a>
-										</li>
-									</ul>
-								</div>
 
 								<div id="ateball-debug-panels" class="row flex-grow-1">	
-									<div class="tab-content p-0 " role="tabpanel">
-										<div id="ateball-debug-panel" class="tab-pane fade show active">
-											<div id="ateball-btns">
+									<div class="p-0">
+										<div id="ateball-debug-panel">
+											<div id="ateball-state-btns">
 												<div class="row">
 													<div class="col swap-btn-wrapper">
 														<button id="ateball-start" class="_btn swap-btn slim press-n-hold ld-over-inverse p-0 active">
@@ -459,7 +452,7 @@
 															<div class="ld ld-ring ld-spin"></div>
 															<div>Start</div>
 														</button>
-														<button id="ateball-stop" class="_btn swap-btn slim timer press-n-hold ld-over-inverse p-0">
+														<button id="ateball-stop" class="_btn swap-btn slim timer press-n-hold ld-over-inverse p-0" disabled="">
 															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
 															<div class="ld ld-ring ld-spin"></div>
 															<div class="timer-c timer-content">Stop</div>
@@ -468,10 +461,8 @@
 													</div>
 												</div>
 											</div>
+
 											<pre id="ateball-debug-console" class="console"></pre>
-										</div>
-										<div id="webview-debug-panel" class="tab-pane fade show">
-											<pre id="webview-debug-console" class="console"></pre>
 										</div>
 									</div>
 								</div>

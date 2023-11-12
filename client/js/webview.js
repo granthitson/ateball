@@ -30,7 +30,7 @@ class Webview {
 
 	get_css(type) {
 		return new Promise((resolve, reject) => {
-			fs.readFile(path.join("./", `client/css/${type}.css`), 'utf8', (err, data) => {
+			fs.readFile(path.join("./", `client/css/webview/${type}.css`), 'utf8', (err, data) => {
 				if (err) { console.log("error getting css: ", err); reject(); };
 				resolve(data);
 			});

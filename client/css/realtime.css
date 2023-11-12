@@ -1,0 +1,320 @@
+#ball_path_placeholder {
+    display: block;
+    color: #8b8b8b;
+    background-color: #c7c7c7;
+    font-family: monospace;
+    text-align: center;
+}
+
+#ball_paths {
+    z-index: 10;
+}
+
+#ball_vectors {
+    z-index: 9;
+}
+
+#realtime canvas {
+    display: none;
+    position: absolute;
+    background-image: url("../images/table-placeholder.png");
+}
+
+#realtime #table {
+    display: block;
+    position: relative;
+    overflow: hidden;
+}
+
+#realtime #table_background {
+    width: 688px;
+    height: 356px;
+    background-image: url("../images/table-placeholder.png");
+}
+
+#realtime #table.raw #table_background {
+    background-image: unset;
+}
+
+#realtime #table.raw canvas {
+    display: unset;
+}
+
+#realtime #table.raw ._ball {
+    background-image: unset;
+    border: unset;
+}
+
+#realtime #table.raw .vector-wrapper {
+    display: none;
+}
+
+#realtime #table.targeting ._ball:hover {
+    border: 2px solid lime !important;
+}
+
+#realtime-menu {
+    position: relative;
+    background-color: #ededed;
+}
+
+#_target {
+    border: 2px solid white;
+    pointer-events: none;
+    z-index: 9;
+}
+
+/* ids */
+
+/* ball path menu items */
+
+    .ball_path {
+        display: flex !important;
+        font-family: monospace;
+        background-color: #ffffff;
+        border-bottom: 1px solid #979797;
+    }
+
+    .ball_path.interact:hover {
+        cursor: pointer;
+        background-color: #d3d3d3;
+    }
+
+    .ball_path.interact.selected {
+        cursor: default;
+        background-color: #b9b9b9;
+    }
+
+    .ball_path.interact.selected:hover {
+        cursor: pointer;
+        background-color: #e2e2e2;
+    }
+
+    .ball_path.param {
+        width: auto;
+        text-align: end;
+        padding: 0 5px;
+    }
+
+/* ball path menu items */
+
+.ball-cluster {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    outline: 1px solid white;
+    display: none;
+}
+
+.ball-cluster.show {
+    display: unset;
+}
+
+.ball-cluster line {
+    stroke: #e2e2e2;
+    stroke-width: 1;
+}
+
+.ball_path_wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9;
+    pointer-events: none;
+}
+
+/* ball/suit selection */
+
+    #targeting-menu #update-targeting-menu {
+        display: none;
+    }
+
+    #targeting-menu.selecting #update-targeting-menu {
+        display: block;
+    }
+
+    #targeting-menu.selecting .pool-ball-indicator.targetable.target:not([disabled]) {
+        border: 1px lime solid;
+    }
+
+    #targeting-menu.selecting .pool-ball-indicator.targetable:not(.target, [disabled]):hover {
+        border: 1px lime solid;
+    }
+
+    .pool-ball-indicator.targetable.target[disabled] {
+        filter: grayscale(1);
+    }
+
+    .pool-ball-indicator.targetable:not(.target), .pool-ball-indicator:not(.targetable, .target) {
+        filter: opacity(.6);
+    }
+
+    .pool-ball-indicator.targetable[disabled]:not(.target), .pool-ball-indicator[disabled]:not(.targetable, .target) {
+        filter: grayscale(1) opacity(.4);
+    }
+
+    .pool-ball-indicator:not(.targetable, .target, [disabled]) {
+        cursor: pointer;
+        pointer-events: none;
+    }
+
+    .suit {
+        position: relative;
+        background: #f1f1f1;
+        transition: all 300ms ease-in-out;
+    }
+
+    .suit.selected {
+        pointer-events: none;
+        cursor: pointer;
+    }
+
+    .suit .content {
+        position: inherit;
+        z-index: 10;
+    }
+
+    .suit.solid {
+        background: #3676c5;
+    }
+
+    .suit.solid.selected {
+        background: #4089e1;
+    }
+
+    .suit.solid:not(.selected, [disabled]):hover {
+        background: #3b81d7;
+    }
+
+    .suit .stripe {
+        background: #3676c5;
+        margin: 4px 0 0 0;
+        z-index: 5;
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        bottom: 0;
+    }
+
+    .suit.selected .stripe {
+        background: #4089e1;
+    }
+
+    .suit.stripe:not(.selected, [disabled]):hover .stripe {
+        background: #3b81d7;
+    }
+
+/* ball/suit selection */
+
+/* turn timer */
+
+    #turn-timer {
+        display: block;
+        position: relative;
+        color: rgb(255, 255, 255);
+        text-shadow: 1px 0px 4px #000000;
+        text-decoration: none;
+        text-align: center;
+        line-height: 28px;
+        font-size: 16px;
+        height: 32px;
+        font-weight: 600;
+        background: #4edc4e;
+        transition: all 1s;
+    }
+
+    #turn-timer.pending {
+        filter: grayscale(1)
+    }
+
+    #turn-timer .timer-progress {
+        background: #42b742;
+    }
+
+    #turn-timer.start .timer-progress {
+        animation: timer;
+        animation-timing-function: linear;
+        animation-fill-mode: backwards;
+    }
+
+    .timer {
+        font-weight: 600;
+    }
+
+    .timer .timer-c {
+        width: inherit;
+        height: inherit;
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+    }
+
+    .timer .timer-content {
+        z-index: 10;
+    }
+
+    .timer .timer-progress {
+        z-index: 5;
+        width: 0%;
+    }
+
+    .timer.press-n-hold.pending .timer-progress {
+        animation: timer 1s linear;
+        animation-fill-mode: backwards;
+    }
+
+    @keyframes timer {
+        from {
+            width: 0%
+        }
+        to {
+            width: 100%
+        }
+    }
+
+/* turn timer */
+
+.vector-wrapper {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    z-index: inherit;
+    pointer-events: none;
+}
+
+.vector-line {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 4px;
+    background-color: white;
+    border: 1px solid black;
+    border-radius: 4px;
+}
+
+.vector-target-point {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 4px;
+    height: 4px;
+    border: 1px solid black;
+    border-radius: 8px;
+    z-index: 12
+}
+
+.predicted-vector-line {
+    position: absolute;
+    top: 9px;
+    left: 9px;
+    width: 2px;
+    background-image: linear-gradient(rgb(255 100 243) 50%, rgba(255,255,255,0) 0%);
+    background-position: right;
+    background-size: 2px 14px;
+    background-repeat: repeat-y;
+}

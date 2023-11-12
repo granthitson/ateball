@@ -55,6 +55,10 @@ ipcRenderer.on('mouseup', (e, data) =>{
 });
 
 window.addEventListener("DOMContentLoaded", () => {
+    format();
+});
+
+const format = () => {
     try {
         if (location.host == "me.miniclip.com") {
             if (location.pathname == "/login/pool") {
@@ -126,7 +130,7 @@ window.addEventListener("DOMContentLoaded", () => {
 	} finally {
         ipcRenderer.send("webview-formatted");
     }
-});
+}
 
 const waitForElement = (selector, _document=document, to_be_visible=true) => {
     return new Promise(resolve => {
