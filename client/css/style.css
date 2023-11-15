@@ -51,6 +51,10 @@ form fieldset:not(.show) {
     height: 100%;
 }
 
+#ateball-toggle {
+    flex: 33%;
+}
+
 #debug-controls {
     width: 300px;
     max-width: 300px;
@@ -338,12 +342,23 @@ form fieldset:not(.show) {
     font-size: .9em;
 }
 
-.swap-btn-wrapper {
+._btn-group {
     display: flex;
     overflow: hidden;
+    transition: all 500ms ease-in-out;
 }
 
-.swap-btn:not(.active) {
+._btn-group:not(.active) {
+    flex-grow: 0 !important;
+    flex-shrink: 1 !important;
+}
+
+._btn-group.active {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+}
+
+._btn-group.swap-btn-wrapper .swap-btn:not(.active) {
     width: 0;
 }
 

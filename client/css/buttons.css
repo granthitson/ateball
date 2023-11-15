@@ -1,29 +1,29 @@
 /* specific menu button colors */
 
-#ateball-start {
+#ateball-start-btn {
     border-color: #40cb23;
     background: -webkit-linear-gradient(top,#1a8f01,#60fd02,#1a8f01);
     transition: width 300ms ease-in-out;
 }
 
-#ateball-start:not([disabled]):hover {
+#ateball-start-btn:not([disabled]):hover {
     border-color: #20b500;
     background: -webkit-linear-gradient(top,#20b500,#73ff1f,#20b500);
 }
 
-#ateball-stop {
+#ateball-stop-btn {
     border-color: #c91717;
     background-image: -webkit-linear-gradient(top, #c91717, #ff2a2a, #c91717);
     transition: width 300ms ease-in-out;
 }
 
-#ateball-stop:not([disabled], .running):hover {
+#ateball-stop-btn:not([disabled], .running):hover {
     border-color: #e02020;
     background-image: -webkit-linear-gradient(top, #e02020, #ff4747, #e02020);
 }
 
-#ateball-stop .timer-progress {
-    background: -webkit-linear-gradient(top, #8b1010, #cf2424, #8b1010);
+#ateball-stop-btn .timer-progress {
+    background: -webkit-linear-gradient(top, #a81b1b, #df3333, #a81b1b);
 }
 
 #call-pocket-all-btn {
@@ -67,13 +67,13 @@
 }
 
 #game-stop-btn {
-    border-color: #c91717;
-    background-image: -webkit-linear-gradient(top, #c91717, #ff2a2a, #c91717);
+    border-color: #9d1616;
+    background-image: -webkit-linear-gradient(top, #9d1616, #c12727, #9d1616);
 }
 
 #game-stop-btn:not([disabled], .running):hover {
-    border-color: #e02020;
-    background-image: -webkit-linear-gradient(top, #e02020, #ff4747, #e02020);
+    border-color: #b72727;
+    background-image: -webkit-linear-gradient(top, #b72727, #e54444, #b72727);
 }
 
 #game-stop-btn .timer-progress {

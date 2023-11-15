@@ -98,9 +98,10 @@ Array.from(play_btns).forEach(btn => {
     });
 });
 
-var start = document.querySelector("#ateball-start");
-start.addEventListener("click", (e) => {
-    toggleButtonSpinner(start, true);
+var ateball_toggle = document.querySelector("#ateball-toggle");
+var ateball_start_btn = document.querySelector("#ateball-start-btn");
+ateball_start_btn.addEventListener("click", (e) => {
+    toggleButtonSpinner(ateball_start_btn, true);
     window.api.ateball.start();
 });
 
@@ -205,21 +206,22 @@ const ball_path_menu = document.querySelector("#ball-path-menu");
 const ball_path_container = table_ui.querySelector("#ball_paths");
 
 ball_path_menu.addEventListener("click", (e) => {
-    if (e.target.classList.contains("ball_path")) {
+    if (e.target.classList.contains("ball_path") || e.target.parentElement.classList.contains("ball_path")) {
+        var target = (e.target.classList.contains("ball_path")) ? e.target : e.target.parentElement;
         var id = null;
 
-        if (!e.target.classList.contains("selected")) {
+        if (!target.classList.contains("selected")) {
             var selected = ball_path_menu.querySelector(".ball_path.selected");
             if (selected) {
                 selected.classList.remove("selected");
                 ball_path_container.querySelector(`.ball_path_wrapper[data-id='${selected.dataset.id}']`).remove();
             }
 
-            id = e.target.dataset.id;
-            e.target.classList.add("selected");
+            id = target.dataset.id;
+            target.classList.add("selected");
         } else {
-            e.target.classList.remove("selected");
-            ball_path_container.querySelector(`.ball_path_wrapper[data-id='${e.target.dataset.id}']`).remove();
+            target.classList.remove("selected");
+            ball_path_container.querySelector(`.ball_path_wrapper[data-id='${target.dataset.id}']`).remove();
         }
 
         if (id === null) {
@@ -274,38 +276,39 @@ pending_cancel.addEventListener("click", (e) => {
 });
 
 var game_stop_press_n_hold; const game_stop_press_n_hold_duration = 1000;
-var game_stop = document.querySelector("#game-stop-btn");
-game_stop.addEventListener("mousedown", (e) => {
-    if (!game_stop.classList.contains("pending") && !game_stop.classList.contains("running")) {
-        game_stop.classList.add("pending");
-        game_stop.style.animationDuration = `${(game_stop_press_n_hold_duration  / 1000)}s`;
+var game_stop = document.querySelector("#game-stop");
+var game_stop_btn = document.querySelector("#game-stop-btn");
+game_stop_btn.addEventListener("mousedown", (e) => {
+    if (!game_stop_btn.classList.contains("pending") && !game_stop_btn.classList.contains("running")) {
+        game_stop_btn.classList.add("pending");
+        game_stop_btn.style.animationDuration = `${(game_stop_press_n_hold_duration  / 1000)}s`;
         game_stop_press_n_hold = setTimeout(() => {
-            game_stop.classList.remove("pending");
-            toggleButtonSpinner(game_stop, true);
+            game_stop_btn.classList.remove("pending");
+            toggleButtonSpinner(game_stop_btn, true);
             window.api.ateball.game.stop();
         }, game_stop_press_n_hold_duration)
     }
 });
 
-game_stop.addEventListener("mouseup", (e) => {
-    game_stop.classList.remove('pending');
+game_stop_btn.addEventListener("mouseup", (e) => {
+    game_stop_btn.classList.remove('pending');
     clearTimeout(game_stop_press_n_hold);
 });
 
 var ateball_stop_press_n_hold; const ateball_stop_press_n_hold_duration = 1000;
-var stop = document.querySelector("#ateball-stop");
-stop.addEventListener("mousedown", (e) => {
+var ateball_stop_btn = document.querySelector("#ateball-stop-btn");
+ateball_stop_btn.addEventListener("mousedown", (e) => {
     window.api.get_state().then((s) => {
         if (!(s.ateball.game.pending || s.ateball.game.started)) {
-            toggleButtonSpinner(stop, true);
+            toggleButtonSpinner(ateball_stop_btn, true);
             window.api.ateball.stop();
         } else {
-            if (!stop.classList.contains("pending") && !stop.classList.contains("running")) {
-                stop.classList.add("pending");
-                stop.style.animationDuration = `${(ateball_stop_press_n_hold_duration  / 1000)}s`;
+            if (!ateball_stop_btn.classList.contains("pending") && !ateball_stop_btn.classList.contains("running")) {
+                ateball_stop_btn.classList.add("pending");
+                ateball_stop_btn.style.animationDuration = `${(ateball_stop_press_n_hold_duration  / 1000)}s`;
                 ateball_stop_press_n_hold = setTimeout(() => {
-                    stop.classList.remove("pending");
-                    toggleButtonSpinner(stop, true);
+                    ateball_stop_btn.classList.remove("pending");
+                    toggleButtonSpinner(ateball_stop_btn, true);
                     window.api.ateball.stop();
                 }, ateball_stop_press_n_hold_duration)
             }
@@ -313,8 +316,8 @@ stop.addEventListener("mousedown", (e) => {
     });
 });
 
-stop.addEventListener("mouseup", (e) => {
-    stop.classList.remove('pending');
+ateball_stop_btn.addEventListener("mouseup", (e) => {
+    ateball_stop_btn.classList.remove('pending');
     clearTimeout(ateball_stop_press_n_hold);
 });
 
@@ -346,9 +349,9 @@ const toggleSwapButton = (btn1, btn2, state) => {
 }
 
 const toggleButtonSpinner = (elem, state) => {
-    state ? elem.classList.add("running") : elem.classList.remove("running");
+    elem.classList.toggle("running", state);
     if (!state) {
-        stop.classList.remove("pending");
+        elem.classList.remove("pending");
     }
 }
 
@@ -397,7 +400,7 @@ const toggleWebviewControls = (s) => {
 }
 
 const toggleAteballControls = (s) => {
-    toggleSwapButton(stop, start, s.process.started);
+    toggleSwapButton(ateball_stop_btn, ateball_start_btn, s.process.started);
 }
 
 const gamemode_controls = document.querySelector("#gamemode-controls");
@@ -441,6 +444,9 @@ const toggleGameControls = (s) => {
 
     game_controls.disabled = !interact;
     game_controls.style.display = !interact ? "none" : "flex";
+
+    game_stop.classList.toggle("active", interact);
+    ateball_toggle.classList.toggle("active", !interact);
 
     turn_timer.classList.toggle("start", s.ateball.game.turn.is_turn);
     turn_timer.classList.toggle("pending", !s.ateball.game.turn.is_turn);

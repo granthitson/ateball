@@ -215,17 +215,6 @@
 											</form>
 										</div>
 									</div>
-
-									<div class="col-sm-auto">
-										<div class="row">
-											<button id="game-stop-btn" class="_btn timer press-n-hold ld-over-inverse">
-												<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
-												<div class="ld ld-ring ld-spin"></div>
-												<div class="timer-c timer-content">Stop</div>
-												<div class="timer-c timer-progress"></div>
-											</button>
-										</div>
-									</div>
 								</div>
 							</div>
 						</fieldset>
@@ -442,29 +431,37 @@
 							<div class="col d-flex flex-column">
 
 								<div id="ateball-debug-panels" class="row flex-grow-1">	
-									<div class="p-0">
-										<div id="ateball-debug-panel">
-											<div id="ateball-state-btns">
-												<div class="row">
-													<div class="col swap-btn-wrapper">
-														<button id="ateball-start" class="_btn swap-btn slim press-n-hold ld-over-inverse p-0 active">
-															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
-															<div class="ld ld-ring ld-spin"></div>
-															<div>Start</div>
-														</button>
-														<button id="ateball-stop" class="_btn swap-btn slim timer press-n-hold ld-over-inverse p-0" disabled="">
-															<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
-															<div class="ld ld-ring ld-spin"></div>
-															<div class="timer-c timer-content">Stop</div>
-															<div class="timer-c timer-progress"></div>
-														</button>
-													</div>
+										<div id="ateball-debug-panel" class="col">
+
+											<div class="row">
+												<div id="game-stop" class="col p-0 _btn-group">
+													<button id="game-stop-btn" class="_btn slim timer press-n-hold ld-over-inverse">
+														<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
+														<div class="ld ld-ring ld-spin"></div>
+														<div class="timer-c timer-content">End Game</div>
+														<div class="timer-c timer-progress"></div>
+													</button>
+												</div>
+
+												<div id="ateball-toggle" class="col p-0 _btn-group swap-btn-wrapper active">
+													<button id="ateball-start-btn" class="_btn swap-btn slim press-n-hold ld-over-inverse p-0" disabled="">
+														<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
+														<div class="ld ld-ring ld-spin"></div>
+														<div>Start</div>
+													</button>
+													<button id="ateball-stop-btn" class="_btn swap-btn slim timer press-n-hold ld-over-inverse p-0 active">
+														<span class="spinner-border spinner-border-sm ld" role="status" aria-hidden="true"></span>
+														<div class="ld ld-ring ld-spin"></div>
+														<div class="timer-c timer-content">Quit</div>
+														<div class="timer-c timer-progress"></div>
+													</button>
 												</div>
 											</div>
 
-											<pre id="ateball-debug-console" class="console"></pre>
+											<div class="row">
+												<pre id="ateball-debug-console" class="console p-0"></pre>
+											</div>
 										</div>
-									</div>
 								</div>
 							</div>
 						</div>

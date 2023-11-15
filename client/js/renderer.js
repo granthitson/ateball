@@ -54,7 +54,7 @@ const debug = document.querySelector("#ateball-debug-console");
 
 window.api.ateball.on_start( (e) => {
     console.log("Ateball started");
-    toggleButtonSpinner(start, false);
+    toggleButtonSpinner(ateball_start_btn, false);
     debug.innerHTML = "";
 });
 
@@ -101,7 +101,7 @@ window.api.ateball.game.round.on_target_path((e, data) => {
 
 window.api.ateball.game.on_end((e) => {
     console.log("game ended");
-    toggleButtonSpinner(game_stop, false);
+    toggleButtonSpinner(game_stop_btn, false);
     closeNavigationMenus(game_controls);
     ateball_mouse.cancel();
 
@@ -114,8 +114,8 @@ window.api.ateball.game.on_end((e) => {
 
 window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
-    toggleButtonSpinner(game_stop, false);
-    toggleButtonSpinner(stop, false);
+    toggleButtonSpinner(game_stop_btn, false);
+    toggleButtonSpinner(ateball_stop_btn, false);
     ateball_mouse.cancel();
 
     var realtime = document.querySelector("#realtime canvas");
