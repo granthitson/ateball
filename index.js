@@ -43,7 +43,6 @@ app.on('ready', async () => {
 		minHeight: 600,
 		menuBarVisible: !app.isPackaged,
 		autoHideMenuBar: !app.isPackaged,
-		minimizable: false,
 		resizable: false,
 		useContentSize: true,
 		fullscreenable: false,

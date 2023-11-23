@@ -55,7 +55,8 @@ class Ateball {
 		this.state.ateball.pending = true;
 
 		this.window.setAlwaysOnTop(true, 'pop-up-menu');
-		this.send_message(msg);
+		this.window.setMinimizable(false)
+		this.send_message({ type: "play", ...data});
 	}
 
 	start_game(msg) {
@@ -92,6 +93,7 @@ class Ateball {
 
 	end_game() {
 		this.window.setAlwaysOnTop(false);
+		this.window.setMinimizable(true)
 		this.reset_game_state();
 		this.toggle_game_controls();
 
@@ -151,6 +153,7 @@ class Ateball {
 				stop_resolve();
 				if (!self.window.isDestroyed()) {
 					self.window.setAlwaysOnTop(false);
+					self.window.setMinimizable(true)
 
 					self.reset_ateball_state();
 					self.toggle_game_controls();
