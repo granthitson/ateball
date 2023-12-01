@@ -34,6 +34,7 @@ class AteballMouse {
 
         this.cancel();
         this.execute_mouse_movement(events);
+        window.api.ateball.game.round.executed_path();
     }
 
     execute_mouse_movement(events) {
