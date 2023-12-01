@@ -6,11 +6,13 @@ webview.addEventListener('dom-ready', () => {
 
 webview.addEventListener('crashed', (e, args) => {
     console.log("crashed", e, args);
+    window.api.ateball.game.stop();
     webview.reload();
 });
 
 webview.addEventListener('destroyed', (e, args) => {
     console.log("destroyed", e, args);
+    window.api.ateball.game.stop();
     webview.reload();
 });
 
