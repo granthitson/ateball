@@ -70,32 +70,87 @@
 
     .ball_path {
         display: flex !important;
+        position: relative;
         font-family: monospace;
         background-color: #ffffff;
-        border-bottom: 1px solid #979797;
+        height: 24px;
     }
 
     .ball_path.interact:hover {
         cursor: pointer;
         background-color: #d3d3d3;
+        filter: brightness(1.4);
     }
 
     .ball_path.interact.selected {
         cursor: default;
         background-color: #b9b9b9;
+        filter: brightness(1.4);
     }
 
     .ball_path.interact.selected:hover {
         cursor: pointer;
         background-color: #e2e2e2;
+        filter: brightness(.7);
     }
 
-    .ball_path.param {
-        width: auto;
-        text-align: end;
-        padding: 0 5px;
+    .ball_path span {
+        height: inherit;
     }
 
+    .ball_path .difficulty {
+        font-family: sans-serif;
+        font-weight: 600;
+        text-align: left;
+    }
+
+    .ball_path .target_ball {
+        background-size: 60%;
+        background-repeat: no-repeat;
+        background-position: 30%;
+
+        border-style: solid;
+        border-image-slice: 3;
+        border-image-width: 0% 30%;
+        border-image-repeat: repeat;
+    }
+
+    .ball_path .target_hole {
+        padding: 0;
+        border-style: solid;
+    }
+
+    .ball_path .target_hole.trh {
+        border-width: 0px 24px 24px 0px;
+        border-color: transparent #000 transparent transparent;
+    }
+    
+    .ball_path .target_hole.tmh {
+        border-style: unset;
+        border-top: 6px solid black;
+        aspect-ratio: 1 / 1;
+    }
+
+    .ball_path .target_hole.tlh {
+        border-width: 0px 0px 24px 24px;
+        border-color: transparent transparent transparent #000;
+    }
+
+    .ball_path .target_hole.blh {
+        border-width: 24px 0px 0px 24px;
+        border-color: transparent transparent transparent #000;
+    }
+
+    .ball_path .target_hole.bmh {
+        border-style: unset;
+        border-bottom: 6px solid black;
+        aspect-ratio: 1 / 1;
+    }
+
+    .ball_path .target_hole.brh {
+        border-width: 24px 24px 0px 0px;
+        border-color: transparent #000 transparent transparent;
+    }
 /* ball path menu items */
 
 .ball-cluster {
