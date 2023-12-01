@@ -15,10 +15,13 @@ contextBridge.exposeInMainWorld('api', {
             round : {
                 select_ball_path: (data) => ipcRenderer.send('select-ball-path', data),
                 on_target_path: (callback) => ipcRenderer.on('target-path', callback),
-                on_execute_path: (callback) => ipcRenderer.on('execute-path', callback)
+                on_execute_path: (callback) => ipcRenderer.on('execute-path', callback),
+                executed_path: () => ipcRenderer.send('executed-path')
             },
             update_targets: (data) => ipcRenderer.send('update-targets', data),
             realtime : {
+                round_decrement : () => ipcRenderer.send('realtime-round-decrement'),
+                round_increment : () => ipcRenderer.send('realtime-round-increment'),
                 configure: (data) => ipcRenderer.send('realtime-configure', data),
                 on_stream: (callback) => ipcRenderer.on('realtime-stream', callback)
             },

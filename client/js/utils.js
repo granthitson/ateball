@@ -20,3 +20,7 @@ const waitForElement = (selector, _document=document.body) => {
         });
     });
 }
+
+const clamp = (n, low, high) => {
+    return Math.max(Math.min(high, n), low)
+}

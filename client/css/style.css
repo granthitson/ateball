@@ -194,16 +194,8 @@ form fieldset:not(.show) {
     transition: filter 1s;
 }
 
-.slim {
+._btn.slim {
     height: 24px !important;
-    line-height: 24px;
-}
-
-._btn.timer {
-    line-height: 32px;
-}
-
-._btn.timer.slim {
     line-height: 24px;
 }
 
@@ -240,6 +232,14 @@ form fieldset:not(.show) {
 
 .gamemode[disabled] * {
     pointer-events: none;
+}
+
+.header {
+    height: 32px;
+}
+
+.header.slim {
+    height: 24px;
 }
 
 /* pending spinner */

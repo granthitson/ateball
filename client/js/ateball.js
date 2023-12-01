@@ -15,17 +15,27 @@ class Ateball {
 				pending: false,
 				game: {
 					started: false,
-					turn : {
-						length : null,
-						is_turn : false
-					},
 					suit: null,
-					turn_num: null,
+					turn : {
+						start_time : null,
+						total_duration : null,
+						active : false,
+					},
 					targets: null,
 					balls: {},
 					round: {
-						ball_clusters: {},
-						ball_paths: {},
+						num : null,
+						data : {
+							ball_clusters: {},
+							ball_paths: {},
+						}
+					},
+					realtime : {
+						current_round : -1,
+						data : {
+							ball_clusters: {},
+							ball_paths: {},
+						}
 					}
 				}
 			}
@@ -51,7 +61,7 @@ class Ateball {
 		}
 	}
 
-	play_game(msg) {
+	play_game(data) {
 		this.state.ateball.pending = true;
 
 		this.window.setAlwaysOnTop(true, 'pop-up-menu');
@@ -77,6 +87,26 @@ class Ateball {
 	update_targets(data) {
 		this.state.ateball.game.targets = data.targets; 
 		this.send_message({ "type" : "update-targets", "data" : data});
+	}
+
+	executed_path() {
+		this.send_message({ "type" : "executed-path"});
+	}
+
+	realtime_set_current_round(increment) {
+		if (this.state.ateball.game.realtime.current_round > 0) {
+			var incremented_round = (this.state.ateball.game.realtime.current_round + increment);
+			if (incremented_round > 0 && incremented_round <= this.state.ateball.game.round.num) {
+				this.state.ateball.game.realtime.current_round += increment;
+			} else {
+				this.state.ateball.game.realtime.current_round = -1;
+			}
+		} else {
+			this.state.ateball.game.realtime.current_round = this.state.ateball.game.round.num;
+		}
+
+		this.state.ateball.game.realtime.data = structuredClone(this.original_state.ateball.game.realtime.data);
+		this.send_message({ "type" : "realtime-set-current-round", "data" : this.state.ateball.game.realtime.current_round});
 	}
 
 	realtime_configure(data) {
@@ -191,23 +221,24 @@ class Ateball {
 							console.log("game started");
 							this.start_game(p_msg);
 							break;
+						case "TURN-START":
+							console.log("turn start");
+							this.reset_round_state();
+							this.state.ateball.game.turn.start_time = p_msg.data.start_time;
+							this.state.ateball.game.turn.total_duration = p_msg.data.total_duration;
+							break;
+						case "TURN-SWAP":
+							console.log("turn swap");
+							this.reset_round_state();
+							break;
 						case "ROUND-START":
 							console.log("round started");
-							this.reset_round_state();
 							
-							this.state.ateball.game.turn_num = p_msg.data.turn_num;
-							this.state.ateball.game.turn.is_turn = true;
-
+							this.state.ateball.game.round.num = p_msg.data.round_num;
+							this.state.ateball.game.turn.active = true;
 							break;
 						case "UPDATE-BALL-STATE":
 							this.state.ateball.game.balls = p_msg.data.balls;
-							break;
-						case "TURN-START":
-							this.reset_round_state();
-							this.state.ateball.game.turn.length = p_msg.data;
-							break;
-						case "TURN-SWAP":
-							this.reset_round_state();
 							break;
 						case "SUIT-SELECT":
 							this.state.ateball.game.suit = p_msg.data.suit;
@@ -219,14 +250,20 @@ class Ateball {
 								this.window.webContents.send("realtime-stream", { data: p_msg.data.image});
 							}
 							break;
-						case "ROUND-UPDATE":
+						case "REALTIME-CURRENT-ROUND-SET":
 							if (p_msg.data) {
+								this.state.ateball.game.realtime.data.ball_clusters = p_msg.data.ball_clusters;
+								this.state.ateball.game.realtime.data.ball_paths = p_msg.data.ball_paths;
+							}
+							break;
+						case "ROUND-UPDATE":
+							if (p_msg.data && this.state.ateball.game.realtime.current_round == -1) {
 								switch (p_msg.data.type) {
 									case "SET-BALL-CLUSTERS":
-										this.state.ateball.game.round.ball_clusters = p_msg.data.ball_clusters;
+										this.state.ateball.game.round.data.ball_clusters = p_msg.data.ball_clusters;
 										break;
 									case "SET-BALL-PATHS":
-										this.state.ateball.game.round.ball_paths = p_msg.data.ball_paths;
+										this.state.ateball.game.round.data.ball_paths = p_msg.data.ball_paths;
 										break;
 									default:
 										break;
@@ -235,16 +272,18 @@ class Ateball {
 
 							break;
 						case "TARGET-PATH":
-							console.log("targeting path", p_msg.data);
-							this.window.webContents.send("target-path", p_msg.data);
+							if (this.state.ateball.game.realtime.current_round == -1) {
+								console.log("targeting path", p_msg.data);
+								this.window.webContents.send("target-path", p_msg.data);
+							}
 							break;
 						case "EXECUTE-PATH":
 							console.log("executing path", p_msg.data);
 							this.window.webContents.send("execute-path", p_msg.data);
 							break;
-						case "ROUND-END":
 						case "ROUND-COMPLETE":
 							console.log("round ended");
+							this.reset_turn_state();
 							break;
 						case "GAME-EXCEPTION":
 						case "GAME-CANCELLED":
@@ -303,9 +342,15 @@ class Ateball {
 		return this.state;
 	}
 
+	reset_turn_state() {
+		this.state.ateball.game.turn = structuredClone(this.original_state.ateball.game.turn);
+	}
+
 	reset_round_state() {
-		this.state.ateball.game.turn.is_turn = false;
-		this.state.ateball.game.round = structuredClone(this.original_state.ateball.game.round);
+		this.state.ateball.game.turn.active = false;
+		if (this.state.ateball.game.realtime.current_round == -1) {
+			this.state.ateball.game.round.data = structuredClone(this.original_state.ateball.game.round.data);
+		}
 	}
 
 	reset_game_state() {

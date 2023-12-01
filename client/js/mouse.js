@@ -84,7 +84,7 @@ class AteballMouse {
         });
         
         window.api.get_state().then(async (s) => {
-            if (data.id in s.ateball.game.round.ball_paths) {
+            if (data.id in s.ateball.game.round.data.ball_paths) {
                 var path_menu_item = document.querySelector(`.ball_path[data-id='${data.id}']`);
                 path_menu_item.click();
             }

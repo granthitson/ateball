@@ -126,7 +126,7 @@ app.on('ready', async () => {
 	});
 
 	ipcMain.on('game-play', (e, data) => {
-		ateball.play_game({ type: "play", ...data});
+		ateball.play_game(data);
 	});
 
 	ipcMain.on('select-ball-path', (e, data) => {
@@ -135,6 +135,18 @@ app.on('ready', async () => {
 
 	ipcMain.on('update-targets', (e, data) => {
 		ateball.update_targets(data);
+	});
+
+	ipcMain.on('executed-path', (e) => {
+		ateball.executed_path();
+	});
+
+	ipcMain.on('realtime-round-decrement', (e) => {
+		ateball.realtime_set_current_round(-1);
+	});
+
+	ipcMain.on('realtime-round-increment', (e) => {
+		ateball.realtime_set_current_round(1);
 	});
 
 	ipcMain.on('realtime-configure', (e, draw) => {

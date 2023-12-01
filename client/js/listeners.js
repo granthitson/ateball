@@ -105,6 +105,21 @@ ateball_start_btn.addEventListener("click", (e) => {
     window.api.ateball.start();
 });
 
+const game_controls = document.querySelector("#game-controls");
+
+const change_round = game_controls.querySelectorAll("#turn-timer .change-round");
+change_round.forEach(change_btn => {
+    change_btn.addEventListener("click", (e) => {
+        if (e.target.classList.contains("left")) {
+            window.api.ateball.game.realtime.round_decrement();
+        } else if (e.target.classList.contains("right")) {
+            window.api.ateball.game.realtime.round_increment();
+        }
+
+        ball_path_container.querySelectorAll(`.ball_path_wrapper`).forEach((e) => { e.remove(); });
+    });
+});
+
 var targeting_menu = document.querySelector("#targeting-menu");
 var targetables = document.querySelectorAll(".targetable");
 
@@ -228,12 +243,15 @@ ball_path_menu.addEventListener("click", (e) => {
             window.api.ateball.game.round.select_ball_path(id);
         } else {
             window.api.get_state().then((s) => {
-                if (id in s.ateball.game.round.ball_paths) {
-                    var ball_path = s.ateball.game.round.ball_paths[id];
+                let ball_paths = (s.ateball.game.realtime.current_round == -1) ? s.ateball.game.round.data.ball_paths : s.ateball.game.realtime.data.ball_paths;
+                if (id in ball_paths) {
+                    var ball_path = ball_paths[id];
                     window.api.ateball.game.round.select_ball_path(id);
                     drawBallPath(id, ball_path);
-    
-                    ateball_mouse.target_path(ball_path.path);
+                    
+                    if (s.ateball.game.turn.active && s.ateball.game.realtime.current_round == -1) {
+                        ateball_mouse.target_path(ball_path.path);
+                    }
                 }
             });
         }
@@ -429,11 +447,12 @@ const toggleGamemodeControls = (s) => {
     });
 }
 
-const game_controls = document.querySelector("#game-controls");
-
 const turn_timer = document.querySelector("#turn-timer");
 const turn_timer_progress = document.querySelector(".timer-progress")
 const turn_num = document.querySelector("#turn-timer #turn-num");
+
+const round_decrement = game_controls.querySelector("#turn-timer #decrement-round");
+const round_increment = game_controls.querySelector("#turn-timer #increment_round");
 
 const suits = Array.from(document.querySelectorAll(".suit"));
 const ball_indicators = Array.from(document.querySelectorAll(".pool-ball-indicator"));
@@ -448,13 +467,18 @@ const toggleGameControls = (s) => {
     game_stop.classList.toggle("active", interact);
     ateball_toggle.classList.toggle("active", !interact);
 
-    turn_timer.classList.toggle("start", s.ateball.game.turn.is_turn);
-    turn_timer.classList.toggle("pending", !s.ateball.game.turn.is_turn);
+    var active_turn = (s.ateball.game.turn.active && s.ateball.game.realtime.current_round == -1);
 
-    if (s.ateball.game.turn.is_turn) {
-        turn_timer_progress.style.animationDuration = `${s.ateball.game.turn.length}s`
-        turn_num.textContent = s.ateball.game.turn_num;
-    }
+    turn_timer.classList.toggle("start", active_turn);
+    turn_timer.classList.toggle("pending", !active_turn);
+
+    turn_num.textContent = (s.ateball.game.realtime.current_round == -1) ? s.ateball.game.round.num : s.ateball.game.realtime.current_round;
+    let time_passed = clamp((Date.now() - (s.ateball.game.turn.start_time * 1000)) / (s.ateball.game.turn.total_duration * 1000), 0, 1) * 100;
+    turn_timer_progress.style.width = (interact && s.ateball.game.turn.active) ? `${time_passed.toFixed(2)}%` : "0%";
+    turn_timer_progress.style.display = (interact && s.ateball.game.realtime.current_round != -1) ? "none" : "";
+
+    round_decrement.style.display = (interact && ((s.ateball.game.round.num != null && s.ateball.game.realtime.current_round == -1) || s.ateball.game.realtime.current_round > 1)) ? "block" : "none";
+    round_increment.style.display = (interact && s.ateball.game.realtime.current_round > 0 && s.ateball.game.realtime.current_round <= s.ateball.game.round.num) ? "block" : "none";
 
     suit_selection.style.display = (s.ateball.game.suit !== undefined) ? "" : "none";
     if (!interact) {
@@ -526,14 +550,23 @@ const toggleRealtimeInterface = (s) => {
     table_ui.classList.toggle("raw", config.table.raw);
 
     if (interact) {
-        if (s.ateball.game.turn.is_turn && s.ateball.game.round.ball_clusters) {
+        let ball_clusters = (s.ateball.game.turn.active && s.ateball.game.realtime.current_round == -1) ? s.ateball.game.round.data.ball_clusters : s.ateball.game.realtime.data.ball_clusters;
+        
+        if ((s.ateball.game.turn.active || s.ateball.game.realtime.current_round != -1) && Object.keys(ball_clusters).length > 0) {
             let show = !config.table.raw && config.balls.clusters.highlight;
 
             var existing_ball_clusters = table_ui.querySelectorAll(".ball-cluster");
-            if (existing_ball_clusters.length > 0) {
-                existing_ball_clusters.forEach(e => { e.classList.toggle("show", show); });
-            } else {
-                for (const [identifier, cluster] of Object.entries(s.ateball.game.round.ball_clusters)) {
+            existing_ball_clusters.forEach(e => { e.classList.toggle("show", show); });
+
+            var ball_cluster_elems_map = Array.from(existing_ball_clusters).reduce((a, v) => ({ ...a, [v.dataset.identifier]: v }), {});
+
+            var all_clusters = new Set([ ...Object.keys(ball_clusters), ...Object.keys(ball_cluster_elems_map) ]);
+            all_clusters.forEach((identifier) => {
+                if (identifier in ball_cluster_elems_map && !(identifier in ball_clusters)) {
+                    ball_cluster_elems_map[identifier].remove();
+                } else if (!(identifier in ball_cluster_elems_map) && identifier in ball_clusters) {
+                    var cluster = ball_clusters[identifier];
+
                     const [min_x, min_y] = cluster.min;
                     const [max_x, max_y] = cluster.max;
                     let width = max_x - min_x;
@@ -559,7 +592,7 @@ const toggleRealtimeInterface = (s) => {
     
                     table_ui.append(ball_cluster);
                 }
-            }
+            });
         } else {
             table_ui.querySelectorAll(".ball-cluster").forEach(e => { e.remove(); });
         }
@@ -606,6 +639,14 @@ const trackBallPositions = () => {
         }
     }
 
+    const removeAllVectorLine = (name, v_type) => {
+        table_ui.querySelectorAll(`.vector-wrapper[data-ball='${name}'][data-type='${v_type}']`).forEach((e) => { e.remove(); });
+    }
+
+    const removeVectorLines = (name) => {
+        table_ui.querySelectorAll(`.vector-wrapper[data-ball='${name}']`).forEach((e) => { e.remove(); });
+    }
+
     var config = get_realtime_config();
 
     window.api.get_state().then((s) => {
@@ -616,10 +657,10 @@ const trackBallPositions = () => {
         balls.forEach(ball => {
             ball.style.display = (interact) ? "" : "none";
 
-            if (interact) {
-                var b_name = ball.id.replace("_", "");
-                var _ball = s.ateball.game.balls[b_name];
+            var b_name = ball.id.replace("_", "");
+            var _ball = s.ateball.game.balls[b_name];
 
+            if (interact) {
                 if (_ball && !_ball.info.pocketed) {
                     let draw = (_ball.info.suit == null || (_ball.info.suit != null && config.balls[_ball.info.suit]));
                     ball.style.display = (draw) ? "unset" : "";
@@ -628,14 +669,20 @@ const trackBallPositions = () => {
 
                     if (!config.table.raw) {
                         for (const [v_type, vector] of Object.entries(_ball.vectors)) {
-                            drawVectorLine(b_name, v_type, vector, draw);
+                            if (vector != null && (s.ateball.game.realtime.current_round == -1 || (_ball.info.name == "cueball" && v_type != "deflect" && s.ateball.game.realtime.current_round != -1))) {
+                                drawVectorLine(b_name, v_type, vector, draw);
+                            } else {
+                                removeAllVectorLine(b_name, v_type);
+                            }
                         }
                     }
                 } else {
                     ball.style.display = "none";
+                    removeVectorLines(b_name);
                 }
             } else {
                 ball.style.display = "none";
+                removeVectorLines(b_name);
             }
         });
     });
@@ -643,22 +690,44 @@ const trackBallPositions = () => {
 
 const listBallPaths = (s) => {
     var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" 
-        && s.ateball.game.started && s.ateball.game.turn.is_turn;
+        && s.ateball.game.started;
+
+    var is_realtime = (s.ateball.game.turn.active && s.ateball.game.realtime.current_round == -1)
 
     var ball_path_elems = Array.from(ball_path_menu.querySelectorAll(".ball_path[data-id]"));
     var ball_path_placeholder = ball_path_menu.querySelector("#ball_path_placeholder");
 
-    if (interact && Object.keys(s.ateball.game.round.ball_paths).length > 0) {
+    let ball_paths = (!is_realtime) ? s.ateball.game.realtime.data.ball_paths : s.ateball.game.round.data.ball_paths;
+
+    if (interact) {
         var ball_path_elems_map = ball_path_elems.reduce((a, v) => ({ ...a, [v.dataset.id]: v }), {});
         var prev_ball_path = null;
 
-        for (const [id, ball_path] of Object.entries(s.ateball.game.round.ball_paths)) {
-            if (!(id in ball_path_elems_map)) {
+        var all_paths = new Set([ ...Object.keys(ball_paths), ...Object.keys(ball_path_elems_map) ]);
+        all_paths.forEach((id) => {
+            if (id in ball_path_elems_map && !(id in ball_paths)) {
+                ball_path_elems_map[id].remove();
+            } else if (!(id in ball_path_elems_map) && id in ball_paths) {
+                var ball_path = ball_paths[id];
+
                 var ball_path_item = document.createElement('div');
                 ball_path_item.classList.add('row', 'ball_path', 'interact');
                 ball_path_item.dataset.id = id;
-                ball_path_item.innerHTML = id;
+
+                var ball_path_difficulty = document.createElement('span');
+                ball_path_difficulty.classList.add('col-sm-3', 'difficulty', 'px-1');
+                ball_path_difficulty.innerHTML = ball_path.path.difficulty.toFixed(2);
+
+                var ball_path_icon = document.createElement('span');
+                ball_path_icon.classList.add('col', 'target_ball', `b${ball_path.target_ball.ball.info.number}`);
+
+                var ball_path_target_hole = document.createElement('span');
+                ball_path_target_hole.classList.add('col-sm-auto', 'target_hole', `${ball_path.target_hole.hole.name}`);
                 
+                ball_path_item.append(ball_path_difficulty);
+                ball_path_item.append(ball_path_icon);
+                ball_path_item.append(ball_path_target_hole);
+
                 if (!prev_ball_path) {
                     ball_path_menu.append(ball_path_item);
                 } else {
@@ -667,9 +736,9 @@ const listBallPaths = (s) => {
                 
                 prev_ball_path = ball_path_item;
             }
-        }
+        });
 
-        ball_path_placeholder.style.display = "none";
+        ball_path_placeholder.style.display = (Object.keys(ball_paths).length > 0) ? "none" : "";
     } else {
         ball_path_placeholder.style.display = "";
         ball_path_elems.forEach(e => { e.remove(); });

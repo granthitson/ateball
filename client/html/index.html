@@ -69,10 +69,18 @@
 							<div id="realtime-menu" class="col d-flex flex-column">
 								<div id="realtime-status-menu" class="row">
 									<div class="col">
-										<div id="realtime-turn-timer" class="row">
-											<div id="turn-timer" class="col timer pending">
-												<div class="timer-c timer-content">Turn #<span id="turn-num">1</span></div>
-												<div class="timer-c timer-progress"></div>
+										<div id="realtime-turn-menu" class="row header">
+											<div class="col">
+												<div id="turn-timer" class="row pending">
+													<div id="decrement-round" class="col-sm-auto px-1 change-round left">&#129168;</div>
+
+													<div class="col timer">
+														<div class="timer-c timer-content">Round #<span id="turn-num"></span></div>
+														<div class="timer-c timer-progress"></div>
+													</div>
+
+													<div id="increment_round" class="col-sm-auto px-1 change-round right">&#129170;</div>
+												</div>
 											</div>
 										</div>
 
