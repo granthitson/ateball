@@ -39,10 +39,10 @@
 						<fieldset id="game-controls" class="row controls" disabled="">
 							<div id="realtime" class="col-sm-auto d-flex p-0">
 								<div id="table">
-									<div id="table_background">
+									<div id="table-background">
 										<canvas id="raw-realtime" width="688px" height="356px"></canvas>
 									</div>
-									<div id="table_balls">
+									<div id="table-balls">
 										<div id="_target" class="_ball"></div>
 										<div id="_cueball" class="_ball b0"></div>
 										<div id="_1ball" class="_ball b1"></div>
@@ -60,8 +60,8 @@
 										<div id="_13ball" class="_ball b13"></div>
 										<div id="_14ball" class="_ball b14"></div>
 										<div id="_15ball" class="_ball b15"></div>
-										<div id="ball_vectors"></div>
-										<div id="ball_paths"></div>
+										<div id="ball-vectors"></div>
+										<div id="ball-paths"></div>
 									</div>
 								</div>
 							</div>
@@ -79,7 +79,7 @@
 														<div class="timer-c timer-progress"></div>
 													</div>
 
-													<div id="increment_round" class="col-sm-auto px-1 change-round right">&#129170;</div>
+													<div id="increment-round" class="col-sm-auto px-1 change-round right">&#129170;</div>
 												</div>
 											</div>
 										</div>
@@ -136,7 +136,7 @@
 										<div class="row">
 											<button id="ball-path-btn" class="_btn menu-btn dropdown" data-target="#ball-path-menu">Ball Paths</button>
 											<form id="ball-path-menu" class="col menu">
-												<div id="ball_path_placeholder" class="row">NO PATHS AVAILABLE</div>
+												<div id="ball-path-placeholder" class="row">NO PATHS AVAILABLE</div>
 											</form>
 										</div>
 
@@ -146,7 +146,7 @@
 												<div class="row">
 													<div class="col p-0">
 														<label class="toggle">
-															<input name="draw_raw" type="checkbox">
+															<input name="draw-raw" type="checkbox">
 															<span class="option-toggle-btn">
 																<span class="option">Default</span>
 																<span class="option">Raw</span>
@@ -158,7 +158,7 @@
 												<div class="row">
 													<div class="col p-0">
 														<label class="toggle">
-															<input name="draw_solid" type="checkbox" checked="checked">
+															<input name="draw-solid" type="checkbox" checked="checked">
 															<span class="option-toggle-btn inverse">
 																<span class="option">Solid</span>
 															</span>
@@ -166,7 +166,7 @@
 													</div>
 													<div class="col p-0">
 														<label class="toggle">
-															<input name="draw_stripe" type="checkbox" checked="checked">
+															<input name="draw-stripe" type="checkbox" checked="checked">
 															<span class="option-toggle-btn inverse">
 																<span class="option">Stripe</span>
 															</span>
@@ -179,7 +179,7 @@
 													<div class="row">
 														<div class="col p-0">
 															<label class="toggle">
-																<input name="highlight_clusters" type="checkbox">
+																<input name="highlight-clusters" type="checkbox">
 																<span class="option-toggle-btn inverse">
 																	<span class="option">Clusters</span>
 																</span>
@@ -189,11 +189,11 @@
 
 												</fieldset>
 
-												<fieldset id="ui-mode-raw-options" data-depends-on="draw_raw" disabled>
+												<fieldset id="ui-mode-raw-options" data-depends-on="draw-raw" disabled>
 													<div class="row">
 														<div class="col p-0">
 															<label class="toggle">
-																<input name="draw_walls" type="checkbox" checked="checked">
+																<input name="draw-walls" type="checkbox" checked="checked">
 																<span class="option-toggle-btn inverse">
 																	<span class="option">Walls</span>
 																</span>
@@ -201,7 +201,7 @@
 														</div>
 														<div class="col p-0">
 															<label class="toggle">
-																<input name="draw_holes" type="checkbox" checked="checked">
+																<input name="draw-holes" type="checkbox" checked="checked">
 																<span class="option-toggle-btn inverse">
 																	<span class="option">Holes</span>
 																</span>
@@ -212,7 +212,7 @@
 													<div class="row">
 														<div class="col p-0">
 															<label class="toggle">
-																<input name="draw_background" type="checkbox" checked="checked">
+																<input name="draw-background" type="checkbox" checked="checked">
 																<span class="option-toggle-btn inverse">
 																	<span class="option">Background</span>
 																</span>
@@ -231,11 +231,11 @@
 					<div class="col-sm-auto d-flex flex-column">
 						<fieldset id="gamemode-controls" class="row controls" disabled="">
 							<div id="gamemode-selection" class="col">
-								<fieldset id="guest_gamemode" class="row gamemode" disabled="">
+								<fieldset id="guest-gamemode" class="row gamemode" disabled="">
 									<button id="guest-btn" class="_btn play-btn" data-gamemode="guest">Guest</button>
 								</fieldset>
 
-								<fieldset id="one_on_one_gamemode" class="row gamemode" disabled="">
+								<fieldset id="one-on-one-gamemode" class="row gamemode" disabled="">
 									<button id="one-on-one-btn" class="_btn menu-btn dropdown" data-target="#one-on-one-menu">1 on 1</button>
 									<div class="col menu" id="one-on-one-menu">
 										<div class="row">
@@ -271,7 +271,7 @@
 													</div>
 													<div class="col-sm-auto p-0 d-none" data-parent="#call-pocket-all-btn">
 														<select class="menu-select" name="location">
-															<option value="las_vegas" selected="">Las Vegas - 10,000
+															<option value="las-vegas" selected="">Las Vegas - 10,000
 															</option>
 															<option value="jakarta">Jakarta - 50,000</option>
 															<option value="toronto">Toronto - 100,000</option>
@@ -295,7 +295,7 @@
 									</div>
 								</fieldset>
 
-								<fieldset id="special_gamemode" class="row gamemode" disabled="">
+								<fieldset id="special-gamemode" class="row gamemode" disabled="">
 									<button id="special-btn" class="_btn menu-btn dropdown" data-target="#special-menu">Special</button>
 									<div class="col menu" id="special-menu">
 										<div class="row">
@@ -313,7 +313,7 @@
 													<div class="col-sm-auto p-0 d-none" data-parent="#tounament-btn">
 														<select class="menu-select" name="location">
 															<option value="barcelona">Barcelona - 200</option>
-															<option value="buenos_aires" selected="">Buenos Aires - 500</option>
+															<option value="buenos-aires" selected="">Buenos Aires - 500</option>
 															<option value="rio">Rio - 3,000</option>
 															<option value="amsterdam">Amsterdam - 5,000</option>
 															<option value="singapore">Singapore - 10,000</option>
@@ -334,7 +334,7 @@
 									</div>
 								</fieldset>
 
-								<fieldset id="nine_ball_gamemode" class="row gamemode" disabled="">
+								<fieldset id="nine-ball-gamemode" class="row gamemode" disabled="">
 									<button id="nine-ball-btn" class="_btn menu-btn dropdown"data-target="#nine-ball-menu" data-gamemode="nine_ball">9 Ball</button>
 									<div class="col menu" id="nine-ball-menu">
 										<div class="row">
@@ -352,7 +352,7 @@
 									</div>
 								</fieldset>
 
-								<fieldset id="minigames_gamemode" class="row gamemode" disabled="">
+								<fieldset id="minigames-gamemode" class="row gamemode" disabled="">
 									<button id="minigames-btn" class="_btn menu-btn dropdown" data-target="#minigames-menu">Minigames</button>
 									<div class="col menu" id="minigames-menu">
 										<div class="row">
@@ -363,7 +363,7 @@
 									</div>
 								</fieldset>
 
-								<fieldset id="friends_gamemode" class="row gamemode" disabled="">
+								<fieldset id="friends-gamemode" class="row gamemode" disabled="">
 									<button id="friends-btn" class="_btn menu-btn dropdown" data-target="#friends-menu" data-gamemode="friend">Friends</button>
 									<div class="col menu" id="friends-menu">
 										<div class="row">
@@ -387,7 +387,7 @@
 									</div>
 								</fieldset>
 
-								<fieldset id="practice_gamemode" class="row gamemode" disabled="">
+								<fieldset id="practice-gamemode" class="row gamemode" disabled="">
 									<button id="practice-btn" class="_btn menu-btn dropdown" data-target="#practice-menu">Practice</button>
 									<div class="col menu" id="practice-menu">
 										<div class="row">
@@ -401,7 +401,7 @@
 									</div>
 								</fieldset>
 
-								<fieldset id="custom_gamemode" class="row gamemode" disabled="">
+								<fieldset id="custom-gamemode" class="row gamemode" disabled="">
 									<button id="custom-btn" class="_btn menu-btn dropdown" data-target="#custom-menu">Custom</button>
 									<div class="col menu" id="custom-menu">
 										<div class="row">

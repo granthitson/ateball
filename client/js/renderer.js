@@ -91,9 +91,9 @@ window.api.ateball.game.round.on_execute_path((e, data) => {
 
 window.api.ateball.game.round.on_target_path((e, data) => {
     // need to wait for menu items to be added 
-    waitForElement(`.ball_path[data-id="${data.id}"]`, ball_path_menu).then(() => {
+    waitForElement(`.ball-path[data-id="${data.id}"]`, ball_path_menu).then(() => {
         try {
-            var ball_path = document.querySelector(`.ball_path[data-id="${data.id}"]`);
+            var ball_path = document.querySelector(`.ball-path[data-id="${data.id}"]`);
             ball_path.click();
         } catch (e) {
             console.error("could not target path: ", e);

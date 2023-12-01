@@ -218,15 +218,15 @@ cancel_targeting_btn.addEventListener("click", (e) => {
 
 const table_ui = document.querySelector("#realtime #table");
 const ball_path_menu = document.querySelector("#ball-path-menu");
-const ball_path_container = table_ui.querySelector("#ball_paths");
+const ball_path_container = table_ui.querySelector("#ball-paths");
 
 ball_path_menu.addEventListener("click", (e) => {
-    if (e.target.classList.contains("ball_path") || e.target.parentElement.classList.contains("ball_path")) {
-        var target = (e.target.classList.contains("ball_path")) ? e.target : e.target.parentElement;
+    if (e.target.classList.contains("ball-path") || e.target.parentElement.classList.contains("ball-path")) {
+        var target = (e.target.classList.contains("ball-path")) ? e.target : e.target.parentElement;
         var id = null;
 
         if (!target.classList.contains("selected")) {
-            var selected = ball_path_menu.querySelector(".ball_path.selected");
+            var selected = ball_path_menu.querySelector(".ball-path.selected");
             if (selected) {
                 selected.classList.remove("selected");
                 ball_path_container.querySelector(`.ball_path_wrapper[data-id='${selected.dataset.id}']`).remove();
@@ -343,17 +343,17 @@ const get_realtime_config = () => {
     // formdata doesnt return disabled fields
     return data = {
         "balls" : {
-            "solid" : document.querySelector("input[name='draw_solid']").checked,
-            "stripe" : document.querySelector("input[name='draw_stripe']").checked,
+            "solid" : document.querySelector("input[name='draw-solid']").checked,
+            "stripe" : document.querySelector("input[name='draw-stripe']").checked,
             "clusters" : {
-                "highlight" : document.querySelector("input[name='highlight_clusters']").checked
+                "highlight" : document.querySelector("input[name='highlight-clusters']").checked
             }
         },
         "table" : {
-            "raw" : document.querySelector("input[name='draw_raw']").checked,
-            "walls" : document.querySelector("input[name='draw_walls']").checked,
-            "holes" : document.querySelector("input[name='draw_holes']").checked,
-            "background" : document.querySelector("input[name='draw_background']").checked
+            "raw" : document.querySelector("input[name='draw-raw']").checked,
+            "walls" : document.querySelector("input[name='draw-walls']").checked,
+            "holes" : document.querySelector("input[name='draw-holes']").checked,
+            "background" : document.querySelector("input[name='draw-background']").checked
         }
     };
 }
@@ -452,7 +452,7 @@ const turn_timer_progress = document.querySelector(".timer-progress")
 const turn_num = document.querySelector("#turn-timer #turn-num");
 
 const round_decrement = game_controls.querySelector("#turn-timer #decrement-round");
-const round_increment = game_controls.querySelector("#turn-timer #increment_round");
+const round_increment = game_controls.querySelector("#turn-timer #increment-round");
 
 const suits = Array.from(document.querySelectorAll(".suit"));
 const ball_indicators = Array.from(document.querySelectorAll(".pool-ball-indicator"));
@@ -613,7 +613,7 @@ const trackBallPositions = () => {
             vector_line.style.height = (vector) ? `${(vector.radius + vector_line.offsetWidth)}px` : "";
         }
     
-        var vector_container = table_ui.querySelector("#ball_vectors");
+        var vector_container = table_ui.querySelector("#ball-vectors");
         var vector_wrapper = table_ui.querySelector(`.vector-wrapper[data-ball='${b_name}'][data-type='${v_type}']`);
         var vector_line = null;
     
@@ -694,8 +694,8 @@ const listBallPaths = (s) => {
 
     var is_realtime = (s.ateball.game.turn.active && s.ateball.game.realtime.current_round == -1)
 
-    var ball_path_elems = Array.from(ball_path_menu.querySelectorAll(".ball_path[data-id]"));
-    var ball_path_placeholder = ball_path_menu.querySelector("#ball_path_placeholder");
+    var ball_path_elems = Array.from(ball_path_menu.querySelectorAll(".ball-path[data-id]"));
+    var ball_path_placeholder = ball_path_menu.querySelector("#ball-path-placeholder");
 
     let ball_paths = (!is_realtime) ? s.ateball.game.realtime.data.ball_paths : s.ateball.game.round.data.ball_paths;
 
@@ -711,7 +711,7 @@ const listBallPaths = (s) => {
                 var ball_path = ball_paths[id];
 
                 var ball_path_item = document.createElement('div');
-                ball_path_item.classList.add('row', 'ball_path', 'interact');
+                ball_path_item.classList.add('row', 'ball-path', 'interact');
                 ball_path_item.dataset.id = id;
 
                 var ball_path_difficulty = document.createElement('span');
