@@ -22,12 +22,14 @@ contextBridge.exposeInMainWorld('api', {
             realtime : {
                 round_decrement : () => ipcRenderer.send('realtime-round-decrement'),
                 round_increment : () => ipcRenderer.send('realtime-round-increment'),
-                configure: (data) => ipcRenderer.send('realtime-configure', data),
                 on_stream: (callback) => ipcRenderer.on('realtime-stream', callback)
             },
             cancel: () => ipcRenderer.send('game-cancel'),
             stop: () => ipcRenderer.send('game-stop'),
             on_end: (callback) => ipcRenderer.on('game-ended', callback),
+        },
+        realtime : {
+            configure: (data) => ipcRenderer.send('realtime-configure', data),
         },
         stop: () => ipcRenderer.send('ateball-stop'),
         on_stop: (callback) => ipcRenderer.on('ateball-stopped', callback),

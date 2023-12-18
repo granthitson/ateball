@@ -28,8 +28,11 @@ form fieldset:not(.show) {
 }
 
 [disabled] {
-    filter: grayscale(1);
     pointer-events: none;
+}
+
+[disabled] ._btn {
+    filter: grayscale(1);
 }
 
 /* ---- */
@@ -368,7 +371,7 @@ form fieldset:not(.show) {
     width: 100%;
 }
   
-.toggle input {
+.toggle input:not([type=range]) {
     visibility: hidden;
     width: 0;
     height: 0;
@@ -420,4 +423,18 @@ input:not(:checked) + .option-toggle-btn:not(.inverse) .option:nth-child(1),
 input:checked + .option-toggle-btn:not(.inverse) .option:nth-child(2) {
     background-color: white;
     color: #036;
+}
+
+.slider {
+    background-color: white;
+}
+
+.slider label {
+    width: 100%;
+    text-align: center;
+    color: #036;
+}
+
+.slider input[type=range] {
+    width: 100%;
 }

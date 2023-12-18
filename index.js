@@ -149,8 +149,8 @@ app.on('ready', async () => {
 		ateball.realtime_set_current_round(1);
 	});
 
-	ipcMain.on('realtime-configure', (e, draw) => {
-		ateball.realtime_configure(draw);
+	ipcMain.on('realtime-configure', (e, data) => {
+		ateball.realtime_configure(data.type, data.value);
 	});
 	
 	ipcMain.on('game-cancel', (e) => {

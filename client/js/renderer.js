@@ -63,6 +63,7 @@ window.api.ateball.on_start( (e) => {
 window.api.ateball.game.on_start(() => {
     console.log("game started");
     closeNavigationMenus(gamemode_controls);
+    ateball_mouse.activate();
 });
 
 var image_stream = Promise.resolve();
@@ -93,8 +94,7 @@ window.api.ateball.game.round.on_target_path((e, data) => {
     // need to wait for menu items to be added 
     waitForElement(`.ball-path[data-id="${data.id}"]`, ball_path_menu).then(() => {
         try {
-            var ball_path = document.querySelector(`.ball-path[data-id="${data.id}"]`);
-            ball_path.click();
+            ateball_mouse.target_path(data.path);
         } catch (e) {
             console.error("could not target path: ", e);
         }   
@@ -105,7 +105,7 @@ window.api.ateball.game.on_end((e) => {
     console.log("game ended");
     toggleButtonSpinner(game_stop_btn, false);
     closeNavigationMenus(game_controls);
-    ateball_mouse.cancel();
+    ateball_mouse.deactivate();
 
     image_stream.then(() => {
         var realtime = document.querySelector("#realtime canvas");
@@ -118,7 +118,7 @@ window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
     toggleButtonSpinner(game_stop_btn, false);
     toggleButtonSpinner(ateball_stop_btn, false);
-    ateball_mouse.cancel();
+    ateball_mouse.deactivate();
 
     var realtime = document.querySelector("#realtime canvas");
     var context = realtime.getContext("2d");

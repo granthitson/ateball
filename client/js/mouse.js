@@ -1,5 +1,6 @@
 class AteballMouse {
     constructor(webview) {
+        this.active = false;
         this.webview = webview
 
         this.current_x = null;
@@ -11,18 +12,23 @@ class AteballMouse {
         this.accepted_events = ["mousemove", "mouseup", "mousedown"];
     }
 
+    activate() {
+        this.active = true;
+    }
+
     target_path(path) {
+        this.cancel();
         console.log("targeting path", path);
 
         var events = [
             {"type" : "mousemove", "point" : path.start}
         ];
 
-        this.cancel();
         this.execute_mouse_movement(events);
     }
 
     execute_path(path) {
+        this.cancel();
         console.log("executing path", path);
 
         var events = [ 
@@ -32,9 +38,10 @@ class AteballMouse {
             {"type" : "mouseup", "point" : path.end}
         ];
 
-        this.cancel();
-        this.execute_mouse_movement(events);
-        window.api.ateball.game.round.executed_path();
+        var executed = this.execute_mouse_movement(events);
+        if (executed) {
+            window.api.ateball.game.round.executed_path();
+        }
     }
 
     execute_mouse_movement(events) {
@@ -84,17 +91,13 @@ class AteballMouse {
             this.active_interpolation = null;
         });
         
+        var executed = false;
         window.api.get_state().then(async (s) => {
-            if (data.id in s.ateball.game.round.data.ball_paths) {
-                var path_menu_item = document.querySelector(`.ball-path[data-id='${data.id}']`);
-                path_menu_item.click();
-            }
-    
             this.webview.focus();
     
             for (const e of events) {
                 try {
-                    if (signal && signal.aborted) {
+                    if ((signal && signal.aborted) || !this.active) {
                         // abort any future events
                         break;
                     }
@@ -104,24 +107,33 @@ class AteballMouse {
                     } else {
                         await this.webview.send(e.type, e.point);
                     }
+
+                    console.log(e.type, e.point);
                 } catch (err) {
                     console.log(err);
                 }  
             }
             
-            if (signal && !signal.aborted) {
+            if (signal && !signal.aborted && this.active) {
                 console.log("path executed");
+                executed = true;
             } else {
                 console.log("path execution cancelled")
             }
 
             this.active_execution = null;
         });
+
+        return executed;
     }
 
     cancel() {
         if (this.active_execution != null) {
             this.active_execution.abort();
         }
+    }
+
+    deactivate() {
+        this.active = false;
     }
 }

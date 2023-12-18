@@ -67,6 +67,10 @@
 /* ids */
 
 /* ball path menu items */
+    #ball-path-menu[disabled] .ball-path {
+        filter: grayscale(1);
+        pointer-events: none;
+    }
 
     .ball-path {
         display: flex !important;
@@ -76,22 +80,23 @@
         height: 24px;
     }
 
-    .ball-path.interact:hover {
+    #ball-path-menu:not([disabled]) .ball-path:hover {
         cursor: pointer;
-        background-color: #d3d3d3;
-        filter: brightness(1.4);
+        opacity: 1;
     }
 
-    .ball-path.interact.selected {
+    .ball-path.selected {
         cursor: default;
-        background-color: #b9b9b9;
-        filter: brightness(1.4);
+        background-color: #aeeeb1;
     }
 
-    .ball-path.interact.selected:hover {
+    .ball-path:not(.selected) {
+        opacity: .7;
+    }
+
+    #ball-path-menu:not([disabled]) .ball-path.selected:hover {
         cursor: pointer;
-        background-color: #e2e2e2;
-        filter: brightness(.7);
+        opacity: .7;
     }
 
     .ball-path span {
@@ -116,6 +121,9 @@
     }
 
     .ball-path .target_hole {
+        position: absolute;
+        top: 0;
+        right: 0;
         padding: 0;
         border-style: solid;
     }

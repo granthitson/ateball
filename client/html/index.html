@@ -75,7 +75,7 @@
 													<div id="decrement-round" class="col-sm-auto px-1 change-round left">&#129168;</div>
 
 													<div class="col timer">
-														<div class="timer-c timer-content">Round #<span id="turn-num"></span></div>
+														<div class="timer-c timer-content">Round #<span id="round-num"></span></div>
 														<div class="timer-c timer-progress"></div>
 													</div>
 
@@ -135,9 +135,9 @@
 									<div id="game-operations" class="col flex-grow-1">
 										<div class="row">
 											<button id="ball-path-btn" class="_btn menu-btn dropdown" data-target="#ball-path-menu">Ball Paths</button>
-											<form id="ball-path-menu" class="col menu">
+											<fieldset id="ball-path-menu" class="col menu">
 												<div id="ball-path-placeholder" class="row">NO PATHS AVAILABLE</div>
-											</form>
+											</fieldset>
 										</div>
 
 										<div class="row">
@@ -146,7 +146,7 @@
 												<div class="row">
 													<div class="col p-0">
 														<label class="toggle">
-															<input name="draw-raw" type="checkbox">
+															<input name="draw-raw" type="checkbox" data-dependency="ui-mode-raw-options">
 															<span class="option-toggle-btn">
 																<span class="option">Default</span>
 																<span class="option">Raw</span>
@@ -189,7 +189,7 @@
 
 												</fieldset>
 
-												<fieldset id="ui-mode-raw-options" data-depends-on="draw-raw" disabled>
+												<fieldset id="ui-mode-raw-options" disabled>
 													<div class="row">
 														<div class="col p-0">
 															<label class="toggle">
