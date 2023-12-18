@@ -26,6 +26,10 @@
     overflow: hidden;
 }
 
+#realtime #table ._ball {
+    transition: all 33.33ms;
+}
+
 #realtime #table-background {
     width: 688px;
     height: 356px;
