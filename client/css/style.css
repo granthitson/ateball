@@ -70,23 +70,19 @@ form fieldset:not(.show) {
     margin: auto;
 }
 
-#game-controls {
+#realtime {
     width: 900px;
     height: 356px;
     display: none;
 }
 
-#game-operations-menu {
-    min-height: 0;
-}
-
-#game-operations {
+#round-status-menu {
     flex: 1 1 auto;
     overflow: auto;
     height: 0;
 }
 
-#game-operations::-webkit-scrollbar {
+#round-status-menu::-webkit-scrollbar {
     display: none;
 }
 

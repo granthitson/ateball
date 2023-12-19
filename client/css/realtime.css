@@ -14,50 +14,50 @@
     z-index: 9;
 }
 
-#realtime canvas {
+#realtime-stream canvas {
     display: none;
     position: absolute;
     background-image: url("../images/table-placeholder.png");
 }
 
-#realtime #table {
+#realtime-stream #table {
     display: block;
     position: relative;
     overflow: hidden;
 }
 
-#realtime #table ._ball {
+#realtime-stream #table ._ball {
     transition: all 33.33ms;
 }
 
-#realtime #table-background {
+#realtime-stream #table-background {
     width: 688px;
     height: 356px;
     background-image: url("../images/table-placeholder.png");
 }
 
-#realtime #table.raw #table-background {
+#realtime-stream #table.raw #table-background {
     background-image: unset;
 }
 
-#realtime #table.raw canvas {
+#realtime-stream #table.raw canvas {
     display: unset;
 }
 
-#realtime #table.raw ._ball {
+#realtime-stream #table.raw ._ball {
     background-image: unset;
     border: unset;
 }
 
-#realtime #table.raw .vector-wrapper {
+#realtime-stream #table.raw .vector-wrapper {
     display: none;
 }
 
-#realtime #table.targeting ._ball:hover {
+#realtime-stream #table.targeting ._ball:hover {
     border: 2px solid lime !important;
 }
 
-#realtime-menu {
+#realtime-stream-status-menu {
     position: relative;
     background-color: #ededed;
 }
@@ -71,7 +71,7 @@
 /* ids */
 
 /* ball path menu items */
-    #ball-path-menu[disabled] .ball-path {
+    #ball-path-container[disabled] .ball-path {
         filter: grayscale(1);
         pointer-events: none;
     }
@@ -84,7 +84,7 @@
         height: 24px;
     }
 
-    #ball-path-menu:not([disabled]) .ball-path:hover {
+    #ball-path-container:not([disabled]) .ball-path:hover {
         cursor: pointer;
         opacity: 1;
     }
@@ -98,7 +98,7 @@
         opacity: .7;
     }
 
-    #ball-path-menu:not([disabled]) .ball-path.selected:hover {
+    #ball-path-container:not([disabled]) .ball-path.selected:hover {
         cursor: pointer;
         opacity: .7;
     }

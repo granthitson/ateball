@@ -36,8 +36,8 @@
 							</div>
 						</div>
 
-						<fieldset id="game-controls" class="row controls" disabled="">
-							<div id="realtime" class="col-sm-auto d-flex p-0">
+						<fieldset id="realtime" class="row controls" disabled="">
+							<div id="realtime-stream" class="col-sm-auto d-flex p-0">
 								<div id="table">
 									<div id="table-background">
 										<canvas id="raw-realtime" width="688px" height="356px"></canvas>
@@ -66,8 +66,8 @@
 								</div>
 							</div>
 
-							<div id="realtime-menu" class="col d-flex flex-column">
-								<div id="realtime-status-menu" class="row">
+							<div id="realtime-status-menu" class="col d-flex flex-column">
+								<div id="game-status-menu" class="row">
 									<div class="col">
 										<div id="realtime-turn-menu" class="row header">
 											<div class="col">
@@ -131,65 +131,51 @@
 									</div>
 								</div>
 
-								<div id="game-operations-menu" class="row flex-column flex-grow-1">
-									<div id="game-operations" class="col flex-grow-1">
-										<div class="row">
-											<button id="ball-path-btn" class="_btn menu-btn dropdown" data-target="#ball-path-menu">Ball Paths</button>
-											<fieldset id="ball-path-menu" class="col menu">
-												<div id="ball-path-placeholder" class="row">NO PATHS AVAILABLE</div>
-											</fieldset>
-										</div>
+								<div id="round-status-menu" class="row flex-column flex-grow-1">
+									<fieldset id="ball-path-container" class="col">
+										<div id="ball-path-placeholder" class="row">NO PATHS AVAILABLE</div>
+									</fieldset>
+								</div>
 
-										<div class="row">
-											<button id="image-options-btn" class="_btn menu-btn dropdown" data-target="#image-options-menu">Options</button>
-											<form id="image-options-menu" class="col menu">
-												<div class="row">
-													<div class="col p-0">
-														<label class="toggle">
-															<input name="draw-raw" type="checkbox" data-dependency="ui-mode-raw-options">
-															<span class="option-toggle-btn">
-																<span class="option">Default</span>
-																<span class="option">Raw</span>
-															</span>
-														</label>
-													</div>
-												</div>
-
-												<div class="row">
-													<div class="col p-0">
-														<label class="toggle">
-															<input name="draw-solid" type="checkbox" checked="checked">
-															<span class="option-toggle-btn inverse">
-																<span class="option">Solid</span>
-															</span>
-														</label>
-													</div>
-													<div class="col p-0">
-														<label class="toggle">
-															<input name="draw-stripe" type="checkbox" checked="checked">
-															<span class="option-toggle-btn inverse">
-																<span class="option">Stripe</span>
-															</span>
-														</label>
-													</div>
-												</div>
-
-												<fieldset id="active-round-options" class="show">
-
+								<div>
+									<div class="row">
+										<button id="image-options-btn" class="_btn menu-btn dropdown" data-target="#image-options-menu">Options</button>
+										<form id="image-options-menu" class="col menu">
+											<fieldset id="continuous-options" class="show">
+												<fieldset id="default-options" class="show">
 													<div class="row">
 														<div class="col p-0">
 															<label class="toggle">
-																<input name="highlight-clusters" type="checkbox">
-																<span class="option-toggle-btn inverse">
-																	<span class="option">Clusters</span>
+																<input name="draw-raw" type="checkbox" data-dependency="raw-options">
+																<span class="option-toggle-btn">
+																	<span class="option">Default</span>
+																	<span class="option">Raw</span>
 																</span>
 															</label>
 														</div>
 													</div>
-
+		
+													<div class="row">
+														<div class="col p-0">
+															<label class="toggle">
+																<input name="draw-solid" type="checkbox" checked="checked">
+																<span class="option-toggle-btn inverse">
+																	<span class="option">Solid</span>
+																</span>
+															</label>
+														</div>
+														<div class="col p-0">
+															<label class="toggle">
+																<input name="draw-stripe" type="checkbox" checked="checked">
+																<span class="option-toggle-btn inverse">
+																	<span class="option">Stripe</span>
+																</span>
+															</label>
+														</div>
+													</div>
 												</fieldset>
 
-												<fieldset id="ui-mode-raw-options" disabled>
+												<fieldset id="raw-options">
 													<div class="row">
 														<div class="col p-0">
 															<label class="toggle">
@@ -208,7 +194,7 @@
 															</label>
 														</div>
 													</div>
-
+	
 													<div class="row">
 														<div class="col p-0">
 															<label class="toggle">
@@ -220,8 +206,22 @@
 														</div>
 													</div>
 												</fieldset>
-											</form>
-										</div>
+											</fieldset>
+
+											<fieldset id="active-round-options" class="show">
+												<div class="row">
+													<div class="col p-0">
+														<label class="toggle">
+															<input name="highlight-clusters" type="checkbox">
+															<span class="option-toggle-btn inverse">
+																<span class="option">Clusters</span>
+															</span>
+														</label>
+													</div>
+												</div>
+
+											</fieldset>
+										</form>
 									</div>
 								</div>
 							</div>

@@ -69,7 +69,7 @@ window.api.ateball.game.on_start(() => {
 var image_stream = Promise.resolve();
 window.api.ateball.game.realtime.on_stream( (e, msg) => {
     image_stream = new Promise((resolve, reject) => {
-        var realtime = document.querySelector("#realtime canvas");
+        var realtime = document.querySelector("#realtime-stream canvas");
         var context = realtime.getContext("2d");
 
         var image = new Image();
@@ -92,7 +92,7 @@ window.api.ateball.game.round.on_execute_path((e, data) => {
 
 window.api.ateball.game.round.on_target_path((e, data) => {
     // need to wait for menu items to be added 
-    waitForElement(`.ball-path[data-id="${data.id}"]`, ball_path_menu).then(() => {
+    waitForElement(`.ball-path[data-id="${data.id}"]`, ball_path_container).then(() => {
         try {
             ateball_mouse.target_path(data.path);
         } catch (e) {
@@ -104,11 +104,11 @@ window.api.ateball.game.round.on_target_path((e, data) => {
 window.api.ateball.game.on_end((e) => {
     console.log("game ended");
     toggleButtonSpinner(game_stop_btn, false);
-    closeNavigationMenus(game_controls);
+    closeNavigationMenus(realtime_controls);
     ateball_mouse.deactivate();
 
     image_stream.then(() => {
-        var realtime = document.querySelector("#realtime canvas");
+        var realtime = document.querySelector("#realtime-stream canvas");
         var context = realtime.getContext("2d");
         context.clearRect(0, 0, realtime.width, realtime.height);
     });
@@ -120,7 +120,7 @@ window.api.ateball.on_stop(() => {
     toggleButtonSpinner(ateball_stop_btn, false);
     ateball_mouse.deactivate();
 
-    var realtime = document.querySelector("#realtime canvas");
+    var realtime = document.querySelector("#realtime-stream canvas");
     var context = realtime.getContext("2d");
     context.clearRect(0, 0, realtime.width, realtime.height);
 
