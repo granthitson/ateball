@@ -109,7 +109,7 @@ const realtime_controls = document.querySelector("#realtime");
 const realtime_stream_table = document.querySelector("#realtime-stream #table");
 const realtime_stream_ball_paths = realtime_stream_table.querySelector("#ball-paths");
 
-const change_round = realtime_controls.querySelectorAll("#turn-timer .change-round");
+const change_round = realtime_controls.querySelectorAll("#round-timer .change-round");
 change_round.forEach(change_btn => {
     change_btn.addEventListener("click", (e) => {
         if (e.target.classList.contains("left")) {
@@ -294,12 +294,12 @@ const toggleGamemodeControls = (s) => {
     });
 }
 
-const turn_timer = document.querySelector("#turn-timer");
-const turn_timer_progress = document.querySelector(".timer-progress")
-const turn_num = document.querySelector("#turn-timer #round-num");
+const round_timer = document.querySelector("#round-timer");
+const round_timer_progress = document.querySelector(".timer-progress")
+const round_num = document.querySelector("#round-timer #round-num");
 
-const round_decrement = realtime_controls.querySelector("#turn-timer #decrement-round");
-const round_increment = realtime_controls.querySelector("#turn-timer #increment-round");
+const round_decrement = realtime_controls.querySelector("#round-timer #decrement-round");
+const round_increment = realtime_controls.querySelector("#round-timer #increment-round");
 
 const suits = Array.from(document.querySelectorAll(".suit"));
 const ball_indicators = Array.from(document.querySelectorAll(".pool-ball-indicator"));
@@ -321,15 +321,15 @@ const toggleRealtimeControls = (s) => {
 }
 
 const toggleRoundIndicator = (s, interact) => {
-    var active_turn = (s.ateball.game.turn.active && s.ateball.game.realtime.current_round == -1);
+    var active_round = (s.ateball.game.turn.active && s.ateball.game.realtime.current_round == -1);
 
-    turn_timer.classList.toggle("start", active_turn);
-    turn_timer.classList.toggle("pending", !active_turn);
+    round_timer.classList.toggle("start", active_round);
+    round_timer.classList.toggle("pending", !active_round);
 
-    turn_num.textContent = (s.ateball.game.realtime.current_round == -1) ? s.ateball.game.round.num : s.ateball.game.realtime.current_round;
+    round_num.textContent = (s.ateball.game.realtime.current_round == -1) ? s.ateball.game.round.num : s.ateball.game.realtime.current_round;
     let time_passed = clamp((Date.now() - (s.ateball.game.turn.start_time * 1000)) / (s.ateball.game.turn.total_duration * 1000), 0, 1) * 100;
-    turn_timer_progress.style.width = (interact && s.ateball.game.turn.active) ? `${time_passed.toFixed(2)}%` : "0%";
-    turn_timer_progress.style.display = (interact && s.ateball.game.realtime.current_round != -1) ? "none" : "";
+    round_timer_progress.style.width = (interact && s.ateball.game.turn.active) ? `${time_passed.toFixed(2)}%` : "0%";
+    round_timer_progress.style.display = (interact && s.ateball.game.realtime.current_round != -1) ? "none" : "";
 
     round_decrement.style.display = (interact && ((s.ateball.game.round.num != null && s.ateball.game.realtime.current_round == -1) || s.ateball.game.realtime.current_round > 1)) ? "block" : "none";
     round_increment.style.display = (interact && s.ateball.game.realtime.current_round > 0 && s.ateball.game.realtime.current_round <= s.ateball.game.round.num) ? "block" : "none";
