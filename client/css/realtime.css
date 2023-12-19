@@ -53,10 +53,6 @@
     display: none;
 }
 
-#realtime-stream #table.targeting ._ball:hover {
-    border: 2px solid lime !important;
-}
-
 #realtime-stream-status-menu {
     position: relative;
     background-color: #ededed;
@@ -194,53 +190,34 @@
 
 /* ball/suit selection */
 
-    #targeting-menu #update-targeting-menu {
-        display: none;
-    }
-
-    #targeting-menu.selecting #update-targeting-menu {
-        display: block;
-    }
-
-    #targeting-menu.selecting .pool-ball-indicator.targetable.target:not([disabled]) {
-        border: 1px lime solid;
-    }
-
-    #targeting-menu.selecting .pool-ball-indicator.targetable:not(.target, [disabled]):hover {
-        border: 1px lime solid;
-    }
-
-    .pool-ball-indicator.targetable.target[disabled] {
+    .pool-ball-indicator.target[disabled] {
         filter: grayscale(1);
     }
 
-    .pool-ball-indicator.targetable:not(.target), .pool-ball-indicator:not(.targetable, .target) {
+    .pool-ball-indicator:not(.target) {
         filter: opacity(.6);
     }
 
-    .pool-ball-indicator.targetable[disabled]:not(.target), .pool-ball-indicator[disabled]:not(.targetable, .target) {
+    .pool-ball-indicator[disabled]:not(.target) {
         filter: grayscale(1) opacity(.4);
     }
 
-    .pool-ball-indicator:not(.targetable, .target, [disabled]) {
+    .pool-ball-indicator:not(.target, [disabled]) {
         cursor: pointer;
         pointer-events: none;
     }
 
     .suit {
+        font-weight: 600;
         position: relative;
         background: #f1f1f1;
         transition: all 300ms ease-in-out;
     }
 
-    .suit.selected {
-        pointer-events: none;
-        cursor: pointer;
-    }
-
     .suit .content {
         position: inherit;
         z-index: 10;
+        font-weight: 600;
     }
 
     .suit.solid {
@@ -249,10 +226,6 @@
 
     .suit.solid.selected {
         background: #4089e1;
-    }
-
-    .suit.solid:not(.selected, [disabled]):hover {
-        background: #3b81d7;
     }
 
     .suit .stripe {
@@ -268,10 +241,6 @@
 
     .suit.selected .stripe {
         background: #4089e1;
-    }
-
-    .suit.stripe:not(.selected, [disabled]):hover .stripe {
-        background: #3b81d7;
     }
 
 /* ball/suit selection */

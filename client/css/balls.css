@@ -99,10 +99,7 @@
     padding: 0;
     background-size: 175%;
     background-position: center;
-}
-
-.ball:hover {
-    filter: brightness(1.2);
+    cursor: default;
 }
 
 /* ball status/selection */

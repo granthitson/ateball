@@ -122,102 +122,6 @@ change_round.forEach(change_btn => {
     });
 });
 
-var targeting_menu = document.querySelector("#targeting-menu");
-var targetables = document.querySelectorAll(".targetable");
-
-var suit_selection = document.querySelector("#realtime-suit");
-suit_selection.addEventListener("click", (e) => {
-    var target = (e.target.classList.contains("suit")) ? e.target : e.target.closest(".suit");
-    if (target) {
-        window.api.get_state().then((s) => {
-            if (s.ateball.game.suit == null) {
-                if (!targeting_menu.classList.contains("selecting")) {
-                    targeting_menu.classList.add("selecting");
-                } else {
-                    targetables.forEach((elem) => {
-                        if (!elem.disabled) {
-                            elem.classList.toggle("target", elem.classList.contains(target.value));
-                        }
-                    });
-                }
-            }
-        });
-    }
-});
-
-var ball_targeting_menu = document.querySelector("#realtime-ball-status");
-ball_targeting_menu.addEventListener("click", (e) => {
-    if (e.target.classList.contains("targetable")) {
-        if (!targeting_menu.classList.contains("selecting")) {
-            targeting_menu.classList.add("selecting");
-        } else {
-            let toggle = !e.target.classList.contains("target");
-            toggleTargetable(e.target, toggle);
-        }
-    }
-});
-
-ball_targeting_menu.addEventListener("mousedown", (e) => {
-    if (targeting_menu.classList.contains("selecting") && e.target.classList.contains("targetable")) {
-        let toggle = !e.target.classList.contains("target");
-
-        ball_targeting_menu.onmousemove = (e) => {
-            let targetable = document.elementFromPoint(e.clientX, e.clientY);
-            toggleTargetable(targetable, toggle);
-        }
-    }
-});
-
-ball_targeting_menu.addEventListener("mouseup", (e) => {
-    ball_targeting_menu.onmousemove = null;
-});
-
-const toggleTargetable = (targetable, toggle) => {
-    var available_targets = document.querySelectorAll(".targetable.target").length;
-    if (available_targets > 1) {
-        targetable.classList.toggle("target", toggle);
-    } else if (toggle) {
-        targetable.classList.toggle("target", toggle);
-    }
-}
-
-var confirm_targeting_btn = document.querySelector("#confirm-targeting-btn");
-confirm_targeting_btn.addEventListener("click", (e) => {
-    var ball_targets = Array.from(targetables).filter((t) => t.classList.contains("ball")).reduce((a, v) => ({ ...a, [v.id]: v.classList.contains("target") && !v.disabled}), {}) ;
-
-    targeting_menu.classList.remove("selecting");
-
-    window.api.ateball.game.update_targets({
-        "targets" : ball_targets
-    });
-});
-
-var cancel_targeting_btn = document.querySelector("#cancel-targeting-btn");
-cancel_targeting_btn.addEventListener("click", (e) => {
-    window.api.get_state().then((s) => {
-        targetables.forEach(targetable => {
-            let target = false;
-
-            if (s.ateball.game.suit == null && s.ateball.game.targets == null) {
-                targetable.classList.add("target");
-            } else {
-                if (s.ateball.game.suit == null) {
-                    target = s.ateball.game.targets[targetable.id] && !targetable.disabled;
-                } else if (s.ateball.game.targets == null) {
-                    target = targetable.classList.contains(s.ateball.game.suit) && !targetable.disabled;
-                } else {
-                    target = targetable.classList.contains(s.ateball.game.suit) && s.ateball.game.targets[targetable.id] && !targetable.disabled;
-                }
-
-                targetable.classList.toggle("target", target);
-            }
-        });
-    });
-    
-
-    targeting_menu.classList.remove("selecting");
-});
-
 const ball_path_container = document.querySelector("#ball-path-container");
 ball_path_container.addEventListener("click", (e) => {
     var target = (e.target.classList.contains("ball-path")) ? e.target : e.target.parentElement;
@@ -431,11 +335,9 @@ const toggleRoundIndicator = (s, interact) => {
     round_increment.style.display = (interact && s.ateball.game.realtime.current_round > 0 && s.ateball.game.realtime.current_round <= s.ateball.game.round.num) ? "block" : "none";
 }
 
+var suit_selection = document.querySelector("#realtime-suit");
 const toggleSuitIndicators = (s, interact) => {
     suit_selection.style.display = (s.ateball.game.suit !== undefined) ? "" : "none";
-    if (!interact) {
-        targeting_menu.classList.remove("selecting");
-    }
 
     if (s.ateball.game.suit !== undefined) {
         suits.forEach((elem) => {
@@ -461,36 +363,28 @@ const toggleBallIndicators = (s, interact) => {
             if (!(elem.id in s.ateball.game.balls) || s.ateball.game.suit === undefined) {
                 elem.disabled = true;
                 elem.classList.remove("target");
-                elem.classList.remove("targetable");
             } else {
                 if (s.ateball.game.suit !== undefined) {
                     // suit is null or solid/stripe
                     
-                    if (!targeting_menu.classList.contains("selecting")) {
-                        let is_target = true; let is_targetable = true;
+                    let is_target = true;
 
-                        if (s.ateball.game.suit != null) {
-                            is_targetable = elem.classList.contains(s.ateball.game.suit) && !s.ateball.game.balls[elem.id].info.pocketed;
-                            is_target = is_targetable && ((s.ateball.game.targets != null) ? s.ateball.game.targets[elem.id] : s.ateball.game.balls[elem.id].info.target);
-                        } else {
-                            is_targetable = !s.ateball.game.balls[elem.id].info.pocketed;
-                            is_target = is_targetable && ((s.ateball.game.targets != null) ? s.ateball.game.targets[elem.id] : s.ateball.game.balls[elem.id].info.target);
-                        }
-
-                        elem.disabled = s.ateball.game.balls[elem.id].info.pocketed;
-                        elem.classList.toggle("target", is_target);
-                        elem.classList.toggle("targetable", is_targetable);
+                    if (s.ateball.game.suit != null) {
+                        is_target = ((s.ateball.game.targets != null) ? s.ateball.game.targets[elem.id] : s.ateball.game.balls[elem.id].info.target);
+                    } else {
+                        is_target = ((s.ateball.game.targets != null) ? s.ateball.game.targets[elem.id] : s.ateball.game.balls[elem.id].info.target);
                     }
+
+                    elem.disabled = s.ateball.game.balls[elem.id].info.pocketed;
+                    elem.classList.toggle("target", is_target);
                 } else {
                     elem.disabled = true;
                     elem.classList.remove("target");
-                    elem.classList.remove("targetable");
                 }
             }
         } else {
             elem.disabled = false;
             elem.classList.add("target");
-            elem.classList.add("targetable");
         }
     });
 }
@@ -499,7 +393,7 @@ const toggleRealtimeInterface = (s) => {
     var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" 
         && s.ateball.game.started;
 
-    table_ui.classList.toggle("raw", s.realtime.config.table.raw);
+    realtime_stream_table.classList.toggle("raw", s.realtime.config.table.raw);
 
     drawBallClusters(s, interact);
 
