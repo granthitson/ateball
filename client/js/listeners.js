@@ -118,7 +118,7 @@ change_round.forEach(change_btn => {
             window.api.ateball.game.realtime.round_increment();
         }
 
-        realtime_stream_ball_paths.querySelectorAll(`.ball_path_wrapper`).forEach((e) => { e.remove(); });
+        realtime_stream_ball_paths.querySelectorAll(`.ball-path-wrapper`).forEach((e) => { e.remove(); });
     });
 });
 
@@ -507,7 +507,7 @@ const listBallPaths = (s, interact, is_realtime) => {
     } else {
         ball_path_placeholder.style.display = "";
         ball_path_elems.forEach(e => { e.remove(); });
-        realtime_stream_ball_paths.querySelectorAll(".ball_path_wrapper").forEach(e => { e.remove(); });
+        realtime_stream_ball_paths.querySelectorAll(".ball-path-wrapper").forEach(e => { e.remove(); });
     }
 }
 
@@ -531,7 +531,7 @@ const drawSelectedBallPath = (s, interact) => {
                     ball_path_elem.classList.add("selected");
                 }
 
-                var drawn_ball_path = realtime_stream_table.querySelector(`.ball_path_wrapper`);
+                var drawn_ball_path = realtime_stream_table.querySelector(`.ball-path-wrapper`);
                 if (!drawn_ball_path || (drawn_ball_path && drawn_ball_path.dataset.id != ball_path.id)) {
                     if (drawn_ball_path && drawn_ball_path.dataset.id != ball_path.id) {
                         drawn_ball_path.remove();
@@ -542,7 +542,7 @@ const drawSelectedBallPath = (s, interact) => {
             } 
         } else {
             ball_path_container.querySelectorAll(".ball-path.selected").forEach((e) => { e.classList.remove("selected"); })
-            realtime_stream_table.querySelectorAll(".ball_path_wrapper").forEach((e) => { e.remove(); })
+            realtime_stream_table.querySelectorAll(".ball-path-wrapper").forEach((e) => { e.remove(); })
         }
     }
 }
