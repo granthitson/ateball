@@ -82,6 +82,12 @@ app.on('ready', async () => {
 		window.focus();
 	});
 
+	window.webContents.on('dom-ready', (e) => {
+		if (ateball && ateball.state.ateball.game.started) {
+			ateball.stop_game()
+		}
+	});
+
 	window.webContents.once('dom-ready', (e) => {
 		ateball.start();
 	});
