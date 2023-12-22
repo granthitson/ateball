@@ -394,6 +394,7 @@ const toggleRealtimeInterface = (s) => {
         && s.ateball.game.started;
 
     realtime_stream_table.classList.toggle("raw", s.realtime.config.table.raw);
+    realtime_stream_table.classList.toggle("live", (interact && s.ateball.game.realtime.current_round == -1));
 
     drawBallClusters(s, interact);
 

@@ -26,8 +26,33 @@
     overflow: hidden;
 }
 
-#realtime-stream #table ._ball {
+#realtime-stream #table.live ._ball {
     transition: all 33.33ms;
+}
+
+#realtime-stream #table:not(.live) * {
+    transition: all 300ms;
+}
+
+#realtime-stream #table:not(.live) .vector-wrapper, #realtime-stream #table:not(.live) #_target {
+    opacity: 0;
+    transition: all 300ms;
+    animation: fade-in 300ms;
+    animation-delay: 300ms;
+    animation-fill-mode: forwards;
+}
+
+#realtime-stream #table:not(.live) ._ball, #realtime-stream #table:not(.live) .ball-cluster {
+    opacity: 0;
+    transition: all 300ms;
+    animation: fade-in 300ms;
+    animation-fill-mode: forwards;
+}
+
+@keyframes fade-in {
+    to {
+        opacity: 1;
+    }
 }
 
 #realtime-stream #table-background {
