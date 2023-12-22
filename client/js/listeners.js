@@ -558,7 +558,7 @@ const drawBallPath = (id, ball_path) => {
     }
 
     var ball_path_wrapper = document.createElement('div');
-    ball_path_wrapper.classList.add('ball_path_wrapper');
+    ball_path_wrapper.classList.add('ball-path-wrapper');
     ball_path_wrapper.dataset.id = id;
 
     // create cueball wrapper
