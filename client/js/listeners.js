@@ -316,7 +316,7 @@ const toggleRealtimeControls = (s) => {
     ateball_toggle.classList.toggle("active", !interact);
 
     toggleRoundIndicator(s, interact);
-    toggleSuitIndicators(s);
+    toggleSuitIndicators(s, interact);
     toggleBallIndicators(s, interact);
 }
 
