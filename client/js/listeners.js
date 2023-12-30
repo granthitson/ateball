@@ -277,7 +277,7 @@ const toggleGamemodeControls = (s) => {
     var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game";
 
     gamemode_controls.disabled = !interact;
-    gamemode_pending_overlay.style.display = (s.ateball.pending) ? "block" : "none";
+    gamemode_pending_overlay.style.display = (s.ateball.game.pending) ? "block" : "none";
 
     gamemodes.forEach(function(elem) {
         if (interact && !s.ateball.game.started) {

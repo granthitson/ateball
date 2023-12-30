@@ -12,8 +12,8 @@ class Ateball {
 				connected: false,
 			},
 			ateball : {
-				pending: false,
 				game: {
+					pending: false,
 					started: false,
 					suit: null,
 					turn : {
@@ -90,7 +90,7 @@ class Ateball {
 	}
 
 	play_game(game_config) {
-		this.state.ateball.pending = true;
+		this.state.ateball.game.pending = true;
 
 		this.window.setAlwaysOnTop(true, 'pop-up-menu');
 		this.window.setMinimizable(false)
@@ -101,7 +101,7 @@ class Ateball {
 		this.state.ateball.game.suit = (msg.data.suit) ? null : undefined;
 		this.state.ateball.game.balls = msg.data.balls;
 		
-		this.state.ateball.pending = false;
+		this.state.ateball.game.pending = false;
 		this.state.ateball.game.started = true;
 
 		this.toggle_game_controls();
