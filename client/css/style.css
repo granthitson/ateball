@@ -54,6 +54,10 @@ form fieldset:not(.show) {
     height: 100%;
 }
 
+#ateball-debug-console {
+    will-change: transform;
+}
+
 #ateball-toggle {
     flex: 33%;
 }
@@ -68,22 +72,6 @@ form fieldset:not(.show) {
     height: fit-content;
     width: fit-content;
     margin: auto;
-}
-
-#realtime {
-    width: 900px;
-    height: 356px;
-    display: none;
-}
-
-#round-status-menu {
-    flex: 1 1 auto;
-    overflow: auto;
-    height: 0;
-}
-
-#round-status-menu::-webkit-scrollbar {
-    display: none;
 }
 
 #logo_header {

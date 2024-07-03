@@ -74,6 +74,9 @@ class Ateball {
 		this.stopped = null;
 
 		this.pending = {};
+
+		this.logging_limit = 300;
+		this.logging = [];
 	}
 
 	start() {
@@ -389,9 +392,18 @@ class Ateball {
 					}
 				}
 			} catch (e) {
-				this.window.webContents.send("ateball-log", msg);
+				this.log("default", msg);
 			}
 		});
+	}
+
+	log(type="default", msg="") {
+		if (this.logging.length > this.logging_limit) {
+			this.logging.shift();
+		}
+
+		this.logging.push(msg);
+		this.window.webContents.send("ateball-log", type, msg);
 	}
 
 	send_message(msg, callback = null) {

@@ -53,15 +53,17 @@ webview.addEventListener('console-message', (e) => {
 // -------
 
 const debug = document.querySelector("#ateball-debug-console");
+const debug_limit = 300;
 
 window.api.ateball.on_start( (e) => {
     console.log("Ateball started");
     toggleButtonSpinner(ateball_start_btn, false);
-    debug.innerHTML = "";
 });
 
-window.api.ateball.game.on_start(() => {
+window.api.ateball.game.on_start((e, data) => {
     console.log("game started");
+    document.querySelector("#default-realtime").style.backgroundImage = `url(${data})`;
+
     trackBallPositions();
     closeNavigationMenus(gamemode_controls);
     ateball_mouse.activate();
@@ -104,6 +106,8 @@ window.api.ateball.game.round.on_target_path((e, data) => {
 
 window.api.ateball.game.on_end((e) => {
     console.log("game ended");
+    document.querySelector("#default-realtime").style.backgroundImage = "";
+
     untrackBallPositions();
     toggleButtonSpinner(game_stop_btn, false);
     closeNavigationMenus(realtime_controls);
@@ -118,6 +122,8 @@ window.api.ateball.game.on_end((e) => {
 
 window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
+    document.querySelector("#default-realtime").style.backgroundImage = "";
+
     untrackBallPositions();
     toggleButtonSpinner(game_stop_btn, false);
     toggleButtonSpinner(ateball_stop_btn, false);
@@ -126,29 +132,17 @@ window.api.ateball.on_stop(() => {
     var realtime = document.querySelector("#realtime-stream canvas");
     var context = realtime.getContext("2d");
     context.clearRect(0, 0, realtime.width, realtime.height);
-
-    var empty = document.createElement('div')
-    empty.classList.add('empty')
-    log_ateball_message(empty);
 });
 
-window.api.ateball.log_message((e, msg) => {
-    log_ateball_message(msg);
-});
-
-const log_ateball_message = (msg) => {
-    let log = document.createElement('span');
-    log.classList.add("log-object");
-
-    if (typeof(msg) === "object") {
-        log.appendChild(msg);
-    } else if (typeof(msg) === "string") {
-        log.innerText += truncate(msg);
+window.api.ateball.log_message((e, type, msg) => {
+    if (debug.children != undefined && debug.children.length >= 300) {
+        Array.from(debug.children).slice(300).forEach((log) => { log.remove(); });
     }
 
-    debug.prepend(log);
-}
-
-const truncate = (msg) => {
-    return (msg.length > 255) ? msg.substring(0, 255) + "..." : msg;
-}
+    var log_obj = document.createElement('span')
+    log_obj.classList.add('log-object')
+    log_obj.classList.toggle('empty', (type =="empty"))
+    log_obj.innerText = msg;
+    
+    debug.prepend(log_obj);
+});

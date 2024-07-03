@@ -14,10 +14,28 @@
     z-index: 9;
 }
 
-#realtime-stream canvas {
+#realtime {
+    width: 900px;
+    height: 356px;
+    display: flex;
+}
+
+#realtime:disabled {
+    filter: grayscale(1);
+}
+
+#realtime:disabled #table-background {
+    filter: contrast(0.7);
+}
+
+#round-status-menu {
+    flex: 1 1 auto;
+    overflow: auto;
+    height: 0;
+}
+
+#round-status-menu::-webkit-scrollbar {
     display: none;
-    position: absolute;
-    background-image: url("../images/table-placeholder.png");
 }
 
 #realtime-stream #table {
@@ -26,50 +44,181 @@
     overflow: hidden;
 }
 
-#realtime-stream #table.live ._ball {
-    transition: all 33.33ms;
-}
-
-#realtime-stream #table:not(.live) * {
-    transition: all 300ms;
-}
-
-#realtime-stream #table:not(.live) .vector-wrapper, #realtime-stream #table:not(.live) #_target {
-    opacity: 0;
-    transition: all 300ms;
-    animation: fade-in 300ms;
-    animation-delay: 300ms;
-    animation-fill-mode: forwards;
-}
-
-#realtime-stream #table:not(.live) ._ball, #realtime-stream #table:not(.live) .ball-cluster {
-    opacity: 0;
-    transition: all 300ms;
-    animation: fade-in 300ms;
-    animation-fill-mode: forwards;
-}
-
-@keyframes fade-in {
-    to {
-        opacity: 1;
-    }
-}
 
 #realtime-stream #table-background {
     width: 688px;
     height: 356px;
+    position: relative;
+    z-index: 6;
+}
+
+#realtime:disabled #table-background {
+    z-index: 10;
+}
+
+#realtime-stream #table-background #default-realtime {
+    width: inherit;
+    height: inherit;
     background-image: url("../images/table-placeholder.png");
+    background-size: 0;
 }
 
-#realtime-stream #table.raw #table-background {
-    background-image: unset;
+#realtime-stream #table.raw #table-background #default-realtime {
+    display: none;
 }
 
-#realtime-stream #table.raw canvas {
+#realtime-stream #default-realtime .background {
+    width: 429px;
+    height: 826px;
+    position: absolute;
+    top: -235px;
+    left: 129px;
+
+    background-position: -3px -3px;
+    background-image: inherit;
+    
+    transform: rotate(90deg) scaleX(calc(356 / 430)) scaleY(calc(688 / 826));
+    z-index: 7;
+}
+
+#realtime-stream #default-realtime #walls {
+    background-image: inherit;
+}
+
+#realtime-stream #default-realtime #walls .wall {
+    background-image: inherit;
+}
+
+#realtime-stream #default-realtime #walls .wall {
+    position: absolute;
+    background-image: inherit;
+    z-index: 8;
+}
+
+#realtime-stream #default-realtime #walls .trw {
+    transform: scaleX(calc(-356 / 430)) scaleY(calc(688 / 826));
+    top: -28px;
+    left: 308px;
+    width: 434px;
+    height: 44px;
+    background-position: 483px 84px;
+}
+
+#realtime-stream #default-realtime #walls .tlw {
+    transform: scaleX(calc(356 / 430)) scaleY(calc(688 / 826));
+    top: -28px;
+    left: -53px;
+    width: 434px;
+    height: 44px;
+    background-position: 483px 84px;
+}
+
+#realtime-stream #default-realtime #walls .lw {
+    transform: rotate(0deg) scaleX(calc(356 / 430)) scaleY(calc(688 / 826));
+    top: -59px;
+    left: -27px;
+    width: 44px;
+    height: 472px;
+    background-position: 52px -2px;
+}
+
+#realtime-stream #default-realtime #walls .blw {
+    transform: rotate(0deg) scaleX(calc(356 / 429)) scaleY(calc(-688 / 826));
+    top: 340px;
+    left: -53px;
+    width: 434px;
+    height: 44px;
+    background-position: 483px 84px;
+}
+
+#realtime-stream #default-realtime #walls .brw {
+    transform: rotate(0deg) scaleX(calc(-356 / 429)) scaleY(calc(-688 / 826));
+    top: 340px;
+    left: 308px;
+    width: 434px;
+    height: 44px;
+    background-position: 483px 84px;
+}
+
+#realtime-stream #default-realtime #walls .rw {
+    transform: rotate(0deg) scaleX(calc(-356 / 430)) scaleY(calc(688 / 826));
+    top: -59px;
+    left: 672px;
+    width: 44px;
+    height: 472px;
+    background-position: 52px -2px;
+}
+
+#realtime-stream #default-realtime #pockets .pocket {
+    position: absolute;
+    background-image: url("https://static-web-pool-production.pool.miniclippt.com/game/wasm_guest_1.0.0_73372/Resources/tableBase-ipad.png");
+    z-index: 6;
+}
+
+#realtime-stream #default-realtime #pockets .pocket.trp {
+    transform: scaleX(calc(-356 / 430)) scaleY(calc(688 / 826));
+    top: -24px;
+    left: 657px;
+    width: 55px;
+    height: 55px;
+    background-position: -3px -61px;
+}
+
+#realtime-stream #default-realtime #pockets .pocket.tmp {
+    transform: scaleX(calc(356 / 430)) scaleY(calc(688 / 826));
+    top: -27px;
+    left: 321px;
+    width: 45px;
+    height: 44px;
+    background-position: -3px -263px;
+}
+
+#realtime-stream #default-realtime #pockets .pocket.tlp {
+    transform: scaleX(calc(356 / 430)) scaleY(calc(688 / 826));
+    top: -24px;
+    left: -25px;
+    width: 55px;
+    height: 55px;
+    background-position: -3px -61px;
+}
+
+#realtime-stream #default-realtime #pockets .pocket.blp {
+    transform: scaleX(calc(356 / 430)) scaleY(calc(-688 / 826));
+    top: 325px;
+    left: -25px;
+    width: 55px;
+    height: 55px;
+    background-position: -3px -61px;
+}
+
+#realtime-stream #default-realtime #pockets .pocket.bmp {
+    transform: scaleX(calc(356 / 430)) scaleY(calc(-688 / 826));
+    top: 338px;
+    left: 321px;
+    width: 45px;
+    height: 44px;
+    background-position: -3px -263px;
+}
+
+#realtime-stream #default-realtime #pockets .pocket.brp {
+    transform: scaleX(calc(-356 / 430)) scaleY(calc(-688 / 826));
+    top: 325px;
+    left: 657px;
+    width: 55px;
+    height: 55px;
+    background-position: -3px -61px;
+}
+
+#realtime-stream #table #raw-realtime {
+    display: none;
+    position: absolute;
+}
+
+#realtime-stream #table.raw #raw-realtime {
     display: unset;
 }
 
-#realtime-stream #table.raw ._ball {
+#realtime-stream #table.raw .ball {
     background-image: unset;
     border: unset;
 }
@@ -83,10 +232,8 @@
     background-color: #ededed;
 }
 
-#_target {
-    border: 2px solid white;
-    pointer-events: none;
-    z-index: 9;
+#realtime-suit {
+    display: none;
 }
 
 /* ids */
@@ -145,7 +292,7 @@
         border-image-repeat: repeat;
     }
 
-    .ball-path .target_hole {
+    .ball-path .target_pocket {
         position: absolute;
         top: 0;
         right: 0;
@@ -153,34 +300,34 @@
         border-style: solid;
     }
 
-    .ball-path .target_hole.trh {
+    .ball-path .target_pocket.trp {
         border-width: 0px 24px 24px 0px;
         border-color: transparent #000 transparent transparent;
     }
     
-    .ball-path .target_hole.tmh {
+    .ball-path .target_pocket.tmp {
         border-style: unset;
         border-top: 6px solid black;
         aspect-ratio: 1 / 1;
     }
 
-    .ball-path .target_hole.tlh {
+    .ball-path .target_pocket.tlp {
         border-width: 0px 0px 24px 24px;
         border-color: transparent transparent transparent #000;
     }
 
-    .ball-path .target_hole.blh {
+    .ball-path .target_pocket.blp {
         border-width: 24px 0px 0px 24px;
         border-color: transparent transparent transparent #000;
     }
 
-    .ball-path .target_hole.bmh {
+    .ball-path .target_pocket.bmp {
         border-style: unset;
         border-bottom: 6px solid black;
         aspect-ratio: 1 / 1;
     }
 
-    .ball-path .target_hole.brh {
+    .ball-path .target_pocket.brh {
         border-width: 24px 24px 0px 0px;
         border-color: transparent #000 transparent transparent;
     }
@@ -192,6 +339,7 @@
     height: 100%;
     outline: 1px solid white;
     display: none;
+    z-index: 9;
 }
 
 .ball-cluster.show {
@@ -215,19 +363,19 @@
 
 /* ball/suit selection */
 
-    .pool-ball-indicator.target[disabled] {
+    .ball-indicator.target[disabled] {
         filter: grayscale(1);
     }
 
-    .pool-ball-indicator:not(.target) {
+    .ball-indicator:not(.target) {
         filter: opacity(.6);
     }
 
-    .pool-ball-indicator[disabled]:not(.target) {
+    .ball-indicator[disabled]:not(.target) {
         filter: grayscale(1) opacity(.4);
     }
 
-    .pool-ball-indicator:not(.target, [disabled]) {
+    .ball-indicator:not(.target, [disabled]) {
         cursor: pointer;
         pointer-events: none;
     }
