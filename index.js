@@ -1,8 +1,9 @@
 const electron = require('electron');
-const { app, BrowserWindow, session, screen, globalShortcut, ipcMain, webContents } = electron;
+const { app, BrowserWindow, session, globalShortcut, ipcMain } = electron;
 const windowStateKeeper = require('electron-window-state');
 
 const dotenv = require('dotenv');
+const debounce = require('debounce');
 const path = require('path');
 const URL = require('url').URL
 
@@ -39,8 +40,8 @@ app.on('ready', async () => {
 		x: window_state.x,
 		y: window_state.y,
 		width: 1200,
-		height: 600,
-		minHeight: 600,
+		height: 956,
+		minHeight: 956,
 		menuBarVisible: !app.isPackaged,
 		autoHideMenuBar: !app.isPackaged,
 		resizable: false,
@@ -55,7 +56,10 @@ app.on('ready', async () => {
 			preload: path.join(__dirname, 'client/js/preload.js'),
 		}
 	});
+	
 	window_state.manage(window);
+	window.on('resize', debounce(window_state.saveState, 500))
+	window.on('move', debounce(window_state.saveState, 500))
 
 	window.webContents.openDevTools();
 
@@ -94,6 +98,7 @@ app.on('ready', async () => {
 
 	window.on('closed', (e) => {
 		try {
+			window_state.saveState(window);
 			ateball.kill("SIGINT");
 		} catch (e) {
 			console.log("couldnt close ateball");
@@ -215,9 +220,11 @@ app.on('window-all-closed', () => {
 });
 
 process.on('SIGTERM', () => {
+	window_state.saveState(window);
 	ateball.kill();
 });
 
 process.on('SIGINT', () => {
+	window_state.saveState(window);
 	ateball.kill();
 });

@@ -104,7 +104,6 @@ class Ateball {
 		this.state.ateball.game.pending = false;
 		this.state.ateball.game.started = true;
 
-		this.toggle_game_controls();
 		this.window.webContents.send("game-started");
 	}
 
@@ -212,7 +211,6 @@ class Ateball {
 		this.window.setAlwaysOnTop(false);
 		this.window.setMinimizable(true)
 		this.reset_game_state();
-		this.toggle_game_controls();
 
 		this.window.webContents.send("game-ended");
 	}
@@ -273,7 +271,6 @@ class Ateball {
 					self.window.setMinimizable(true)
 
 					self.reset_ateball_state();
-					self.toggle_game_controls();
 					self.process = null;
 					self.window.webContents.send("ateball-stopped");
 				}
@@ -417,17 +414,6 @@ class Ateball {
 		}
 	}
 
-	toggle_game_controls() {
-		var bounds = this.window.getContentBounds();
-
-		if (this.state.ateball.game.started) {
-			bounds.height = 956;
-		} else {
-			bounds.height = 600;
-		}
-		
-		this.window.setContentBounds(bounds);
-	}
 
 	get_state() {
 		return this.state;
