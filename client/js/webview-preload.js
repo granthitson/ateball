@@ -81,6 +81,9 @@ const format = () => {
             });
     
             waitForElement(".play-area").then(() => {
+                var game_page = document.querySelector(".game-page");
+                game_page.style.padding = "unset";
+
                 var play_area = document.querySelector(".play-area");
 
                 var play_area_p1 = play_area.parentElement;
