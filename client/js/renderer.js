@@ -62,6 +62,7 @@ window.api.ateball.on_start( (e) => {
 
 window.api.ateball.game.on_start(() => {
     console.log("game started");
+    trackBallPositions();
     closeNavigationMenus(gamemode_controls);
     ateball_mouse.activate();
 });
@@ -103,6 +104,7 @@ window.api.ateball.game.round.on_target_path((e, data) => {
 
 window.api.ateball.game.on_end((e) => {
     console.log("game ended");
+    untrackBallPositions();
     toggleButtonSpinner(game_stop_btn, false);
     closeNavigationMenus(realtime_controls);
     ateball_mouse.deactivate();
@@ -116,6 +118,7 @@ window.api.ateball.game.on_end((e) => {
 
 window.api.ateball.on_stop(() => {
     console.log("Ateball stopped");
+    untrackBallPositions();
     toggleButtonSpinner(game_stop_btn, false);
     toggleButtonSpinner(ateball_stop_btn, false);
     ateball_mouse.deactivate();

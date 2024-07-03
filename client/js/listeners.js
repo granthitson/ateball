@@ -105,8 +105,16 @@ ateball_start_btn.addEventListener("click", (e) => {
 });
 
 const realtime_controls = document.querySelector("#realtime");
+const realtime_status_menu = realtime_controls.querySelector("#realtime-status-menu");
+const realtime_game_status_menu = realtime_status_menu.querySelector("#game-status-menu");
+const realtime_round_status_menu = realtime_status_menu.querySelector("#round-status-menu");
+
+const realtime_ball_indicators = realtime_game_status_menu.querySelector("#ball-indicators");
 
 const realtime_stream_table = document.querySelector("#realtime-stream #table");
+const realtime_stream_container = realtime_stream_table.querySelector("#table-container");
+const realtime_stream_balls = realtime_stream_table.querySelector("#balls");
+const realtime_stream_ball_vectors = realtime_stream_table.querySelector("#ball-vectors");
 const realtime_stream_ball_paths = realtime_stream_table.querySelector("#ball-paths");
 
 const change_round = realtime_controls.querySelectorAll("#round-timer .change-round");
@@ -122,7 +130,7 @@ change_round.forEach(change_btn => {
     });
 });
 
-const ball_path_container = document.querySelector("#ball-path-container");
+const ball_path_container = realtime_round_status_menu.querySelector("#ball-path-container");
 ball_path_container.addEventListener("click", (e) => {
     var target = (e.target.classList.contains("ball-path")) ? e.target : e.target.parentElement;
     if (target.classList.contains("ball-path")) {
@@ -302,14 +310,13 @@ const round_decrement = realtime_controls.querySelector("#round-timer #decrement
 const round_increment = realtime_controls.querySelector("#round-timer #increment-round");
 
 const suits = Array.from(document.querySelectorAll(".suit"));
-const ball_indicators = Array.from(document.querySelectorAll(".pool-ball-indicator"));
+const ball_indicators = Array.from(document.querySelectorAll(".ball-indicator"));
 
 const toggleRealtimeControls = (s) => {
     var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" 
         && s.ateball.game.started;
 
     realtime_controls.disabled = !interact;
-    realtime_controls.style.display = !interact ? "none" : "flex";
 
     game_stop_btn.disabled = !interact;
     game_stop.classList.toggle("active", interact);
@@ -324,18 +331,25 @@ const toggleRoundIndicator = (s, interact) => {
     var active_round = (s.ateball.game.turn.active && s.ateball.game.realtime.current_round == -1);
 
     round_timer.classList.toggle("start", active_round);
+    round_timer.classList.toggle("rcomplete", s.ateball.game.round.state.completed);
     round_timer.classList.toggle("pending", !active_round);
 
     round_num.textContent = (s.ateball.game.realtime.current_round == -1) ? s.ateball.game.round.num : s.ateball.game.realtime.current_round;
-    let time_passed = clamp((Date.now() - (s.ateball.game.turn.start_time * 1000)) / (s.ateball.game.turn.total_duration * 1000), 0, 1) * 100;
-    round_timer_progress.style.width = (interact && s.ateball.game.turn.active) ? `${time_passed.toFixed(2)}%` : "0%";
-    round_timer_progress.style.display = (interact && s.ateball.game.realtime.current_round != -1) ? "none" : "";
+
+    if (s.ateball.game.turn.total_duration != null) {
+        let time_passed = clamp((Date.now() - (s.ateball.game.turn.start_time * 1000)) / (s.ateball.game.turn.total_duration * 1000), 0, 1) * 100;
+        round_timer_progress.style.width = (interact && s.ateball.game.turn.active) ? `${time_passed.toFixed(2)}%` : "0%";
+        round_timer_progress.style.display = (interact && s.ateball.game.realtime.current_round != -1) ? "none" : "";
+    } else {
+        round_timer_progress.style.width = "0%";
+        round_timer_progress.style.display = "none";
+    }
 
     round_decrement.style.display = (interact && ((s.ateball.game.round.num != null && s.ateball.game.realtime.current_round == -1) || s.ateball.game.realtime.current_round > 1)) ? "block" : "none";
     round_increment.style.display = (interact && s.ateball.game.realtime.current_round > 0 && s.ateball.game.realtime.current_round <= s.ateball.game.round.num) ? "block" : "none";
 }
 
-var suit_selection = document.querySelector("#realtime-suit");
+const suit_selection = realtime_game_status_menu.querySelector("#realtime-suit");
 const toggleSuitIndicators = (s, interact) => {
     suit_selection.style.display = (s.ateball.game.suit !== undefined) ? "" : "none";
 
@@ -358,6 +372,8 @@ const toggleSuitIndicators = (s, interact) => {
 }
 
 const toggleBallIndicators = (s, interact) => {
+    var ball_indicators = Array.from(realtime_ball_indicators.querySelectorAll(".ball-indicator"));
+
     ball_indicators.forEach((elem) => {
         if (interact) {
             if (!(elem.id in s.ateball.game.balls) || s.ateball.game.suit === undefined) {
@@ -485,14 +501,15 @@ const listBallPaths = (s, interact, is_realtime) => {
                 ball_path_difficulty.innerHTML = ball_path.info.difficulty.toFixed(2);
 
                 var ball_path_icon = document.createElement('span');
-                ball_path_icon.classList.add('col', 'target_ball', `b${ball_path.target_ball.ball.info.number}`);
+                ball_path_icon.classList.add('col', 'target_ball');
+                ball_path_icon.dataset.name = ball_path.target_ball.ball.info.name;
 
-                var ball_path_target_hole = document.createElement('span');
-                ball_path_target_hole.classList.add('col-sm-auto', 'target_hole', `${ball_path.target_hole.hole.name}`);
+                var ball_path_target_pocket = document.createElement('span');
+                ball_path_target_pocket.classList.add('col-sm-auto', 'target_pocket', `${ball_path.target_pocket.pocket.name}`);
                 
                 ball_path_item.append(ball_path_difficulty);
                 ball_path_item.append(ball_path_icon);
-                ball_path_item.append(ball_path_target_hole);
+                ball_path_item.append(ball_path_target_pocket);
 
                 if (!prev_ball_path) {
                     ball_path_container.append(ball_path_item);
@@ -575,110 +592,143 @@ const drawBallPath = (id, ball_path) => {
     ball_path_wrapper.append(cueball_to_ball_wrapper);
 
     // create ball wrapper
-    var ball_to_hole_wrapper = document.createElement('div');
-    ball_to_hole_wrapper.classList.add('vector-wrapper');
+    var ball_to_pocket_wrapper = document.createElement('div');
+    ball_to_pocket_wrapper.classList.add('vector-wrapper');
 
     // mark ball target point
     var ball_target_point = document.createElement('div');
     ball_target_point.classList.add('vector-target-point');
-    ball_to_hole_wrapper.append(ball_target_point);
+    ball_to_pocket_wrapper.append(ball_target_point);
 
     // create ball vector
-    var ball_to_hole_vector = document.createElement('div');
-    ball_to_hole_vector.classList.add('predicted-vector-line');
-    ball_to_hole_wrapper.append(ball_to_hole_vector);
+    var ball_to_pocket_vector = document.createElement('div');
+    ball_to_pocket_vector.classList.add('predicted-vector-line');
+    ball_to_pocket_wrapper.append(ball_to_pocket_vector);
 
-    setTrajectory(ball_to_hole_wrapper, ball_to_hole_vector, ball_path.target_ball.trajectory)
-    ball_path_wrapper.append(ball_to_hole_wrapper);
+    setTrajectory(ball_to_pocket_wrapper, ball_to_pocket_vector, ball_path.target_ball.trajectory)
+    ball_path_wrapper.append(ball_to_pocket_wrapper);
 
     realtime_stream_ball_paths.append(ball_path_wrapper);
 }
 
 // ---
 
+var track = null;
 const trackBallPositions = () => {
-    const drawVectorLine = (b_name, v_type, vector, draw) => {
-        function setVectorLine(vector_wrapper, vector_line) {
-            vector_wrapper.style.left = `${vector.origin.x}px`;
-            vector_wrapper.style.top = `${vector.origin.y}px`;
-            vector_wrapper.style.rotate = (vector) ? `${(vector.angle - 90)}deg` : "";
-    
-            vector_line.style.display = (vector) ? "" : "none";
-            vector_line.style.height = (vector) ? `${(vector.radius + vector_line.offsetWidth)}px` : "";
-        }
-    
-        var vector_container = realtime_stream_table.querySelector("#ball-vectors");
-        var vector_wrapper = realtime_stream_table.querySelector(`.vector-wrapper[data-ball='${b_name}'][data-type='${v_type}']`);
-        var vector_line = null;
-    
-        if (draw && vector != null) {
-            if (!vector_wrapper) {
-                vector_line = document.createElement('div');
-                vector_line.classList.add(['vector-line']);
-    
-                vector_wrapper = document.createElement('div');
-                vector_wrapper.classList.add(['vector-wrapper']);
-                vector_wrapper.dataset.ball = b_name;
-                vector_wrapper.dataset.type = v_type;
-    
-                vector_wrapper.append(vector_line);
-                vector_container.append(vector_wrapper);
-            } else {
-                vector_line = vector_wrapper.querySelector(".vector-line");
-            }
-    
-            setVectorLine(vector_wrapper, vector_line);
-        } else if (vector_wrapper) {
-            vector_wrapper.remove();
-        }
-    }
-
-    const removeAllVectorLine = (name, v_type) => {
-        realtime_stream_table.querySelectorAll(`.vector-wrapper[data-ball='${name}'][data-type='${v_type}']`).forEach((e) => { e.remove(); });
-    }
-
-    const removeVectorLines = (name) => {
-        realtime_stream_table.querySelectorAll(`.vector-wrapper[data-ball='${name}']`).forEach((e) => { e.remove(); });
-    }
+    if (track != null) { return; }
 
     window.api.get_state().then((s) => {
-        var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
+        Object.entries(s.ateball.game.balls).forEach(([name, ball]) => {
+            var ball_elem = document.createElement('div');
+            ball_elem.dataset.name = ball.info.name;
+            ball_elem.classList.add(...['ball']);
+
+            realtime_stream_balls.append(ball_elem);
+
+            if (ball.info.number >= 0) {
+                var suit = (ball.info.suit) ? ball.info.suit : null;
+
+                var ball_indicator_elem = document.createElement('div');
+                ball_indicator_elem.dataset.name = ball.info.name;
+                ball_indicator_elem.classList.add(...['_btn', 'ball-icon', 'ball-indicator', suit]);
+
+                realtime_ball_indicators.append(ball_indicator_elem);
+            }
+        });
+    });
+
+    track = setInterval(() => {
+        window.api.get_state().then((s) => {
+            const drawVectorLine = (b_name, v_type, vector, draw) => {
+                function setVectorLine(vector_wrapper, vector_line) {
+                    vector_wrapper.style.left = `${vector.origin.x}px`;
+                    vector_wrapper.style.top = `${vector.origin.y}px`;
+                    vector_wrapper.style.rotate = (vector) ? `${(vector.angle - 90)}deg` : "";
+            
+                    vector_line.style.display = (vector) ? "" : "none";
+                    vector_line.style.height = (vector) ? `${(vector.radius + vector_line.offsetWidth)}px` : "";
+                }
+            
+                var vector_container = realtime_stream_table.querySelector("#ball-vectors");
+                var vector_wrapper = realtime_stream_table.querySelector(`.vector-wrapper[data-ball='${b_name}'][data-type='${v_type}']`);
+                var vector_line = null;
+            
+                if (draw && vector != null) {
+                    if (!vector_wrapper) {
+                        vector_line = document.createElement('div');
+                        vector_line.classList.add(...['vector-line']);
+            
+                        vector_wrapper = document.createElement('div');
+                        vector_wrapper.classList.add(...['vector-wrapper']);
+                        vector_wrapper.dataset.ball = b_name;
+                        vector_wrapper.dataset.type = v_type;
+            
+                        vector_wrapper.append(vector_line);
+                        vector_container.append(vector_wrapper);
+                    } else {
+                        vector_line = vector_wrapper.querySelector(".vector-line");
+                    }
+            
+                    setVectorLine(vector_wrapper, vector_line);
+                } else if (vector_wrapper) {
+                    vector_wrapper.remove();
+                }
+            }
         
-        var balls = realtime_stream_table.querySelectorAll("._ball");
-
-        balls.forEach(ball => {
-            ball.style.display = (interact) ? "" : "none";
-
-            var b_name = ball.id.replace("_", "");
-            var _ball = s.ateball.game.balls[b_name];
-
-            if (interact) {
-                if (_ball && !_ball.info.pocketed) {
-                    let draw = (_ball.info.suit == null || (_ball.info.suit != null && s.realtime.config.balls[_ball.info.suit]));
-                    ball.style.display = (draw) ? "unset" : "";
-                    ball.style.left = `${_ball.center.x}px`;
-                    ball.style.top = `${_ball.center.y}px`;
-
-                    if (!s.realtime.config.table.raw) {
-                        for (const [v_type, vector] of Object.entries(_ball.vectors)) {
-                            if (vector != null && (s.ateball.game.realtime.current_round == -1 || (_ball.info.name == "cueball" && v_type != "deflect" && s.ateball.game.realtime.current_round != -1))) {
-                                drawVectorLine(b_name, v_type, vector, draw);
-                            } else {
-                                removeAllVectorLine(b_name, v_type);
+            const removeAllVectorLine = (name, v_type) => {
+                realtime_stream_table.querySelectorAll(`.vector-wrapper[data-ball='${name}'][data-type='${v_type}']`).forEach((e) => { e.remove(); });
+            }
+        
+            const removeVectorLines = (name) => {
+                realtime_stream_table.querySelectorAll(`.vector-wrapper[data-ball='${name}']`).forEach((e) => { e.remove(); });
+            }
+        
+            var interact = s.webview.loaded && s.process.started && s.process.connected && s.webview.menu && s.webview.menu == "/en/game" && s.ateball.game.started;
+            
+            var balls = realtime_stream_container.querySelectorAll(".ball");
+            balls.forEach(ball => {
+                ball.style.display = (interact) ? "" : "none";
+    
+                var b_name = ball.dataset.name;
+                var ball_data = s.ateball.game.balls[b_name];
+    
+                if (interact) {
+                    if (ball_data && !ball_data.info.pocketed) {
+                        let draw = (ball_data.info.suit == null || (ball_data.info.suit != null && s.realtime.config.balls[ball_data.info.suit]));
+                        ball.style.display = (draw) ? "unset" : "";
+                        ball.style.left = `${ball_data.center.x}px`;
+                        ball.style.top = `${ball_data.center.y}px`;
+    
+                        if (!s.realtime.config.table.raw) {
+                            for (const [v_type, vector] of Object.entries(ball_data.vectors)) {
+                                if (vector != null && (s.ateball.game.realtime.current_round == -1 || (ball_data.info.name == "cueball" && v_type != "deflect" && s.ateball.game.realtime.current_round != -1))) {
+                                    drawVectorLine(b_name, v_type, vector, draw);
+                                } else {
+                                    removeAllVectorLine(b_name, v_type);
+                                }
                             }
                         }
+                    } else {
+                        ball.style.display = "none";
+                        removeVectorLines(b_name);
                     }
                 } else {
                     ball.style.display = "none";
                     removeVectorLines(b_name);
                 }
-            } else {
-                ball.style.display = "none";
-                removeVectorLines(b_name);
-            }
+            });
         });
-    });
+    }, 1000 / 30);
+}
+
+const untrackBallPositions = () => {
+    clearInterval(track);
+    track = null;
+
+    realtime_ball_indicators.replaceChildren();
+
+    var balls = realtime_stream_container.querySelectorAll(".ball");
+    balls.forEach(ball => { ball.remove() });
 }
 
 setInterval(toggleGUIElements, 1000 / 10);
-setInterval(trackBallPositions, 1000 / 30);

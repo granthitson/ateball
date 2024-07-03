@@ -1,86 +1,91 @@
-.b0 {
+[data-name="cueball"] {
     background-image: url("../images/balls/0ball.png");
     border-image-source: url("../images/balls/0ball.png");
 }
 
-.b1 {
+[data-name="1ball"] {
     background-image: url("../images/balls/1ball.png");
     border-image-source: url("../images/balls/1ball.png");
 }
 
-.b2 {
+[data-name="2ball"] {
     background-image: url("../images/balls/2ball.png");
     border-image-source: url("../images/balls/2ball.png");
 }
 
-.b3 {
+[data-name="3ball"] {
     background-image: url("../images/balls/3ball.png");
     border-image-source: url("../images/balls/3ball.png");
 }
 
-.b4 {
+[data-name="4ball"] {
     background-image: url("../images/balls/4ball.png");
     border-image-source: url("../images/balls/4ball.png");
 }
 
-.b5 {
+[data-name="5ball"] {
     background-image: url("../images/balls/5ball.png");
     border-image-source: url("../images/balls/5ball.png");
 }
 
-.b6 {
+[data-name="6ball"] {
     background-image: url("../images/balls/6ball.png");
     border-image-source: url("../images/balls/6ball.png");
 }
 
-.b7 {
+[data-name="7ball"] {
     background-image: url("../images/balls/7ball.png");
     border-image-source: url("../images/balls/7ball.png");
 }
 
-.b8 {
+[data-name="8ball"] {
     background-image: url("../images/balls/8ball.png");
     border-image-source: url("../images/balls/8ball.png");
 }
 
-.b9 {
+[data-name="9ball"] {
     background-image: url("../images/balls/9ball.png");
     border-image-source: url("../images/balls/9ball.png");
 }
 
-.b10 {
+[data-name="10ball"] {
     background-image: url("../images/balls/10ball.png");
     border-image-source: url("../images/balls/10ball.png");
 }
 
-.b11 {
+[data-name="11ball"] {
     background-image: url("../images/balls/11ball.png");
     border-image-source: url("../images/balls/11ball.png");
 }
 
-.b12 {
+[data-name="12ball"] {
     background-image: url("../images/balls/12ball.png");
     border-image-source: url("../images/balls/12ball.png");
 }
 
-.b13 {
+[data-name="13ball"] {
     background-image: url("../images/balls/13ball.png");
     border-image-source: url("../images/balls/13ball.png");
 }
 
-.b14 {
+[data-name="14ball"] {
     background-image: url("../images/balls/14ball.png");
     border-image-source: url("../images/balls/14ball.png");
 }
 
-.b15 {
+[data-name="15ball"] {
     background-image: url("../images/balls/15ball.png");
     border-image-source: url("../images/balls/15ball.png");
 }
 
+[data-name="1000ball"] {
+    background-image: url("../images/balls/1000ball.png");
+    border-image-source: url("../images/balls/1000ball.png");
+}
+
 /* ball status/selection */
 
-._ball {
+.ball {
     position: absolute;
     width: 20px;
     height: 20px;
@@ -91,9 +96,16 @@
     background-position: center;
     border-radius: 20px;
     display: none;
+    z-index: 8;
 }
 
-.ball {
+.ball[data-name="target"] {
+    border: 2px solid white;
+    pointer-events: none;
+    z-index: 9;
+}
+
+.ball-icon {
     width: calc(100% / 8);
     height: calc(213px / 8);
     padding: 0;
