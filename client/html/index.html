@@ -70,6 +70,7 @@
 										<div id="balls"></div>
 										<div id="ball-vectors"></div>
 										<div id="ball-paths"></div>
+										<div id="targets"></div>
 									</div>
 								</div>
 							</div>
@@ -159,17 +160,17 @@
 													<div class="row">
 														<div class="col p-0">
 															<label class="toggle">
-																<input name="draw-walls" type="checkbox" checked="checked">
+																<input name="draw-boundaries" type="checkbox" checked="checked">
 																<span class="option-toggle-btn inverse">
-																	<span class="option">Walls</span>
+																	<span class="option">Boundaries</span>
 																</span>
 															</label>
 														</div>
 														<div class="col p-0">
 															<label class="toggle">
-																<input name="draw-holes" type="checkbox" checked="checked">
+																<input name="draw-pockets" type="checkbox" checked="checked">
 																<span class="option-toggle-btn inverse">
-																	<span class="option">Holes</span>
+																	<span class="option">Pockets</span>
 																</span>
 															</label>
 														</div>
@@ -192,7 +193,7 @@
 												<div class="row">
 													<div class="col p-0">
 														<label class="toggle">
-															<input name="highlight-clusters" type="checkbox">
+															<input name="draw-clusters" type="checkbox">
 															<span class="option-toggle-btn inverse">
 																<span class="option">Clusters</span>
 															</span>
@@ -337,7 +338,7 @@
 									<div class="col menu" id="minigames-menu">
 										<div class="row">
 											<div class="col p-0">
-												<button id="luckyshot-btn" class="_btn play-btn" data-gamemode="lucky_shot">Lucky Shot</button>
+												<button id="luckyshot-btn" class="_btn play-btn" data-gamemode="lucky_shot" data-location="lucky_shot">Lucky Shot</button>
 											</div>
 										</div>
 									</div>
@@ -372,10 +373,10 @@
 									<div class="col menu" id="practice-menu">
 										<div class="row">
 											<div class="col p-0 h-50">
-												<button id="pass-n-play-btn" class="_btn play-btn" data-gamemode="pass_n_play">Pass'n Play</button>
+												<button id="pass-n-play-btn" class="_btn play-btn" data-gamemode="pass_n_play" data-location="pass_n_play">Pass'n Play</button>
 											</div>
 											<div class="col p-0 h-50">
-												<button id="quick-fire-btn" class="_btn play-btn" data-gamemode="quick_fire">Quick Fire</button>
+												<button id="quick-fire-btn" class="_btn play-btn" data-gamemode="quick_fire" data-location="quick_fire">Quick Fire</button>
 											</div>
 										</div>
 									</div>

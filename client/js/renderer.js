@@ -113,6 +113,9 @@ window.api.ateball.game.on_end((e) => {
     closeNavigationMenus(realtime_controls);
     ateball_mouse.deactivate();
 
+    closeNavigationMenus(realtime_controls);
+    resetImageOptionsMenu();
+
     image_stream.then(() => {
         var realtime = document.querySelector("#realtime-stream canvas");
         var context = realtime.getContext("2d");
@@ -128,6 +131,9 @@ window.api.ateball.on_stop(() => {
     toggleButtonSpinner(game_stop_btn, false);
     toggleButtonSpinner(ateball_stop_btn, false);
     ateball_mouse.deactivate();
+
+    closeNavigationMenus(realtime_controls);
+    resetImageOptionsMenu();
 
     var realtime = document.querySelector("#realtime-stream canvas");
     var context = realtime.getContext("2d");

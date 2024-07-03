@@ -116,6 +116,7 @@ const realtime_stream_container = realtime_stream_table.querySelector("#table-co
 const realtime_stream_balls = realtime_stream_table.querySelector("#balls");
 const realtime_stream_ball_vectors = realtime_stream_table.querySelector("#ball-vectors");
 const realtime_stream_ball_paths = realtime_stream_table.querySelector("#ball-paths");
+const realtime_stream_targets = realtime_stream_table.querySelector("#targets");
 
 const change_round = realtime_controls.querySelectorAll("#round-timer .change-round");
 change_round.forEach(change_btn => {
@@ -173,6 +174,32 @@ image_options_menu.addEventListener("change", (e) => {
         }
     }
 });
+
+const resetImageOptionsMenu = () => {
+    window.api.get_state().then((s) => {
+        Object.entries(s.realtime.config.balls).forEach(([option, value]) => {
+            var option_elem = image_options_menu.querySelector(`[name='draw-${option}']`);
+            option_elem.checked = value;
+
+            var option_dependency = image_options_menu.querySelector(`fieldset#${option_elem.dataset.dependency}`);
+            if (option_dependency) {
+                option_dependency.disabled = !value;
+                option_dependency.classList.toggle("show", value);
+            }
+        });
+
+        Object.entries(s.realtime.config.table).forEach(([option, value]) => {
+            var option_elem = image_options_menu.querySelector(`[name='draw-${option}']`);
+            option_elem.checked = value;
+
+            var option_dependency = image_options_menu.querySelector(`fieldset#${option_elem.dataset.dependency}`);
+            if (option_dependency) {
+                option_dependency.disabled = !value;
+                option_dependency.classList.toggle("show", value);
+            }
+        });
+    });
+}
 
 var pending_cancel = document.querySelector("#pending-cancel");
 pending_cancel.addEventListener("click", (e) => {
@@ -412,13 +439,47 @@ const toggleRealtimeInterface = (s) => {
     realtime_stream_table.classList.toggle("raw", s.realtime.config.table.raw);
     realtime_stream_table.classList.toggle("live", (interact && s.ateball.game.realtime.current_round == -1));
 
+    drawTableTarget(s, interact);
     drawBallClusters(s, interact);
 
     var is_realtime = (s.ateball.game.turn.active && s.ateball.game.realtime.current_round == -1);
+    ball_path_container.style.display = !interact ? "none" : "";
     ball_path_container.disabled = !(interact && (!is_realtime || (is_realtime && !(s.ateball.game.round.state.executing || s.ateball.game.round.state.executed))));
 
     listBallPaths(s, interact, is_realtime);
     drawSelectedBallPath(s, interact);
+}
+
+const drawTableTarget = (s, interact) => {
+    if (interact) {
+        let show = !s.realtime.config.table.raw;
+
+        let target_destinations = s.ateball.game.target_destinations;
+        if (target_destinations == null || (target_destinations && target_destinations.length <= 0)) {
+            return;
+        }
+        
+        target_destinations.forEach((dest) => {
+            dest.forEach((zone) => {
+                var zone_exist = realtime_stream_table.querySelector(`.zone#${zone.name}`);
+                if (!zone_exist) {
+                    var x = zone.center.x - zone.radius; var y = zone.center.y - zone.radius;
+
+                    var zone_elem = document.createElement('div');
+                    zone_elem.id = zone.name;
+                    zone_elem.classList.add('zone');
+                    zone_elem.style.left = `${x}px`;
+                    zone_elem.style.top = `${y}px`;
+
+                    realtime_stream_targets.append(zone_elem);
+                } else {
+                    zone_exist.classList.toggle("show", show);
+                }
+            });
+        });
+    } else {
+        realtime_stream_table.querySelectorAll(".zone").forEach(e => { e.remove(); });
+    }
 }
 
 const drawBallClusters = (s, interact) => {
@@ -426,7 +487,7 @@ const drawBallClusters = (s, interact) => {
         let ball_clusters = (s.ateball.game.turn.active && s.ateball.game.realtime.current_round == -1) ? s.ateball.game.round.data.ball_clusters : s.ateball.game.realtime.data.ball_clusters;
         
         if ((s.ateball.game.turn.active || s.ateball.game.realtime.current_round != -1) && Object.keys(ball_clusters).length > 0) {
-            let show = !s.realtime.config.table.raw && s.realtime.config.balls.clusters.highlight;
+            let show = !s.realtime.config.table.raw && s.realtime.config.balls.clusters;
 
             var existing_ball_clusters = realtime_stream_table.querySelectorAll(".ball-cluster");
             existing_ball_clusters.forEach(e => { e.classList.toggle("show", show); });

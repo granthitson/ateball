@@ -15,6 +15,7 @@ class Ateball {
 				game: {
 					pending: false,
 					started: false,
+					table : null,
 					suit: null,
 					turn : {
 						start_time : null,
@@ -23,11 +24,13 @@ class Ateball {
 					},
 					targets: null,
 					balls: {},
+					target_destinations : [],
 					round: {
 						num : null,
 						state : {
 							executing : false,
-							executed : false
+							executed : false,
+							completed : false
 						},
 						data : {
 							selected_ball_path_id : null,
@@ -55,14 +58,12 @@ class Ateball {
 					balls : {
 						solid : true,
 						stripe : true,
-						clusters : {
-							highlight : false
-						}
+						clusters : false
 					},
 					table : {
 						raw : false,
-						walls : true,
-						holes : true,
+						boundaries : true,
+						pockets : true,
 						background : true
 					}
 				}
@@ -101,13 +102,14 @@ class Ateball {
 	}
 
 	start_game(msg) {
+		this.state.ateball.game.table = msg.data.location;
 		this.state.ateball.game.suit = (msg.data.suit) ? null : undefined;
 		this.state.ateball.game.balls = msg.data.balls;
 		
 		this.state.ateball.game.pending = false;
 		this.state.ateball.game.started = true;
 
-		this.window.webContents.send("game-started");
+		this.window.webContents.send("game-started", this.state.ateball.game.table);
 	}
 
 	select_ball_path(id) {
@@ -181,14 +183,14 @@ class Ateball {
 			case "draw-stripe":
 				this.state.realtime.config.balls.stripe = value;
 				break;
-			case "highlight-clusters":
-				this.state.realtime.config.balls.clusters.highlight = value;
+			case "draw-clusters":
+				this.state.realtime.config.balls.clusters = value;
 				break;
-			case "draw-walls":
-				this.state.realtime.config.table.walls = value;
+			case "draw-boundaries":
+				this.state.realtime.config.table.boundaries = value;
 				break;
-			case "draw-holes":
-				this.state.realtime.config.table.holes = value;
+			case "draw-pockets":
+				this.state.realtime.config.table.pockets = value;
 				break;
 			case "draw-background":
 				this.state.realtime.config.table.background = value;
@@ -216,6 +218,7 @@ class Ateball {
 		this.reset_game_state();
 
 		this.window.webContents.send("game-ended");
+		this.log("empty");
 	}
 
 	stop() {
@@ -312,8 +315,10 @@ class Ateball {
 							console.log("turn start");
 							this.reset_turn_state();
 							this.reset_round_state();
+							console.log(p_msg.data);
 							this.state.ateball.game.turn.start_time = p_msg.data.start_time;
 							this.state.ateball.game.turn.total_duration = p_msg.data.total_duration;
+							console.log(this.state.ateball.game.turn.total_duration);
 							break;
 						case "TURN-SWAP":
 							console.log("turn swap");
@@ -334,6 +339,7 @@ class Ateball {
 							break;
 						case "REALTIME-STREAM":
 							this.state.ateball.game.balls = p_msg.data.balls;
+							this.state.ateball.game.target_destinations = p_msg.data.target_destinations;
 
 							if (p_msg.data.image) {
 								this.window.webContents.send("realtime-stream", { data: p_msg.data.image});
@@ -375,6 +381,7 @@ class Ateball {
 							break;
 						case "ROUND-COMPLETE":
 							console.log("round ended");
+							this.state.ateball.game.round.state.completed = true;
 							break;
 						case "GAME-EXCEPTION":
 						case "GAME-CANCELLED":
@@ -442,13 +449,12 @@ class Ateball {
 	}
 
 	reset_game_state() {
-		this.state.realtime.config.selected_ball_path_id = structuredClone(this.state.realtime.config.selected_ball_path_id);
+		this.state.realtime.config = structuredClone(this.original_state.realtime.config);
 		this.state.ateball.game = structuredClone(this.original_state.ateball.game);
 	}
 
 	reset_ateball_state() {
-		this.state.process = structuredClone(this.original_state.process);
-		this.state.ateball = structuredClone(this.original_state.ateball);
+		this.state = structuredClone(this.original_state);
 	}
 
 	kill() {

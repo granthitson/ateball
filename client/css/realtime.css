@@ -452,6 +452,10 @@
         transition: all 100ms ease-in-out;
     }
 
+    #round-timer.rcomplete {
+        filter: grayscale(1)
+    }
+
     #round-timer .timer {
         pointer-events: none;
     }
@@ -552,4 +556,44 @@
     background-position: right;
     background-size: 2px 14px;
     background-repeat: repeat-y;
+}
+
+.zone {
+    position: absolute;
+    border-radius: 50%;
+    box-sizing: border-box;
+    display: none;
+    z-index: 8;
+}
+
+.zone.show {
+    display: unset;
+}
+
+#white_zone {
+    background: rgb(220 220 220 / 20%);
+    border: 2px solid rgb(220, 220, 220);
+    width: 176px;
+    height: 176px;
+}
+
+#blue_zone {
+    background: radial-gradient(circle, rgba(39, 174, 236, 0.2) 64%, rgb(39, 174, 236) 100%);
+    border: 2px solid rgb(39, 174, 236);
+    width: 132px;
+    height: 132px;
+}
+
+#red_zone {
+    background: radial-gradient(circle, rgb(192 80 85 / 30%) 70%, rgb(192, 80, 85) 90%);
+    border: 2px solid rgb(192, 80, 85);
+    width: 84px;
+    height: 84px;
+}
+
+#gold_zone {
+    background: rgb(173, 154, 57);
+    border: 2px solid rgb(228, 207, 42);
+    width: 40px;
+    height: 40px;
 }
